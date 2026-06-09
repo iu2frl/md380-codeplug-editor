@@ -139,8 +139,8 @@ describe("detectBrowserRadioCapabilities", () => {
           "requestDevice",
           "open",
           "selectConfiguration:1",
-          "selectAlternate:2:1",
           "claimInterface:2",
+          "selectAlternate:2:1",
         ]);
       },
     );
