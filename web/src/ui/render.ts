@@ -1,6 +1,6 @@
 import type { AppState, EditorStore } from "../state/store";
 import { radioButtonActionOptions } from "../domain/parser";
-import { detectBrowserRadioCapabilities } from "../transport/browserRadio";
+import { createBrowserRadioTransport, detectBrowserRadioCapabilities } from "../transport/browserRadio";
 
 interface ChannelPanelState {
   query: string;
@@ -1425,14 +1425,29 @@ function bindActiveTab(
       return;
     }
 
-    panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", () => {
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", async () => {
       const capabilities = detectBrowserRadioCapabilities();
       if (!capabilities.supported) {
         window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
         return;
       }
 
-      window.alert("Phase 3 connection flow scaffold is ready. Device connect implementation is the next milestone.");
+      const transport = createBrowserRadioTransport(capabilities);
+      if (!transport) {
+        window.alert("Unable to initialize WebUSB transport in this browser.");
+        return;
+      }
+
+      try {
+        const device = await transport.connect();
+        const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
+        window.alert(
+          `Connected to ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "WebUSB connection failed.";
+        window.alert(`Connect failed: ${message}`);
+      }
     });
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", () => {

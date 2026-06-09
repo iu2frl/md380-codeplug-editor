@@ -16,6 +16,12 @@ export default defineConfig({
           environment: "node",
         },
       },
+      {
+        test: {
+          include: ["src/transport/**/*.test.ts"],
+          environment: "node",
+        },
+      },
     ],
   },
 });
