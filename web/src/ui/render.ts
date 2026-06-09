@@ -11,6 +11,7 @@ type ActiveTab = "basic" | "general" | "digital-contacts" | "zones" | "group-lis
 
 interface UiState {
   activeTab: ActiveTab;
+  riskAccepted: boolean;
 }
 
 function downloadBytes(fileName: string, bytes: Uint8Array): void {
@@ -33,6 +34,7 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
 
   const uiState: UiState = {
     activeTab: "basic",
+    riskAccepted: false,
   };
 
   store.subscribe((state) => renderState(target, store, state, channelState, uiState));
@@ -46,14 +48,15 @@ function renderState(
   uiState: UiState,
 ): void {
   if (!state.document) {
-    target.innerHTML = renderLanding(state.importError);
+    target.innerHTML = renderLanding(state.importError, uiState.riskAccepted);
     bindFileInputs(target, store);
+    bindLandingActions(target, store, state, channelState, uiState);
     return;
   }
 
   target.innerHTML = renderLoadedLayout(state, uiState);
   bindFileInputs(target, store);
-  bindTopActions(target, store);
+  bindTopActions(target, store, state);
   bindTabs(target, uiState, state, store, channelState);
 
   const activeTab = target.querySelector<HTMLElement>("#active-tab-panel");
@@ -80,7 +83,7 @@ function renderState(
   bindActiveTab(target, store, state, channelState, uiState);
 }
 
-function renderLanding(importError?: string): string {
+function renderLanding(importError: string | undefined, riskAccepted: boolean): string {
   return `
     <main class="layout">
       <section class="hero card">
@@ -88,29 +91,66 @@ function renderLanding(importError?: string): string {
         <p>Phase 1 workflow: read with the Python helper, edit in browser, then write back safely.</p>
       </section>
 
+      <section class="card risk-card">
+        <h2>Warning</h2>
+        <p class="risk-text">
+          This is a beta app. Using it may brick or damage your transceiver.
+          By proceeding, you accept all risk and agree that the project maintainer is not responsible for device damage.
+        </p>
+        <label class="risk-ack">
+          <input id="risk-ack" type="checkbox" ${riskAccepted ? "checked" : ""} />
+          I understand and accept all risk, including possible device damage or bricking.
+        </label>
+      </section>
+
       <section class="tiles">
-        <article class="card tile muted">
+        <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
-          <p>Not available in Phase 1.</p>
-          <button class="button" disabled>Create New (Coming Soon)</button>
+          <p>Create-new workflow is not available in Phase 1 yet.</p>
+          <button id="create-new-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create New</button>
         </article>
 
-        <article class="card tile">
+        <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Open Existing Codeplug</h2>
           <ol>
             <li>Run <code>python tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/radio_dump.rdt</code>.</li>
             <li>Select the generated <code>.rdt</code> or <code>.bin</code> file below.</li>
             <li>Edit and export, then write back with <code>radio-write</code>.</li>
           </ol>
-          <label class="button">
-            Open .rdt/.bin
-            <input id="file-input" type="file" accept=".rdt,.bin" hidden />
-          </label>
+          <button id="open-existing-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open .rdt/.bin</button>
+          <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
       </section>
     </main>
   `;
+}
+
+function bindLandingActions(
+  target: HTMLElement,
+  store: EditorStore,
+  state: AppState,
+  channelState: ChannelPanelState,
+  uiState: UiState,
+): void {
+  target.querySelector<HTMLInputElement>("#risk-ack")?.addEventListener("change", (event) => {
+    uiState.riskAccepted = (event.currentTarget as HTMLInputElement).checked;
+    renderState(target, store, state, channelState, uiState);
+  });
+
+  target.querySelector<HTMLButtonElement>("#open-existing-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    target.querySelector<HTMLInputElement>("#file-input")?.click();
+  });
+
+  target.querySelector<HTMLButtonElement>("#create-new-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    window.alert("Create new codeplug is planned for a later phase and is not available yet.");
+  });
 }
 
 function renderLoadedLayout(state: AppState, uiState: UiState): string {
@@ -124,11 +164,17 @@ function renderLoadedLayout(state: AppState, uiState: UiState): string {
       <section class="hero card">
         <h1>MD380 Codeplug Editor</h1>
         <p>Loaded: ${escapeHtml(document.fileName)} (${document.format.toUpperCase()})</p>
+        <p class="status-line">
+          <span class="status-badge ${state.isDirty ? "dirty" : "clean"}">${state.isDirty ? "Unsaved changes" : "Saved"}</span>
+          <span class="status-meta">Undo: ${state.undoCount} | Redo: ${state.redoCount}</span>
+        </p>
         <div class="actions">
           <label class="button">
             Open Another File
             <input id="file-input" type="file" accept=".rdt,.bin" hidden />
           </label>
+          <button id="undo-btn" class="button ghost" ${state.undoCount === 0 ? "disabled" : ""}>Undo</button>
+          <button id="redo-btn" class="button ghost" ${state.redoCount === 0 ? "disabled" : ""}>Redo</button>
           <button id="export-btn" class="button ghost">Export Current File</button>
         </div>
       </section>
@@ -391,7 +437,7 @@ function bindFileInputs(target: HTMLElement, store: EditorStore): void {
   }
 }
 
-function bindTopActions(target: HTMLElement, store: EditorStore): void {
+function bindTopActions(target: HTMLElement, store: EditorStore, state: AppState): void {
   target.querySelector<HTMLButtonElement>("#export-btn")?.addEventListener("click", () => {
     const snapshot = store.getState();
     if (!snapshot.document) {
@@ -402,6 +448,18 @@ function bindTopActions(target: HTMLElement, store: EditorStore): void {
       return;
     }
     downloadBytes(snapshot.document.outputFileName, bytes);
+  });
+
+  target.querySelector<HTMLButtonElement>("#undo-btn")?.addEventListener("click", () => {
+    if (state.undoCount > 0) {
+      store.undo();
+    }
+  });
+
+  target.querySelector<HTMLButtonElement>("#redo-btn")?.addEventListener("click", () => {
+    if (state.redoCount > 0) {
+      store.redo();
+    }
   });
 }
 
