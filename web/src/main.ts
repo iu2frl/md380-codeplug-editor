@@ -2,7 +2,7 @@ import "./style.css";
 import { EditorStore } from "./state/store";
 import { renderApp } from "./ui/render";
 
-const googleVerificationCode = String(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION ?? "").trim();
+const googleVerificationCode = String(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION ?? "fu6LDPfebphULUc-nfObEg9oKMJVEl-4lQevJ9FSYlA").trim();
 if (googleVerificationCode.length > 0) {
   const verificationTag = document.querySelector<HTMLMetaElement>('meta[name="google-site-verification"]');
   if (verificationTag) {
