@@ -1,4 +1,4 @@
-import type { CodeplugDocument, RadioVariant } from "./types";
+import type { Channel, CodeplugDocument, RadioVariant } from "./types";
 
 const KNOWN_RDT_SIZE = 262709;
 const KNOWN_RAW_SIZE = 262144;
@@ -850,11 +850,25 @@ function writeChannels(
       continue;
     }
 
+    if (
+      channel.slot !== undefined
+      && channel._rawRecordHex
+      && !channel._dirty
+      && channel._rawSignature === buildChannelSignature(channel)
+    ) {
+      writeHexString(payload, base, CHANNELS_RECORD_SIZE, channel._rawRecordHex);
+      const contactSlot = channel.contactId ? contactSlotById.get(channel.contactId) ?? 0 : 0;
+      writeLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2, contactSlot);
+      const scanListSlot = channel.scanListId ? scanListSlotById.get(channel.scanListId) ?? 0 : 0;
+      const groupListSlot = channel.groupListId ? groupListSlotById.get(channel.groupListId) ?? 0 : 0;
+      writeBitField(payload, base * 8 + CHANNEL_SCAN_LIST_INDEX_OFFSET * 8, 8, scanListSlot);
+      writeBitField(payload, base * 8 + CHANNEL_GROUP_LIST_INDEX_OFFSET * 8, 8, groupListSlot);
+      continue;
+    }
+
     if (channel.slot === undefined) {
       payload.fill(0, base, base + CHANNELS_RECORD_SIZE);
     }
-
-    const preservedByte5 = payload[base + 5];
 
     writeFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET, channel.rxFrequencyMHz);
     writeFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET, channel.txFrequencyMHz);
@@ -908,10 +922,14 @@ function writeChannels(
     const groupListSlot = channel.groupListId ? groupListSlotById.get(channel.groupListId) ?? 0 : 0;
     writeBitField(payload, base * 8 + CHANNEL_SCAN_LIST_INDEX_OFFSET * 8, 8, scanListSlot);
     writeBitField(payload, base * 8 + CHANNEL_GROUP_LIST_INDEX_OFFSET * 8, 8, groupListSlot);
-    payload[base + 5] = preservedByte5;
   }
 
   return channelSlotById;
+}
+
+function buildChannelSignature(channel: Channel): string {
+  const { _rawRecordHex: _ignoredRaw, _dirty: _ignoredDirty, _rawSignature: _ignoredSignature, ...rest } = channel;
+  return JSON.stringify(rest);
 }
 
 function writeZones(payload: Uint8Array, document: CodeplugDocument, channelSlotById: Map<number, number>): void {
@@ -1113,7 +1131,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     const rxFrequencyMHz = readFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET);
     const txFrequencyMHz = readFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET);
 
-    channels.push({
+    const parsedChannel: Channel = {
       id: logicalId,
       name,
       contactId,
@@ -1168,7 +1186,11 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       bandwidthKhz: parseBandwidth(readBitField(payload, base * 8 + CHANNEL_BANDWIDTH_BIT_OFFSET, 2)),
       power: parsePower(readBitField(payload, base * 8 + CHANNEL_POWER_BIT_OFFSET, 1)),
       slot: index + 1,
-    });
+      _rawRecordHex: readHexString(payload, base, CHANNELS_RECORD_SIZE),
+      _dirty: false,
+    };
+    parsedChannel._rawSignature = buildChannelSignature(parsedChannel);
+    channels.push(parsedChannel);
   }
 
   for (let index = 0; index < ZONES_MAX; index += 1) {

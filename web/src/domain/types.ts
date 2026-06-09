@@ -55,6 +55,9 @@ export interface Channel {
   bandwidthKhz: "12.5" | "20" | "25";
   power: "Low" | "High";
   slot?: number;
+  _rawRecordHex?: string;
+  _dirty?: boolean;
+  _rawSignature?: string;
 }
 
 export interface Zone {

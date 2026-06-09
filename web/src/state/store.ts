@@ -313,6 +313,7 @@ export class EditorStore {
       repeaterSlot: 1,
       bandwidthKhz: "12.5",
       power: "High",
+      _dirty: true,
     });
     this.refreshDirty();
   }
@@ -538,6 +539,7 @@ export class EditorStore {
     if (patch.power !== undefined) {
       channel.power = patch.power;
     }
+    channel._dirty = true;
     this.refreshDirty();
   }
 
