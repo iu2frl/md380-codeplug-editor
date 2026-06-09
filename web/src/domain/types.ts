@@ -28,6 +28,10 @@ export interface CodeplugDocument {
   format: "rdt" | "bin" | "dfu";
   variant: RadioVariant;
   sourceSize: number;
+  outputFileName: string;
+  payloadOffset: number;
+  payloadLength: number;
+  model: string;
   channels: Channel[];
   zones: Zone[];
   contacts: Contact[];

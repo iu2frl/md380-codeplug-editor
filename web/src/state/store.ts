@@ -27,6 +27,10 @@ export class EditorStore {
     };
   }
 
+  getState(): AppState {
+    return this.state;
+  }
+
   load(fileName: string, bytes: Uint8Array): void {
     const document = parseCodeplug(fileName, bytes);
     this.state = {
@@ -51,10 +55,10 @@ export class EditorStore {
   }
 
   exportBytes(): Uint8Array | undefined {
-    if (!this.state.originalBytes) {
+    if (!this.state.originalBytes || !this.state.document) {
       return undefined;
     }
-    return serializeCodeplug(this.state.originalBytes);
+    return serializeCodeplug(this.state.document, this.state.originalBytes);
   }
 
   private emit(): void {

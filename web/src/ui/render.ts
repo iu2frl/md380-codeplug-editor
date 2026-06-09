@@ -48,11 +48,15 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   });
 
   exportButton?.addEventListener("click", () => {
+    const snapshot = store.getState();
+    if (!snapshot?.document) {
+      return;
+    }
     const bytes = store.exportBytes();
     if (!bytes) {
       return;
     }
-    downloadBytes("codeplug-export.bin", bytes);
+    downloadBytes(snapshot.document.outputFileName, bytes);
   });
 
   store.subscribe((state) => renderState(target, store, state));
@@ -82,6 +86,7 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
       <div><dt>File</dt><dd>${document.fileName}</dd></div>
       <div><dt>Format</dt><dd>${document.format.toUpperCase()}</dd></div>
       <div><dt>Variant</dt><dd>${document.variant}</dd></div>
+      <div><dt>Model</dt><dd>${document.model || "Unknown"}</dd></div>
       <div><dt>Size</dt><dd>${document.sourceSize} bytes</dd></div>
       <div><dt>Channels</dt><dd>${document.channels.length}</dd></div>
       <div><dt>Zones</dt><dd>${document.zones.length}</dd></div>
