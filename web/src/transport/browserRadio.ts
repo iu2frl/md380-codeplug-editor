@@ -105,6 +105,7 @@ interface UsbNavigatorLike {
 
 const MD380_USB_FILTERS: UsbRequestFilter[] = [
   { vendorId: 0x0483, productId: 0xdf11 },
+  { vendorId: 0x0483 },
   { classCode: 0xfe, subclassCode: 0x01, protocolCode: 0x02 },
 ];
 
@@ -207,15 +208,15 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
         throw new Error("No claimable USB interface found for this radio.");
       }
 
-      const alternate = pickAlternate(selectedInterface);
-      if (alternate && typeof device.selectAlternateInterface === "function") {
-        await device.selectAlternateInterface(selectedInterface.interfaceNumber, alternate.alternateSetting);
-      }
-
       if (typeof device.claimInterface !== "function") {
         throw new Error("Browser cannot claim the selected USB interface.");
       }
       await device.claimInterface(selectedInterface.interfaceNumber);
+
+      const alternate = pickAlternate(selectedInterface);
+      if (alternate && typeof device.selectAlternateInterface === "function") {
+        await device.selectAlternateInterface(selectedInterface.interfaceNumber, alternate.alternateSetting);
+      }
 
       this.device = device;
       this.claimedInterfaceNumber = selectedInterface.interfaceNumber;
