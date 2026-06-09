@@ -124,6 +124,19 @@ body {
   color: var(--ink);
 }
 
+.button:disabled {
+  background: #b9b9b9;
+  border: 1px solid #a8a8a8;
+  color: #5f5f5f;
+  cursor: not-allowed;
+}
+
+.button.ghost:disabled {
+  background: #e6e6e6;
+  border-color: #c8c8c8;
+  color: #7a7a7a;
+}
+
 .grid {
   display: grid;
   gap: 1rem;

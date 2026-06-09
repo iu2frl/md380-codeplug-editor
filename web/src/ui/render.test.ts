@@ -379,5 +379,27 @@ describe("landing entrypoints", () => {
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
     expect(container.querySelector("#landing-radio-progress")).toBeNull();
   });
+
+  it("keeps all landing buttons disabled until risk checkbox is selected", () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    const createButton = container.querySelector<HTMLButtonElement>("#create-new-btn");
+    const openButton = container.querySelector<HTMLButtonElement>("#open-existing-btn");
+    const readButton = container.querySelector<HTMLButtonElement>("#landing-read-radio-btn");
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+
+    expect(createButton?.disabled).toBe(true);
+    expect(openButton?.disabled).toBe(true);
+    expect(readButton?.disabled).toBe(true);
+
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(container.querySelector<HTMLButtonElement>("#create-new-btn")?.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>("#open-existing-btn")?.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.disabled).toBe(false);
+  });
 });
 
