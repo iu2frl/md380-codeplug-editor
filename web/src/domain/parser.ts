@@ -119,14 +119,14 @@ function readAscii(bytes: Uint8Array, offset: number, length: number): string {
 function readLittleInt(bytes: Uint8Array, offset: number, size: number): number {
   let value = 0;
   for (let index = 0; index < size; index += 1) {
-    value |= bytes[offset + index] << (index * 8);
+    value += bytes[offset + index] * 2 ** (index * 8);
   }
   return value;
 }
 
 function writeLittleInt(bytes: Uint8Array, offset: number, size: number, value: number): void {
   for (let index = 0; index < size; index += 1) {
-    bytes[offset + index] = (value >> (index * 8)) & 0xff;
+    bytes[offset + index] = Math.floor(value / 2 ** (index * 8)) & 0xff;
   }
 }
 
@@ -345,7 +345,6 @@ function writeChannels(
     writeUcs2String(payload, base + CHANNEL_NAME_OFFSET, CHANNEL_NAME_SIZE, channel.name);
     const contactSlot = channel.contactId ? contactSlotById.get(channel.contactId) ?? 0 : 0;
     writeLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2, contactSlot);
-    payload[base + CHANNELS_DELETED_OFFSET] = 0;
   }
 
   return channelSlotById;
