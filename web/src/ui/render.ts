@@ -12,6 +12,8 @@ type ActiveTab = "basic" | "general" | "digital-contacts" | "zones" | "group-lis
 interface UiState {
   activeTab: ActiveTab;
   riskAccepted: boolean;
+  selectedZoneId: number | null;
+  selectedChannelId: number | null;
 }
 
 function downloadBytes(fileName: string, bytes: Uint8Array): void {
@@ -35,6 +37,8 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   const uiState: UiState = {
     activeTab: "basic",
     riskAccepted: false,
+    selectedZoneId: null,
+    selectedChannelId: null,
   };
 
   store.subscribe((state) => renderState(target, store, state, channelState, uiState));
@@ -284,25 +288,53 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
   }
 
   if (activeTab === "zones") {
+    const selectedZone = uiState.selectedZoneId ? document.zones.find((z) => z.id === uiState.selectedZoneId) : null;
     return `
       <h2>Zones</h2>
-      <p class="muted-text">Maximum 16 channels per zone. Use comma-separated channel IDs to define membership and order.</p>
-      <button class="button tiny" id="add-zone">Add Zone</button>
-      <div class="rows">
-        ${document.zones
-          .map(
-            (zone) => `
-              <div class="row zone-row">
-                <input data-zone-name="${zone.id}" value="${escapeHtml(zone.name)}" maxlength="16" />
-                <input data-zone-channel-ids="${zone.id}" value="${zone.channelIds.join(",")}" placeholder="channel ids, e.g. 1,2,3" />
-                <button class="button ghost tiny" data-zone-delete="${zone.id}">Delete</button>
-              </div>
-            `,
-          )
-          .join("")}
+      <div class="two-pane-layout">
+        <div class="pane-left">
+          <button class="button tiny" id="add-zone">Add Zone</button>
+          <div class="list">
+            ${document.zones
+              .map(
+                (zone) => `
+                  <div class="list-item ${zone.id === uiState.selectedZoneId ? "selected" : ""}" data-zone-select="${zone.id}">
+                    <div class="list-item-name">${escapeHtml(zone.name)}</div>
+                    <div class="list-item-meta">${zone.channelIds.length} channels</div>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+        <div class="pane-right">
+          ${
+            selectedZone
+              ? `
+            <div class="form-group">
+              <label>
+                Zone Name
+                <input id="zone-editor-name" type="text" value="${escapeHtml(selectedZone.name)}" maxlength="16" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Channel IDs (comma-separated)
+                <input id="zone-editor-channels" type="text" value="${selectedZone.channelIds.join(",")}" placeholder="e.g. 1,2,3" />
+              </label>
+              <p class="muted-text">Maximum 16 channels per zone</p>
+            </div>
+            <div class="form-actions">
+              <button class="button tiny" id="zone-editor-delete">Delete Zone</button>
+            </div>
+          `
+              : `<p class="muted-text">Select a zone to edit</p>`
+          }
+        </div>
       </div>
     `;
   }
+
 
   if (activeTab === "scan-lists") {
     return `
@@ -348,79 +380,144 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     `;
   }
 
-  const filteredChannels = document.channels.filter((channel) => {
-    const nameHit = channel.name.toLowerCase().includes(channelState.query.toLowerCase());
-    const modeHit = channelState.modeFilter === "all" || channel.channelMode === channelState.modeFilter;
-    return nameHit && modeHit;
-  });
+  if (activeTab === "channels") {
+    const filteredChannels = document.channels.filter((channel) => {
+      const nameHit = channel.name.toLowerCase().includes(channelState.query.toLowerCase());
+      const modeHit = channelState.modeFilter === "all" || channel.channelMode === channelState.modeFilter;
+      return nameHit && modeHit;
+    });
 
-  return `
-    <h2>Channels</h2>
-    <div class="toolbar">
-      <button class="button tiny" id="add-channel">Add Channel</button>
-      <input id="channel-search" placeholder="Search channel name" value="${escapeHtml(channelState.query)}" />
-      <select id="channel-mode-filter">
-        <option value="all" ${channelState.modeFilter === "all" ? "selected" : ""}>All Modes</option>
-        <option value="Analog" ${channelState.modeFilter === "Analog" ? "selected" : ""}>Analog</option>
-        <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
-      </select>
-    </div>
-    <div class="bulkbar">
-      <strong>Bulk Update (${filteredChannels.length})</strong>
-      <select id="bulk-mode">
-        <option value="" ${channelState.bulkMode === "" ? "selected" : ""}>Mode (unchanged)</option>
-        <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
-        <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
-      </select>
-      <select id="bulk-power">
-        <option value="" ${channelState.bulkPower === "" ? "selected" : ""}>Power (unchanged)</option>
-        <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
-        <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
-      </select>
-      <button class="button tiny" id="apply-bulk">Apply To Filtered</button>
-    </div>
-    <div class="rows">
-      ${filteredChannels
-        .map(
-          (channel) => `
-            <div class="row channel-row">
-              <input data-channel-name="${channel.id}" value="${escapeHtml(channel.name)}" maxlength="16" />
-              <input data-channel-rx="${channel.id}" type="number" step="0.00001" min="100" max="1000" value="${channel.rxFrequencyMHz.toFixed(5)}" />
-              <input data-channel-tx="${channel.id}" type="number" step="0.00001" min="100" max="1000" value="${channel.txFrequencyMHz.toFixed(5)}" />
-              <select data-channel-mode="${channel.id}">
-                <option value="Analog" ${channel.channelMode === "Analog" ? "selected" : ""}>Analog</option>
-                <option value="Digital" ${channel.channelMode === "Digital" ? "selected" : ""}>Digital</option>
-              </select>
-              <input data-channel-color-code="${channel.id}" type="number" min="0" max="15" step="1" value="${channel.colorCode}" />
-              <select data-channel-slot="${channel.id}">
-                <option value="1" ${channel.repeaterSlot === 1 ? "selected" : ""}>TS1</option>
-                <option value="2" ${channel.repeaterSlot === 2 ? "selected" : ""}>TS2</option>
-              </select>
-              <select data-channel-bandwidth="${channel.id}">
-                <option value="12.5" ${channel.bandwidthKhz === "12.5" ? "selected" : ""}>12.5</option>
-                <option value="20" ${channel.bandwidthKhz === "20" ? "selected" : ""}>20</option>
-                <option value="25" ${channel.bandwidthKhz === "25" ? "selected" : ""}>25</option>
-              </select>
-              <select data-channel-power="${channel.id}">
-                <option value="Low" ${channel.power === "Low" ? "selected" : ""}>Low</option>
-                <option value="High" ${channel.power === "High" ? "selected" : ""}>High</option>
-              </select>
-              <select data-channel-contact-id="${channel.id}">
-                <option value="">No Contact</option>
-                ${document.contacts
-                  .map(
-                    (contact) =>
-                      `<option value="${contact.id}" ${channel.contactId === contact.id ? "selected" : ""}>${escapeHtml(contact.name)}</option>`,
-                  )
-                  .join("")}
-              </select>
-              <button class="button ghost tiny" data-channel-delete="${channel.id}">Delete</button>
+    const selectedChannel = uiState.selectedChannelId ? document.channels.find((c) => c.id === uiState.selectedChannelId) : null;
+
+    return `
+      <h2>Channels</h2>
+      <div class="two-pane-layout">
+        <div class="pane-left">
+          <div class="toolbar">
+            <button class="button tiny" id="add-channel">Add Channel</button>
+            <input id="channel-search" placeholder="Search" value="${escapeHtml(channelState.query)}" />
+            <select id="channel-mode-filter">
+              <option value="all" ${channelState.modeFilter === "all" ? "selected" : ""}>All Modes</option>
+              <option value="Analog" ${channelState.modeFilter === "Analog" ? "selected" : ""}>Analog</option>
+              <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
+            </select>
+          </div>
+          <div class="list">
+            ${filteredChannels
+              .map(
+                (channel) => `
+                  <div class="list-item ${channel.id === uiState.selectedChannelId ? "selected" : ""}" data-channel-select="${channel.id}">
+                    <div class="list-item-name">${escapeHtml(channel.name)}</div>
+                    <div class="list-item-meta">${channel.rxFrequencyMHz.toFixed(4)} MHz (${channel.channelMode})</div>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+        <div class="pane-right">
+          ${
+            selectedChannel
+              ? `
+            <div class="form-group">
+              <label>
+                Channel Name
+                <input id="channel-editor-name" type="text" value="${escapeHtml(selectedChannel.name)}" maxlength="16" />
+              </label>
             </div>
-          `,
-        )
-        .join("")}
-    </div>
-  `;
+            <div class="form-group">
+              <label>
+                RX Frequency (MHz)
+                <input id="channel-editor-rx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.rxFrequencyMHz.toFixed(5)}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                TX Frequency (MHz)
+                <input id="channel-editor-tx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.txFrequencyMHz.toFixed(5)}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Mode
+                <select id="channel-editor-mode">
+                  <option value="Analog" ${selectedChannel.channelMode === "Analog" ? "selected" : ""}>Analog</option>
+                  <option value="Digital" ${selectedChannel.channelMode === "Digital" ? "selected" : ""}>Digital</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Color Code
+                <input id="channel-editor-color-code" type="number" min="0" max="15" step="1" value="${selectedChannel.colorCode}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Time Slot
+                <select id="channel-editor-slot">
+                  <option value="1" ${selectedChannel.repeaterSlot === 1 ? "selected" : ""}>TS1</option>
+                  <option value="2" ${selectedChannel.repeaterSlot === 2 ? "selected" : ""}>TS2</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Bandwidth (kHz)
+                <select id="channel-editor-bandwidth">
+                  <option value="12.5" ${selectedChannel.bandwidthKhz === "12.5" ? "selected" : ""}>12.5</option>
+                  <option value="20" ${selectedChannel.bandwidthKhz === "20" ? "selected" : ""}>20</option>
+                  <option value="25" ${selectedChannel.bandwidthKhz === "25" ? "selected" : ""}>25</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Power
+                <select id="channel-editor-power">
+                  <option value="Low" ${selectedChannel.power === "Low" ? "selected" : ""}>Low</option>
+                  <option value="High" ${selectedChannel.power === "High" ? "selected" : ""}>High</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Contact
+                <select id="channel-editor-contact-id">
+                  <option value="">No Contact</option>
+                  ${document.contacts
+                    .map(
+                      (contact) =>
+                        `<option value="${contact.id}" ${selectedChannel.contactId === contact.id ? "selected" : ""}>${escapeHtml(contact.name)}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="button tiny" id="channel-editor-delete">Delete Channel</button>
+            </div>
+            <div class="bulkbar">
+              <strong>Bulk Update (${filteredChannels.length})</strong>
+              <select id="bulk-mode">
+                <option value="">Mode (unchanged)</option>
+                <option value="Analog">Analog</option>
+                <option value="Digital">Digital</option>
+              </select>
+              <select id="bulk-power">
+                <option value="">Power (unchanged)</option>
+                <option value="Low">Low</option>
+                <option value="High">High</option>
+              </select>
+              <button class="button tiny" id="apply-bulk">Apply To Filtered</button>
+            </div>
+          `
+              : `<p class="muted-text">Select a channel to edit</p>`
+          }
+        </div>
+      </div>
+    `;
+  }
 }
 
 function bindFileInputs(target: HTMLElement, store: EditorStore): void {
@@ -567,42 +664,54 @@ function bindActiveTab(
       return;
     }
 
+    // Add zone button
     panel.querySelector<HTMLButtonElement>("#add-zone")?.addEventListener("click", () => {
       store.addZone();
     });
 
-    for (const nameInput of panel.querySelectorAll<HTMLInputElement>("[data-zone-name]")) {
-      nameInput.addEventListener("change", () => {
-        const id = Number.parseInt(nameInput.dataset.zoneName ?? "", 10);
-        if (Number.isNaN(id)) {
-          return;
-        }
-        const channelsInput = panel.querySelector<HTMLInputElement>(`[data-zone-channel-ids="${id}"]`);
-        const channelIds = parseZoneChannels(channelsInput?.value ?? "");
-        store.updateZone(id, nameInput.value, channelIds);
-      });
-    }
-
-    for (const channelsInput of panel.querySelectorAll<HTMLInputElement>("[data-zone-channel-ids]")) {
-      channelsInput.addEventListener("change", () => {
-        const id = Number.parseInt(channelsInput.dataset.zoneChannelIds ?? "", 10);
-        if (Number.isNaN(id)) {
-          return;
-        }
-        const nameInput = panel.querySelector<HTMLInputElement>(`[data-zone-name="${id}"]`);
-        const channelIds = parseZoneChannels(channelsInput.value);
-        store.updateZone(id, nameInput?.value ?? `Zone ${id}`, channelIds);
-      });
-    }
-
-    for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-zone-delete]")) {
-      deleteButton.addEventListener("click", () => {
-        const id = Number.parseInt(deleteButton.dataset.zoneDelete ?? "", 10);
+    // List item selection
+    for (const item of panel.querySelectorAll<HTMLElement>("[data-zone-select]")) {
+      item.addEventListener("click", () => {
+        const id = Number.parseInt(item.dataset.zoneSelect ?? "", 10);
         if (!Number.isNaN(id)) {
-          store.removeZone(id);
+          uiState.selectedZoneId = id;
+          store.notifySubscribers();
         }
       });
     }
+
+    // Editor fields
+    const nameInput = panel.querySelector<HTMLInputElement>("#zone-editor-name");
+    const channelsInput = panel.querySelector<HTMLInputElement>("#zone-editor-channels");
+    const deleteButton = panel.querySelector<HTMLButtonElement>("#zone-editor-delete");
+
+    if (nameInput) {
+      nameInput.addEventListener("change", () => {
+        if (uiState.selectedZoneId) {
+          const channelIds = parseZoneChannels(channelsInput?.value ?? "");
+          store.updateZone(uiState.selectedZoneId, nameInput.value, channelIds);
+        }
+      });
+    }
+
+    if (channelsInput) {
+      channelsInput.addEventListener("change", () => {
+        if (uiState.selectedZoneId) {
+          const channelIds = parseZoneChannels(channelsInput.value);
+          store.updateZone(uiState.selectedZoneId, nameInput?.value ?? `Zone ${uiState.selectedZoneId}`, channelIds);
+        }
+      });
+    }
+
+    if (deleteButton) {
+      deleteButton.addEventListener("click", () => {
+        if (uiState.selectedZoneId) {
+          store.removeZone(uiState.selectedZoneId);
+          uiState.selectedZoneId = null;
+        }
+      });
+    }
+
     return;
   }
 
@@ -622,10 +731,12 @@ function bindActiveTab(
     return nameHit && modeHit;
   });
 
+  // Add channel button
   panel.querySelector<HTMLButtonElement>("#add-channel")?.addEventListener("click", () => {
     store.addChannel();
   });
 
+  // Search and filter
   panel.querySelector<HTMLInputElement>("#channel-search")?.addEventListener("input", (event) => {
     channelState.query = (event.currentTarget as HTMLInputElement).value;
     renderState(target, store, store.getState(), channelState, uiState);
@@ -637,6 +748,70 @@ function bindActiveTab(
     renderState(target, store, store.getState(), channelState, uiState);
   });
 
+  // List item selection
+  for (const item of panel.querySelectorAll<HTMLElement>("[data-channel-select]")) {
+    item.addEventListener("click", () => {
+      const id = Number.parseInt(item.dataset.channelSelect ?? "", 10);
+      if (!Number.isNaN(id)) {
+        uiState.selectedChannelId = id;
+        renderState(target, store, store.getState(), channelState, uiState);
+      }
+    });
+  }
+
+  // Editor fields
+  const nameInput = panel.querySelector<HTMLInputElement>("#channel-editor-name");
+  const rxInput = panel.querySelector<HTMLInputElement>("#channel-editor-rx");
+  const txInput = panel.querySelector<HTMLInputElement>("#channel-editor-tx");
+  const modeSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-mode");
+  const colorCodeInput = panel.querySelector<HTMLInputElement>("#channel-editor-color-code");
+  const slotSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-slot");
+  const bandwidthSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-bandwidth");
+  const powerSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-power");
+  const contactSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-contact-id");
+  const deleteButton = panel.querySelector<HTMLButtonElement>("#channel-editor-delete");
+
+  const commitChannelChange = (): void => {
+    if (uiState.selectedChannelId) {
+      const updates: Parameters<typeof store.updateChannel>[1] = {};
+      if (nameInput) updates.name = nameInput.value;
+      if (rxInput) updates.rxFrequencyMHz = Number.parseFloat(rxInput.value);
+      if (txInput) updates.txFrequencyMHz = Number.parseFloat(txInput.value);
+      if (modeSelect) updates.channelMode = modeSelect.value === "Digital" ? "Digital" : "Analog";
+      if (colorCodeInput) updates.colorCode = Number.parseInt(colorCodeInput.value, 10);
+      if (slotSelect) updates.repeaterSlot = Number.parseInt(slotSelect.value, 10) === 2 ? 2 : 1;
+      if (bandwidthSelect) updates.bandwidthKhz = bandwidthSelect.value === "20" || bandwidthSelect.value === "25" ? bandwidthSelect.value : "12.5";
+      if (powerSelect) updates.power = powerSelect.value === "Low" ? "Low" : "High";
+      if (contactSelect) {
+        const contactId = Number.parseInt(contactSelect.value, 10);
+        updates.contactId = Number.isNaN(contactId) ? undefined : contactId;
+      }
+      if (Object.keys(updates).length > 0) {
+        store.updateChannel(uiState.selectedChannelId, updates);
+      }
+    }
+  };
+
+  nameInput?.addEventListener("change", commitChannelChange);
+  rxInput?.addEventListener("change", commitChannelChange);
+  txInput?.addEventListener("change", commitChannelChange);
+  modeSelect?.addEventListener("change", commitChannelChange);
+  colorCodeInput?.addEventListener("change", commitChannelChange);
+  slotSelect?.addEventListener("change", commitChannelChange);
+  bandwidthSelect?.addEventListener("change", commitChannelChange);
+  powerSelect?.addEventListener("change", commitChannelChange);
+  contactSelect?.addEventListener("change", commitChannelChange);
+
+  if (deleteButton) {
+    deleteButton.addEventListener("click", () => {
+      if (uiState.selectedChannelId) {
+        store.removeChannel(uiState.selectedChannelId);
+        uiState.selectedChannelId = null;
+      }
+    });
+  }
+
+  // Bulk update
   panel.querySelector<HTMLSelectElement>("#bulk-mode")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
     channelState.bulkMode = value === "Analog" || value === "Digital" ? value : "";
@@ -666,106 +841,6 @@ function bindActiveTab(
       patch,
     );
   });
-
-  for (const nameInput of panel.querySelectorAll<HTMLInputElement>("[data-channel-name]")) {
-    nameInput.addEventListener("change", () => {
-      const id = Number.parseInt(nameInput.dataset.channelName ?? "", 10);
-      if (!Number.isNaN(id)) {
-        store.updateChannel(id, { name: nameInput.value });
-      }
-    });
-  }
-
-  for (const contactInput of panel.querySelectorAll<HTMLSelectElement>("[data-channel-contact-id]")) {
-    contactInput.addEventListener("change", () => {
-      const id = Number.parseInt(contactInput.dataset.channelContactId ?? "", 10);
-      if (Number.isNaN(id)) {
-        return;
-      }
-      const contactId = Number.parseInt(contactInput.value, 10);
-      store.updateChannel(id, { contactId: Number.isNaN(contactId) ? undefined : contactId });
-    });
-  }
-
-  for (const rxInput of panel.querySelectorAll<HTMLInputElement>("[data-channel-rx]")) {
-    rxInput.addEventListener("change", () => {
-      const id = Number.parseInt(rxInput.dataset.channelRx ?? "", 10);
-      const value = Number.parseFloat(rxInput.value);
-      if (!Number.isNaN(id) && !Number.isNaN(value)) {
-        store.updateChannel(id, { rxFrequencyMHz: value });
-      }
-    });
-  }
-
-  for (const txInput of panel.querySelectorAll<HTMLInputElement>("[data-channel-tx]")) {
-    txInput.addEventListener("change", () => {
-      const id = Number.parseInt(txInput.dataset.channelTx ?? "", 10);
-      const value = Number.parseFloat(txInput.value);
-      if (!Number.isNaN(id) && !Number.isNaN(value)) {
-        store.updateChannel(id, { txFrequencyMHz: value });
-      }
-    });
-  }
-
-  for (const modeInput of panel.querySelectorAll<HTMLSelectElement>("[data-channel-mode]")) {
-    modeInput.addEventListener("change", () => {
-      const id = Number.parseInt(modeInput.dataset.channelMode ?? "", 10);
-      if (!Number.isNaN(id)) {
-        store.updateChannel(id, { channelMode: modeInput.value === "Digital" ? "Digital" : "Analog" });
-      }
-    });
-  }
-
-  for (const colorCodeInput of panel.querySelectorAll<HTMLInputElement>("[data-channel-color-code]")) {
-    colorCodeInput.addEventListener("change", () => {
-      const id = Number.parseInt(colorCodeInput.dataset.channelColorCode ?? "", 10);
-      const value = Number.parseInt(colorCodeInput.value, 10);
-      if (!Number.isNaN(id) && !Number.isNaN(value)) {
-        store.updateChannel(id, { colorCode: value });
-      }
-    });
-  }
-
-  for (const slotInput of panel.querySelectorAll<HTMLSelectElement>("[data-channel-slot]")) {
-    slotInput.addEventListener("change", () => {
-      const id = Number.parseInt(slotInput.dataset.channelSlot ?? "", 10);
-      const value = Number.parseInt(slotInput.value, 10);
-      if (!Number.isNaN(id)) {
-        store.updateChannel(id, { repeaterSlot: value === 2 ? 2 : 1 });
-      }
-    });
-  }
-
-  for (const bandwidthInput of panel.querySelectorAll<HTMLSelectElement>("[data-channel-bandwidth]")) {
-    bandwidthInput.addEventListener("change", () => {
-      const id = Number.parseInt(bandwidthInput.dataset.channelBandwidth ?? "", 10);
-      if (Number.isNaN(id)) {
-        return;
-      }
-      const value = bandwidthInput.value;
-      store.updateChannel(id, {
-        bandwidthKhz: value === "20" || value === "25" ? value : "12.5",
-      });
-    });
-  }
-
-  for (const powerInput of panel.querySelectorAll<HTMLSelectElement>("[data-channel-power]")) {
-    powerInput.addEventListener("change", () => {
-      const id = Number.parseInt(powerInput.dataset.channelPower ?? "", 10);
-      if (!Number.isNaN(id)) {
-        store.updateChannel(id, { power: powerInput.value === "Low" ? "Low" : "High" });
-      }
-    });
-  }
-
-  for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-channel-delete]")) {
-    deleteButton.addEventListener("click", () => {
-      const id = Number.parseInt(deleteButton.dataset.channelDelete ?? "", 10);
-      if (!Number.isNaN(id)) {
-        store.removeChannel(id);
-      }
-    });
-  }
 }
 
 function inferMaker(model: string): string {

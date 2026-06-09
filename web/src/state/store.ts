@@ -339,6 +339,10 @@ export class EditorStore {
     this.emit();
   }
 
+  notifySubscribers(): void {
+    this.emit();
+  }
+
   private emit(): void {
     for (const listener of this.listeners) {
       listener(this.state);
