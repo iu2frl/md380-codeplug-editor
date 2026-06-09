@@ -108,3 +108,9 @@ Before marking any feature complete, ensure:
 - No silent auto-flashing without user confirmation.
 - No mixing of callsign DB binaries into codeplug export flows.
 - No broad firmware patching scope in this project.
+
+## Tests
+
+- All frontend and backend capabilities must be covered by tests.
+- Tests should be deterministic and reproducible.
+- Tests for the parser are described in [tests.md](../tests.md).
