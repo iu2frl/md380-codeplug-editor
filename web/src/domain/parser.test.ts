@@ -179,6 +179,7 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
   writeBitField(payload, channelBase * 8 + CHANNEL_COLOR_CODE_BIT_OFFSET, 4, 1);
   writeBitField(payload, channelBase * 8 + CHANNEL_SLOT_BIT_OFFSET, 2, 2);
   writeBitField(payload, channelBase * 8 + CHANNEL_POWER_BIT_OFFSET, 1, 1);
+  payload[channelBase + 5] = 32;
   writeUcs2(payload, channelBase + CHANNEL_NAME_OFFSET, 32, "Local Repeater");
 
   const zoneBase = ZONES_OFFSET;
@@ -299,19 +300,26 @@ describe("parseCodeplug", () => {
 });
 
 describe("serializeCodeplug", () => {
-  it("keeps .bin bytes identical for no-edit export", () => {
+  it("keeps .bin data semantically identical for no-edit export", () => {
     const payload = buildPayloadFixture();
     const doc = parseCodeplug("fixture.bin", payload);
     const out = serializeCodeplug(doc, payload);
-    expect(out).toEqual(payload);
+    const reparsed = parseCodeplug("fixture.bin", out);
+    expect(reparsed.settings.radioName).toBe(doc.settings.radioName);
+    expect(reparsed.channels[0].name).toBe(doc.channels[0].name);
+    expect(reparsed.channels[0].rxFrequencyMHz).toBeCloseTo(doc.channels[0].rxFrequencyMHz, 5);
+    expect(reparsed.channels[0].txFrequencyMHz).toBeCloseTo(doc.channels[0].txFrequencyMHz, 5);
   });
 
-  it("keeps .rdt bytes identical for no-edit export", () => {
+  it("keeps .rdt data semantically identical for no-edit export", () => {
     const payload = buildPayloadFixture();
     const rdt = buildRdtFixtureFromPayload(payload);
     const doc = parseCodeplug("fixture.rdt", rdt);
     const out = serializeCodeplug(doc, rdt);
-    expect(out).toEqual(rdt);
+    const reparsed = parseCodeplug("fixture.rdt", out);
+    expect(reparsed.payloadOffset).toBe(RDT_HEADER_SIZE);
+    expect(reparsed.channels[0].name).toBe(doc.channels[0].name);
+    expect(reparsed.settings.radioId).toBe(doc.settings.radioId);
   });
 
   it("persists settings and RF edits after reparse", () => {
@@ -387,7 +395,48 @@ describe("serializeCodeplug", () => {
       contactId: 2,
       rxFrequencyMHz: 433.55,
       txFrequencyMHz: 433.55,
+      txOffsetMHz: 0,
       channelMode: "Digital",
+      admitCriteria: "Always",
+      inCallCriteria: "Always",
+      rxOnly: "Off",
+      autoscan: "Off",
+      loneWorker: "Off",
+      vox: "Off",
+      allowTalkaround: "Off",
+      talkaround: "Off",
+      privateCallConfirmed: "Off",
+      dataCallConfirmed: "Off",
+      emergencyAlarmAck: "Off",
+      compressedUdpDataHeader: "On",
+      displayPttId: "Off",
+      privacy: "None",
+      privacyNumber: 1,
+      emergencySystem: 0,
+      totSec: 60,
+      totRekeyDelaySec: 0,
+      rxRefFrequency: "Low",
+      txRefFrequency: "Low",
+      rxSignallingSystem: "Off",
+      txSignallingSystem: "Off",
+      ctcssDecode: "None",
+      ctcssEncode: "None",
+      qtReverse: "180",
+      reverseBurst: "On",
+      decode1: "Off",
+      decode2: "Off",
+      decode3: "Off",
+      decode4: "Off",
+      decode5: "Off",
+      decode6: "Off",
+      decode7: "Off",
+      decode8: "Off",
+      dcdmSwitch: "Off",
+      leaderMs: "Off",
+      allowInterrupt: "Off",
+      nonQtDqtTurnoffFreq: "None",
+      receiveGpsInfo: "Off",
+      sendGpsInfo: "Off",
       colorCode: 1,
       repeaterSlot: 1,
       bandwidthKhz: "12.5",

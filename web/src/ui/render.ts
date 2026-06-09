@@ -712,6 +712,12 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             </div>
             <div class="form-group">
               <label>
+                TX Offset (MHz)
+                <input id="channel-editor-tx-offset" type="number" step="0.00001" min="-100" max="100" value="${selectedChannel.txOffsetMHz.toFixed(5)}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
                 Mode
                 <select id="channel-editor-mode">
                   <option value="Analog" ${selectedChannel.channelMode === "Analog" ? "selected" : ""}>Analog</option>
@@ -766,6 +772,199 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
                     .join("")}
                 </select>
               </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Scan List
+                <select id="channel-editor-scan-list-id">
+                  <option value="">None</option>
+                  ${document.scanLists
+                    .map(
+                      (scanList) =>
+                        `<option value="${scanList.id}" ${selectedChannel.scanListId === scanList.id ? "selected" : ""}>${escapeHtml(scanList.name)}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                RX Group List
+                <select id="channel-editor-group-list-id">
+                  <option value="">None</option>
+                  ${document.groupLists
+                    .map(
+                      (groupList) =>
+                        `<option value="${groupList.id}" ${selectedChannel.groupListId === groupList.id ? "selected" : ""}>${escapeHtml(groupList.name)}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Admit Criteria
+                <select id="channel-editor-admit-criteria">
+                  <option value="Always" ${selectedChannel.admitCriteria === "Always" ? "selected" : ""}>Always</option>
+                  <option value="Channel free" ${selectedChannel.admitCriteria === "Channel free" ? "selected" : ""}>Channel free</option>
+                  <option value="CTCSS/DCS" ${selectedChannel.admitCriteria === "CTCSS/DCS" ? "selected" : ""}>CTCSS/DCS</option>
+                  <option value="Color code" ${selectedChannel.admitCriteria === "Color code" ? "selected" : ""}>Color code</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                In-Call Criteria
+                <select id="channel-editor-in-call-criteria">
+                  <option value="Always" ${selectedChannel.inCallCriteria === "Always" ? "selected" : ""}>Always</option>
+                  <option value="Follow Admit Criteria" ${selectedChannel.inCallCriteria === "Follow Admit Criteria" ? "selected" : ""}>Follow Admit Criteria</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Privacy
+                <select id="channel-editor-privacy">
+                  <option value="None" ${selectedChannel.privacy === "None" ? "selected" : ""}>None</option>
+                  <option value="Basic" ${selectedChannel.privacy === "Basic" ? "selected" : ""}>Basic</option>
+                  <option value="Enhanced" ${selectedChannel.privacy === "Enhanced" ? "selected" : ""}>Enhanced</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Privacy Number
+                <input id="channel-editor-privacy-number" type="number" min="1" max="16" step="1" value="${selectedChannel.privacyNumber}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                TOT (s)
+                <select id="channel-editor-tot">
+                  <option value="Infinite" ${selectedChannel.totSec === "Infinite" ? "selected" : ""}>Infinite</option>
+                  ${Array.from({ length: 37 }, (_, i) => i + 1)
+                    .map((value) => {
+                      const sec = value * 15;
+                      return `<option value="${sec}" ${selectedChannel.totSec === sec ? "selected" : ""}>${sec}</option>`;
+                    })
+                    .join("")}
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                TOT Rekey Delay (s)
+                <input id="channel-editor-tot-rekey" type="number" min="0" max="255" step="1" value="${selectedChannel.totRekeyDelaySec}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Emergency System
+                <input id="channel-editor-emergency-system" type="number" min="0" max="32" step="1" value="${selectedChannel.emergencySystem}" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                RX Ref Frequency
+                <select id="channel-editor-rx-ref-frequency">
+                  <option value="Low" ${selectedChannel.rxRefFrequency === "Low" ? "selected" : ""}>Low</option>
+                  <option value="Medium" ${selectedChannel.rxRefFrequency === "Medium" ? "selected" : ""}>Medium</option>
+                  <option value="High" ${selectedChannel.rxRefFrequency === "High" ? "selected" : ""}>High</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                TX Ref Frequency
+                <select id="channel-editor-tx-ref-frequency">
+                  <option value="Low" ${selectedChannel.txRefFrequency === "Low" ? "selected" : ""}>Low</option>
+                  <option value="Medium" ${selectedChannel.txRefFrequency === "Medium" ? "selected" : ""}>Medium</option>
+                  <option value="High" ${selectedChannel.txRefFrequency === "High" ? "selected" : ""}>High</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                RX Signalling
+                <select id="channel-editor-rx-signalling">
+                  <option value="Off" ${selectedChannel.rxSignallingSystem === "Off" ? "selected" : ""}>Off</option>
+                  <option value="DTMF-1" ${selectedChannel.rxSignallingSystem === "DTMF-1" ? "selected" : ""}>DTMF-1</option>
+                  <option value="DTMF-2" ${selectedChannel.rxSignallingSystem === "DTMF-2" ? "selected" : ""}>DTMF-2</option>
+                  <option value="DTMF-3" ${selectedChannel.rxSignallingSystem === "DTMF-3" ? "selected" : ""}>DTMF-3</option>
+                  <option value="DTMF-4" ${selectedChannel.rxSignallingSystem === "DTMF-4" ? "selected" : ""}>DTMF-4</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                TX Signalling
+                <select id="channel-editor-tx-signalling">
+                  <option value="Off" ${selectedChannel.txSignallingSystem === "Off" ? "selected" : ""}>Off</option>
+                  <option value="DTMF-1" ${selectedChannel.txSignallingSystem === "DTMF-1" ? "selected" : ""}>DTMF-1</option>
+                  <option value="DTMF-2" ${selectedChannel.txSignallingSystem === "DTMF-2" ? "selected" : ""}>DTMF-2</option>
+                  <option value="DTMF-3" ${selectedChannel.txSignallingSystem === "DTMF-3" ? "selected" : ""}>DTMF-3</option>
+                  <option value="DTMF-4" ${selectedChannel.txSignallingSystem === "DTMF-4" ? "selected" : ""}>DTMF-4</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                CTCSS/DCS Decode
+                <input id="channel-editor-ctcss-decode" type="text" value="${escapeHtml(selectedChannel.ctcssDecode)}" placeholder="None / 67.0 / D023N" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                CTCSS/DCS Encode
+                <input id="channel-editor-ctcss-encode" type="text" value="${escapeHtml(selectedChannel.ctcssEncode)}" placeholder="None / 67.0 / D023N" />
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                QT Reverse
+                <select id="channel-editor-qt-reverse">
+                  <option value="180" ${selectedChannel.qtReverse === "180" ? "selected" : ""}>180</option>
+                  <option value="120" ${selectedChannel.qtReverse === "120" ? "selected" : ""}>120</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                Non-QT/DQT Turn-off Freq
+                <select id="channel-editor-dqt-turnoff">
+                  <option value="None" ${selectedChannel.nonQtDqtTurnoffFreq === "None" ? "selected" : ""}>None</option>
+                  <option value="Raw-1" ${selectedChannel.nonQtDqtTurnoffFreq === "Raw-1" ? "selected" : ""}>Unknown (raw 1)</option>
+                  <option value="259.2 Hz" ${selectedChannel.nonQtDqtTurnoffFreq === "259.2 Hz" ? "selected" : ""}>259.2 Hz</option>
+                  <option value="55.2 Hz" ${selectedChannel.nonQtDqtTurnoffFreq === "55.2 Hz" ? "selected" : ""}>55.2 Hz</option>
+                </select>
+              </label>
+            </div>
+            <div class="disabled-grid">
+              <label>RX Only<select id="channel-editor-rx-only"><option value="Off" ${selectedChannel.rxOnly === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.rxOnly === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Autoscan<select id="channel-editor-autoscan"><option value="Off" ${selectedChannel.autoscan === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.autoscan === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Lone Worker<select id="channel-editor-lone-worker"><option value="Off" ${selectedChannel.loneWorker === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.loneWorker === "On" ? "selected" : ""}>On</option></select></label>
+              <label>VOX<select id="channel-editor-vox"><option value="Off" ${selectedChannel.vox === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.vox === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Allow Talkaround<select id="channel-editor-allow-talkaround"><option value="Off" ${selectedChannel.allowTalkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowTalkaround === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Talkaround<select id="channel-editor-talkaround"><option value="Off" ${selectedChannel.talkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.talkaround === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Private Call Confirmed<select id="channel-editor-private-confirmed"><option value="Off" ${selectedChannel.privateCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.privateCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Data Call Confirmed<select id="channel-editor-data-confirmed"><option value="Off" ${selectedChannel.dataCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dataCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Emergency Alarm Ack<select id="channel-editor-emergency-ack"><option value="Off" ${selectedChannel.emergencyAlarmAck === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.emergencyAlarmAck === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Compressed UDP Header<select id="channel-editor-compressed-udp"><option value="Off" ${selectedChannel.compressedUdpDataHeader === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.compressedUdpDataHeader === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Display PTT ID<select id="channel-editor-display-ptt"><option value="Off" ${selectedChannel.displayPttId === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.displayPttId === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Receive GPS Info<select id="channel-editor-receive-gps"><option value="Off" ${selectedChannel.receiveGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.receiveGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Send GPS Info<select id="channel-editor-send-gps"><option value="Off" ${selectedChannel.sendGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.sendGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Reverse Burst<select id="channel-editor-reverse-burst"><option value="Off" ${selectedChannel.reverseBurst === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.reverseBurst === "On" ? "selected" : ""}>On</option></select></label>
+              <label>DCDM Switch<select id="channel-editor-dcdm"><option value="Off" ${selectedChannel.dcdmSwitch === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dcdmSwitch === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Leader/MS<select id="channel-editor-leader-ms"><option value="Off" ${selectedChannel.leaderMs === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.leaderMs === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Allow Interrupt<select id="channel-editor-allow-interrupt"><option value="Off" ${selectedChannel.allowInterrupt === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowInterrupt === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 1<select id="channel-editor-decode1"><option value="Off" ${selectedChannel.decode1 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode1 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 2<select id="channel-editor-decode2"><option value="Off" ${selectedChannel.decode2 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode2 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 3<select id="channel-editor-decode3"><option value="Off" ${selectedChannel.decode3 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode3 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 4<select id="channel-editor-decode4"><option value="Off" ${selectedChannel.decode4 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode4 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 5<select id="channel-editor-decode5"><option value="Off" ${selectedChannel.decode5 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode5 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 6<select id="channel-editor-decode6"><option value="Off" ${selectedChannel.decode6 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode6 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 7<select id="channel-editor-decode7"><option value="Off" ${selectedChannel.decode7 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode7 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>Decode 8<select id="channel-editor-decode8"><option value="Off" ${selectedChannel.decode8 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode8 === "On" ? "selected" : ""}>On</option></select></label>
             </div>
             <div class="form-actions">
               <button class="button tiny" id="channel-editor-delete">Delete Channel</button>
@@ -1342,12 +1541,55 @@ function bindActiveTab(
   const nameInput = panel.querySelector<HTMLInputElement>("#channel-editor-name");
   const rxInput = panel.querySelector<HTMLInputElement>("#channel-editor-rx");
   const txInput = panel.querySelector<HTMLInputElement>("#channel-editor-tx");
+  const txOffsetInput = panel.querySelector<HTMLInputElement>("#channel-editor-tx-offset");
   const modeSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-mode");
   const colorCodeInput = panel.querySelector<HTMLInputElement>("#channel-editor-color-code");
   const slotSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-slot");
   const bandwidthSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-bandwidth");
   const powerSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-power");
   const contactSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-contact-id");
+  const scanListSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-scan-list-id");
+  const groupListSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-group-list-id");
+  const admitCriteriaSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-admit-criteria");
+  const inCallCriteriaSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-in-call-criteria");
+  const privacySelect = panel.querySelector<HTMLSelectElement>("#channel-editor-privacy");
+  const privacyNumberInput = panel.querySelector<HTMLInputElement>("#channel-editor-privacy-number");
+  const totSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-tot");
+  const totRekeyInput = panel.querySelector<HTMLInputElement>("#channel-editor-tot-rekey");
+  const emergencySystemInput = panel.querySelector<HTMLInputElement>("#channel-editor-emergency-system");
+  const rxRefFrequencySelect = panel.querySelector<HTMLSelectElement>("#channel-editor-rx-ref-frequency");
+  const txRefFrequencySelect = panel.querySelector<HTMLSelectElement>("#channel-editor-tx-ref-frequency");
+  const rxSignallingSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-rx-signalling");
+  const txSignallingSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-tx-signalling");
+  const ctcssDecodeInput = panel.querySelector<HTMLInputElement>("#channel-editor-ctcss-decode");
+  const ctcssEncodeInput = panel.querySelector<HTMLInputElement>("#channel-editor-ctcss-encode");
+  const qtReverseSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-qt-reverse");
+  const dqtTurnoffSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-dqt-turnoff");
+  const rxOnlySelect = panel.querySelector<HTMLSelectElement>("#channel-editor-rx-only");
+  const autoscanSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-autoscan");
+  const loneWorkerSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-lone-worker");
+  const voxSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-vox");
+  const allowTalkaroundSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-allow-talkaround");
+  const talkaroundSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-talkaround");
+  const privateConfirmedSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-private-confirmed");
+  const dataConfirmedSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-data-confirmed");
+  const emergencyAckSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-emergency-ack");
+  const compressedUdpSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-compressed-udp");
+  const displayPttSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-display-ptt");
+  const receiveGpsSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-receive-gps");
+  const sendGpsSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-send-gps");
+  const reverseBurstSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-reverse-burst");
+  const dcdmSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-dcdm");
+  const leaderMsSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-leader-ms");
+  const allowInterruptSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-allow-interrupt");
+  const decode1Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode1");
+  const decode2Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode2");
+  const decode3Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode3");
+  const decode4Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode4");
+  const decode5Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode5");
+  const decode6Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode6");
+  const decode7Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode7");
+  const decode8Select = panel.querySelector<HTMLSelectElement>("#channel-editor-decode8");
   const deleteButton = panel.querySelector<HTMLButtonElement>("#channel-editor-delete");
 
   const commitChannelChange = (): void => {
@@ -1356,6 +1598,7 @@ function bindActiveTab(
       if (nameInput) updates.name = nameInput.value;
       if (rxInput) updates.rxFrequencyMHz = Number.parseFloat(rxInput.value);
       if (txInput) updates.txFrequencyMHz = Number.parseFloat(txInput.value);
+      if (txOffsetInput) updates.txOffsetMHz = Number.parseFloat(txOffsetInput.value);
       if (modeSelect) updates.channelMode = modeSelect.value === "Digital" ? "Digital" : "Analog";
       if (colorCodeInput) updates.colorCode = Number.parseInt(colorCodeInput.value, 10);
       if (slotSelect) updates.repeaterSlot = Number.parseInt(slotSelect.value, 10) === 2 ? 2 : 1;
@@ -1365,7 +1608,128 @@ function bindActiveTab(
         const contactId = Number.parseInt(contactSelect.value, 10);
         updates.contactId = Number.isNaN(contactId) ? undefined : contactId;
       }
+      if (scanListSelect) {
+        const scanListId = Number.parseInt(scanListSelect.value, 10);
+        updates.scanListId = Number.isNaN(scanListId) ? undefined : scanListId;
+      }
+      if (groupListSelect) {
+        const groupListId = Number.parseInt(groupListSelect.value, 10);
+        updates.groupListId = Number.isNaN(groupListId) ? undefined : groupListId;
+      }
+      if (admitCriteriaSelect) {
+        updates.admitCriteria =
+          admitCriteriaSelect.value === "Channel free" ||
+          admitCriteriaSelect.value === "CTCSS/DCS" ||
+          admitCriteriaSelect.value === "Color code"
+            ? admitCriteriaSelect.value
+            : "Always";
+      }
+      if (inCallCriteriaSelect) {
+        updates.inCallCriteria = inCallCriteriaSelect.value === "Follow Admit Criteria" ? "Follow Admit Criteria" : "Always";
+      }
+      if (privacySelect) {
+        updates.privacy =
+          privacySelect.value === "Basic" || privacySelect.value === "Enhanced" ? privacySelect.value : "None";
+      }
+      if (privacyNumberInput) {
+        updates.privacyNumber = Number.parseInt(privacyNumberInput.value, 10);
+      }
+      if (totSelect) {
+        updates.totSec = totSelect.value === "Infinite" ? "Infinite" : Number.parseInt(totSelect.value, 10);
+      }
+      if (totRekeyInput) {
+        updates.totRekeyDelaySec = Number.parseInt(totRekeyInput.value, 10);
+      }
+      if (emergencySystemInput) {
+        updates.emergencySystem = Number.parseInt(emergencySystemInput.value, 10);
+      }
+      if (rxRefFrequencySelect) {
+        updates.rxRefFrequency =
+          rxRefFrequencySelect.value === "Medium" || rxRefFrequencySelect.value === "High" ? rxRefFrequencySelect.value : "Low";
+      }
+      if (txRefFrequencySelect) {
+        updates.txRefFrequency =
+          txRefFrequencySelect.value === "Medium" || txRefFrequencySelect.value === "High" ? txRefFrequencySelect.value : "Low";
+      }
+      if (rxSignallingSelect) {
+        updates.rxSignallingSystem =
+          rxSignallingSelect.value === "DTMF-1" ||
+          rxSignallingSelect.value === "DTMF-2" ||
+          rxSignallingSelect.value === "DTMF-3" ||
+          rxSignallingSelect.value === "DTMF-4"
+            ? rxSignallingSelect.value
+            : "Off";
+      }
+      if (txSignallingSelect) {
+        updates.txSignallingSystem =
+          txSignallingSelect.value === "DTMF-1" ||
+          txSignallingSelect.value === "DTMF-2" ||
+          txSignallingSelect.value === "DTMF-3" ||
+          txSignallingSelect.value === "DTMF-4"
+            ? txSignallingSelect.value
+            : "Off";
+      }
+      if (ctcssDecodeInput) {
+        updates.ctcssDecode = ctcssDecodeInput.value.trim() || "None";
+      }
+      if (ctcssEncodeInput) {
+        updates.ctcssEncode = ctcssEncodeInput.value.trim() || "None";
+      }
+      if (qtReverseSelect) {
+        updates.qtReverse = qtReverseSelect.value === "120" ? "120" : "180";
+      }
+      if (dqtTurnoffSelect) {
+        updates.nonQtDqtTurnoffFreq =
+          dqtTurnoffSelect.value === "259.2 Hz" ||
+          dqtTurnoffSelect.value === "55.2 Hz" ||
+          dqtTurnoffSelect.value === "Raw-1"
+            ? dqtTurnoffSelect.value
+            : "None";
+      }
+      if (rxOnlySelect) updates.rxOnly = rxOnlySelect.value === "On" ? "On" : "Off";
+      if (autoscanSelect) updates.autoscan = autoscanSelect.value === "On" ? "On" : "Off";
+      if (loneWorkerSelect) updates.loneWorker = loneWorkerSelect.value === "On" ? "On" : "Off";
+      if (voxSelect) updates.vox = voxSelect.value === "On" ? "On" : "Off";
+      if (allowTalkaroundSelect) updates.allowTalkaround = allowTalkaroundSelect.value === "On" ? "On" : "Off";
+      if (talkaroundSelect) updates.talkaround = talkaroundSelect.value === "On" ? "On" : "Off";
+      if (privateConfirmedSelect) updates.privateCallConfirmed = privateConfirmedSelect.value === "On" ? "On" : "Off";
+      if (dataConfirmedSelect) updates.dataCallConfirmed = dataConfirmedSelect.value === "On" ? "On" : "Off";
+      if (emergencyAckSelect) updates.emergencyAlarmAck = emergencyAckSelect.value === "On" ? "On" : "Off";
+      if (compressedUdpSelect) updates.compressedUdpDataHeader = compressedUdpSelect.value === "On" ? "On" : "Off";
+      if (displayPttSelect) updates.displayPttId = displayPttSelect.value === "On" ? "On" : "Off";
+      if (receiveGpsSelect) updates.receiveGpsInfo = receiveGpsSelect.value === "On" ? "On" : "Off";
+      if (sendGpsSelect) updates.sendGpsInfo = sendGpsSelect.value === "On" ? "On" : "Off";
+      if (reverseBurstSelect) updates.reverseBurst = reverseBurstSelect.value === "On" ? "On" : "Off";
+      if (dcdmSelect) updates.dcdmSwitch = dcdmSelect.value === "On" ? "On" : "Off";
+      if (leaderMsSelect) updates.leaderMs = leaderMsSelect.value === "On" ? "On" : "Off";
+      if (allowInterruptSelect) updates.allowInterrupt = allowInterruptSelect.value === "On" ? "On" : "Off";
+      if (decode1Select) updates.decode1 = decode1Select.value === "On" ? "On" : "Off";
+      if (decode2Select) updates.decode2 = decode2Select.value === "On" ? "On" : "Off";
+      if (decode3Select) updates.decode3 = decode3Select.value === "On" ? "On" : "Off";
+      if (decode4Select) updates.decode4 = decode4Select.value === "On" ? "On" : "Off";
+      if (decode5Select) updates.decode5 = decode5Select.value === "On" ? "On" : "Off";
+      if (decode6Select) updates.decode6 = decode6Select.value === "On" ? "On" : "Off";
+      if (decode7Select) updates.decode7 = decode7Select.value === "On" ? "On" : "Off";
+      if (decode8Select) updates.decode8 = decode8Select.value === "On" ? "On" : "Off";
+
+      if (rxInput && txInput && txOffsetInput) {
+        const rx = Number.parseFloat(rxInput.value);
+        const tx = Number.parseFloat(txInput.value);
+        if (!Number.isNaN(rx) && !Number.isNaN(tx) && !Number.isNaN(updates.txOffsetMHz ?? Number.NaN)) {
+          updates.txFrequencyMHz = tx;
+        }
+      }
       if (Object.keys(updates).length > 0) {
+        if (updates.rxFrequencyMHz !== undefined && updates.txOffsetMHz !== undefined) {
+          updates.txFrequencyMHz = updates.rxFrequencyMHz + updates.txOffsetMHz;
+        } else if (updates.rxFrequencyMHz !== undefined && updates.txFrequencyMHz !== undefined) {
+          updates.txOffsetMHz = updates.txFrequencyMHz - updates.rxFrequencyMHz;
+        } else if (updates.txFrequencyMHz !== undefined && rxInput) {
+          const rx = Number.parseFloat(rxInput.value);
+          if (!Number.isNaN(rx)) {
+            updates.txOffsetMHz = updates.txFrequencyMHz - rx;
+          }
+        }
         store.updateChannel(uiState.selectedChannelId, updates);
       }
     }
@@ -1374,12 +1738,55 @@ function bindActiveTab(
   nameInput?.addEventListener("change", commitChannelChange);
   rxInput?.addEventListener("change", commitChannelChange);
   txInput?.addEventListener("change", commitChannelChange);
+  txOffsetInput?.addEventListener("change", commitChannelChange);
   modeSelect?.addEventListener("change", commitChannelChange);
   colorCodeInput?.addEventListener("change", commitChannelChange);
   slotSelect?.addEventListener("change", commitChannelChange);
   bandwidthSelect?.addEventListener("change", commitChannelChange);
   powerSelect?.addEventListener("change", commitChannelChange);
   contactSelect?.addEventListener("change", commitChannelChange);
+  scanListSelect?.addEventListener("change", commitChannelChange);
+  groupListSelect?.addEventListener("change", commitChannelChange);
+  admitCriteriaSelect?.addEventListener("change", commitChannelChange);
+  inCallCriteriaSelect?.addEventListener("change", commitChannelChange);
+  privacySelect?.addEventListener("change", commitChannelChange);
+  privacyNumberInput?.addEventListener("change", commitChannelChange);
+  totSelect?.addEventListener("change", commitChannelChange);
+  totRekeyInput?.addEventListener("change", commitChannelChange);
+  emergencySystemInput?.addEventListener("change", commitChannelChange);
+  rxRefFrequencySelect?.addEventListener("change", commitChannelChange);
+  txRefFrequencySelect?.addEventListener("change", commitChannelChange);
+  rxSignallingSelect?.addEventListener("change", commitChannelChange);
+  txSignallingSelect?.addEventListener("change", commitChannelChange);
+  ctcssDecodeInput?.addEventListener("change", commitChannelChange);
+  ctcssEncodeInput?.addEventListener("change", commitChannelChange);
+  qtReverseSelect?.addEventListener("change", commitChannelChange);
+  dqtTurnoffSelect?.addEventListener("change", commitChannelChange);
+  rxOnlySelect?.addEventListener("change", commitChannelChange);
+  autoscanSelect?.addEventListener("change", commitChannelChange);
+  loneWorkerSelect?.addEventListener("change", commitChannelChange);
+  voxSelect?.addEventListener("change", commitChannelChange);
+  allowTalkaroundSelect?.addEventListener("change", commitChannelChange);
+  talkaroundSelect?.addEventListener("change", commitChannelChange);
+  privateConfirmedSelect?.addEventListener("change", commitChannelChange);
+  dataConfirmedSelect?.addEventListener("change", commitChannelChange);
+  emergencyAckSelect?.addEventListener("change", commitChannelChange);
+  compressedUdpSelect?.addEventListener("change", commitChannelChange);
+  displayPttSelect?.addEventListener("change", commitChannelChange);
+  receiveGpsSelect?.addEventListener("change", commitChannelChange);
+  sendGpsSelect?.addEventListener("change", commitChannelChange);
+  reverseBurstSelect?.addEventListener("change", commitChannelChange);
+  dcdmSelect?.addEventListener("change", commitChannelChange);
+  leaderMsSelect?.addEventListener("change", commitChannelChange);
+  allowInterruptSelect?.addEventListener("change", commitChannelChange);
+  decode1Select?.addEventListener("change", commitChannelChange);
+  decode2Select?.addEventListener("change", commitChannelChange);
+  decode3Select?.addEventListener("change", commitChannelChange);
+  decode4Select?.addEventListener("change", commitChannelChange);
+  decode5Select?.addEventListener("change", commitChannelChange);
+  decode6Select?.addEventListener("change", commitChannelChange);
+  decode7Select?.addEventListener("change", commitChannelChange);
+  decode8Select?.addEventListener("change", commitChannelChange);
 
   if (deleteButton) {
     deleteButton.addEventListener("click", () => {

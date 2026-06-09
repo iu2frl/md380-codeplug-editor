@@ -83,11 +83,53 @@ const CHANNELS_DELETED_VALUE = 0xff;
 const CHANNEL_NAME_OFFSET = 32;
 const CHANNEL_NAME_SIZE = 32;
 const CHANNEL_CONTACT_INDEX_OFFSET = 6;
+const CHANNEL_SCAN_LIST_INDEX_OFFSET = 11;
+const CHANNEL_GROUP_LIST_INDEX_OFFSET = 12;
 const CHANNEL_BANDWIDTH_BIT_OFFSET = 4;
 const CHANNEL_MODE_BIT_OFFSET = 6;
 const CHANNEL_COLOR_CODE_BIT_OFFSET = 8;
 const CHANNEL_SLOT_BIT_OFFSET = 12;
+const CHANNEL_RX_ONLY_BIT_OFFSET = 14;
+const CHANNEL_ALLOW_TALKAROUND_BIT_OFFSET = 15;
+const CHANNEL_DATA_CALL_CONFIRMED_BIT_OFFSET = 16;
+const CHANNEL_PRIVATE_CALL_CONFIRMED_BIT_OFFSET = 17;
+const CHANNEL_PRIVACY_BIT_OFFSET = 18;
+const CHANNEL_PRIVACY_NUMBER_BIT_OFFSET = 20;
+const CHANNEL_DISPLAY_PTT_ID_BIT_OFFSET = 24;
+const CHANNEL_COMPRESSED_UDP_HEADER_BIT_OFFSET = 25;
+const CHANNEL_TALKAROUND_BIT_OFFSET = 26;
+const CHANNEL_EMERGENCY_ALARM_ACK_BIT_OFFSET = 28;
+const CHANNEL_RX_REF_FREQUENCY_BIT_OFFSET = 30;
+const CHANNEL_ADMIT_CRITERIA_BIT_OFFSET = 32;
 const CHANNEL_POWER_BIT_OFFSET = 34;
+const CHANNEL_VOX_BIT_OFFSET = 35;
+const CHANNEL_TX_REF_FREQUENCY_BIT_OFFSET = 38;
+const CHANNEL_IN_CALL_CRITERIA_BIT_OFFSET = 43;
+const CHANNEL_TOT_BIT_OFFSET = 64;
+const CHANNEL_TOT_REKEY_DELAY_BIT_OFFSET = 72;
+const CHANNEL_EMERGENCY_SYSTEM_BIT_OFFSET = 80;
+const CHANNEL_DECODE1_BIT_OFFSET = 112;
+const CHANNEL_DECODE2_BIT_OFFSET = 113;
+const CHANNEL_DECODE3_BIT_OFFSET = 114;
+const CHANNEL_DECODE4_BIT_OFFSET = 115;
+const CHANNEL_DECODE5_BIT_OFFSET = 116;
+const CHANNEL_DECODE6_BIT_OFFSET = 117;
+const CHANNEL_DECODE7_BIT_OFFSET = 118;
+const CHANNEL_DECODE8_BIT_OFFSET = 119;
+const CHANNEL_CTCSS_DECODE_BIT_OFFSET = 192;
+const CHANNEL_CTCSS_ENCODE_BIT_OFFSET = 208;
+const CHANNEL_RX_SIGNALLING_SYSTEM_BIT_OFFSET = 224;
+const CHANNEL_TX_SIGNALLING_SYSTEM_BIT_OFFSET = 232;
+const CHANNEL_DQTTURNOFF_FREQ_BIT_OFFSET = 40;
+const CHANNEL_QT_REVERSE_BIT_OFFSET = 36;
+const CHANNEL_REVERSE_BURST_BIT_OFFSET = 37;
+const CHANNEL_LEADER_MS_BIT_OFFSET = 251;
+const CHANNEL_DCDM_SWITCH_BIT_OFFSET = 252;
+const CHANNEL_ALLOW_INTERRUPT_BIT_OFFSET = 253;
+const CHANNEL_LONE_WORKER_BIT_OFFSET = 0;
+const CHANNEL_AUTOSCAN_BIT_OFFSET = 3;
+const CHANNEL_RECEIVE_GPS_INFO_BIT_OFFSET = 254;
+const CHANNEL_SEND_GPS_INFO_BIT_OFFSET = 255;
 const CHANNEL_RX_FREQ_OFFSET = 16;
 const CHANNEL_TX_FREQ_OFFSET = 20;
 
@@ -321,6 +363,75 @@ function encodeOffOnBit(value: "On" | "Off"): number {
   return value === "On" ? 1 : 0;
 }
 
+function parseOnOffBit(value: number): "On" | "Off" {
+  return value === 0 ? "On" : "Off";
+}
+
+function encodeOnOffBit(value: "On" | "Off"): number {
+  return value === "On" ? 0 : 1;
+}
+
+function decodeCtcssDcs(raw: number): string {
+  if (raw === 0 || raw === 0xffff) {
+    return "None";
+  }
+  const kind = raw >> 14;
+  const code = bcdToInt(raw & 0x3fff);
+  if (kind === 0) {
+    return `${Math.floor(code / 10)}.${code % 10}`;
+  }
+  if (kind === 2) {
+    return `D${String(code).padStart(3, "0")}N`;
+  }
+  if (kind === 3) {
+    return `D${String(code).padStart(3, "0")}I`;
+  }
+  return "None";
+}
+
+function encodeCtcssDcs(value: string): number {
+  if (!value || value === "None") {
+    return 0;
+  }
+  if (/^D\d{3}[NI]$/.test(value)) {
+    const code = Number.parseInt(value.slice(1, 4), 10);
+    const kind = value.endsWith("N") ? 2 : 3;
+    return (kind << 14) | (intToBcd(code) & 0x3fff);
+  }
+  const parsed = Number.parseFloat(value);
+  if (Number.isNaN(parsed)) {
+    return 0xffff;
+  }
+  const code = Math.round(parsed * 10);
+  return intToBcd(code) & 0x3fff;
+}
+
+function decodeDqtTurnoffFreq(value: number): "259.2 Hz" | "55.2 Hz" | "None" | "Raw-1" {
+  if (value === 0) {
+    return "259.2 Hz";
+  }
+  if (value === 1) {
+    return "Raw-1";
+  }
+  if (value === 2) {
+    return "55.2 Hz";
+  }
+  return "None";
+}
+
+function encodeDqtTurnoffFreq(value: "259.2 Hz" | "55.2 Hz" | "None" | "Raw-1"): number {
+  if (value === "259.2 Hz") {
+    return 0;
+  }
+  if (value === "Raw-1") {
+    return 1;
+  }
+  if (value === "55.2 Hz") {
+    return 2;
+  }
+  return 3;
+}
+
 function parseMenuHangTime(raw: number): string {
   return raw === 0 ? "Hang" : `${raw}`;
 }
@@ -508,6 +619,126 @@ function parsePower(value: number): "Low" | "High" {
   return value === 0 ? "Low" : "High";
 }
 
+function decodePrivacy(value: number): "None" | "Basic" | "Enhanced" {
+  if (value === 1) {
+    return "Basic";
+  }
+  if (value === 2) {
+    return "Enhanced";
+  }
+  return "None";
+}
+
+function encodePrivacy(value: "None" | "Basic" | "Enhanced"): number {
+  if (value === "Basic") {
+    return 1;
+  }
+  if (value === "Enhanced") {
+    return 2;
+  }
+  return 0;
+}
+
+function decodeAdmitCriteria(value: number): "Always" | "Channel free" | "CTCSS/DCS" | "Color code" {
+  if (value === 1) {
+    return "Channel free";
+  }
+  if (value === 2) {
+    return "CTCSS/DCS";
+  }
+  if (value === 3) {
+    return "Color code";
+  }
+  return "Always";
+}
+
+function encodeAdmitCriteria(value: "Always" | "Channel free" | "CTCSS/DCS" | "Color code"): number {
+  if (value === "Channel free") {
+    return 1;
+  }
+  if (value === "CTCSS/DCS") {
+    return 2;
+  }
+  if (value === "Color code") {
+    return 3;
+  }
+  return 0;
+}
+
+function decodeInCallCriteria(value: number): "Always" | "Follow Admit Criteria" {
+  return value === 1 ? "Follow Admit Criteria" : "Always";
+}
+
+function encodeInCallCriteria(value: "Always" | "Follow Admit Criteria"): number {
+  return value === "Follow Admit Criteria" ? 1 : 0;
+}
+
+function decodeRefFrequency(value: number): "Low" | "Medium" | "High" {
+  if (value === 1) {
+    return "Medium";
+  }
+  if (value === 2) {
+    return "High";
+  }
+  return "Low";
+}
+
+function encodeRefFrequency(value: "Low" | "Medium" | "High"): number {
+  if (value === "Medium") {
+    return 1;
+  }
+  if (value === "High") {
+    return 2;
+  }
+  return 0;
+}
+
+function decodeSignallingSystem(value: number): "Off" | "DTMF-1" | "DTMF-2" | "DTMF-3" | "DTMF-4" {
+  if (value === 1) {
+    return "DTMF-1";
+  }
+  if (value === 2) {
+    return "DTMF-2";
+  }
+  if (value === 3) {
+    return "DTMF-3";
+  }
+  if (value === 4) {
+    return "DTMF-4";
+  }
+  return "Off";
+}
+
+function encodeSignallingSystem(value: "Off" | "DTMF-1" | "DTMF-2" | "DTMF-3" | "DTMF-4"): number {
+  if (value === "DTMF-1") {
+    return 1;
+  }
+  if (value === "DTMF-2") {
+    return 2;
+  }
+  if (value === "DTMF-3") {
+    return 3;
+  }
+  if (value === "DTMF-4") {
+    return 4;
+  }
+  return 0;
+}
+
+function decodeTotSec(value: number): number | "Infinite" {
+  if (value <= 0) {
+    return "Infinite";
+  }
+  return value * 15;
+}
+
+function encodeTotSec(value: number | "Infinite"): number {
+  if (value === "Infinite") {
+    return 0;
+  }
+  return Math.max(0, Math.min(37, Math.round(value / 15)));
+}
+
 function encodePower(value: "Low" | "High"): number {
   return value === "Low" ? 0 : 1;
 }
@@ -596,6 +827,8 @@ function writeChannels(
   contactSlotById: Map<number, number>,
 ): Map<number, number> {
   const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
+  const scanListSlotById = resolveSlots(document.scanLists, SCAN_LISTS_MAX);
+  const groupListSlotById = resolveSlots(document.groupLists, GROUP_LISTS_MAX);
   const activeSlots = new Set<number>(channelSlotById.values());
 
   for (let slot = 1; slot <= CHANNELS_MAX; slot += 1) {
@@ -621,16 +854,61 @@ function writeChannels(
       payload.fill(0, base, base + CHANNELS_RECORD_SIZE);
     }
 
+    const preservedByte5 = payload[base + 5];
+
     writeFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET, channel.rxFrequencyMHz);
     writeFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET, channel.txFrequencyMHz);
     writeBitField(payload, base * 8 + CHANNEL_BANDWIDTH_BIT_OFFSET, 2, encodeBandwidth(channel.bandwidthKhz));
     writeBitField(payload, base * 8 + CHANNEL_MODE_BIT_OFFSET, 2, encodeMode(channel.channelMode));
+    writeBitField(payload, base * 8 + CHANNEL_ADMIT_CRITERIA_BIT_OFFSET, 2, encodeAdmitCriteria(channel.admitCriteria));
+    writeBitField(payload, base * 8 + CHANNEL_RX_ONLY_BIT_OFFSET, 1, encodeOffOnBit(channel.rxOnly));
+    writeBitField(payload, base * 8 + CHANNEL_AUTOSCAN_BIT_OFFSET, 1, encodeOffOnBit(channel.autoscan));
+    writeBitField(payload, base * 8 + CHANNEL_LONE_WORKER_BIT_OFFSET, 1, encodeOffOnBit(channel.loneWorker));
+    writeBitField(payload, base * 8 + CHANNEL_VOX_BIT_OFFSET, 1, encodeOffOnBit(channel.vox));
+    writeBitField(payload, base * 8 + CHANNEL_ALLOW_TALKAROUND_BIT_OFFSET, 1, encodeOffOnBit(channel.allowTalkaround));
+    writeBitField(payload, base * 8 + CHANNEL_TALKAROUND_BIT_OFFSET, 1, encodeOnOffBit(channel.talkaround));
+    writeBitField(payload, base * 8 + CHANNEL_PRIVATE_CALL_CONFIRMED_BIT_OFFSET, 1, encodeOffOnBit(channel.privateCallConfirmed));
+    writeBitField(payload, base * 8 + CHANNEL_DATA_CALL_CONFIRMED_BIT_OFFSET, 1, encodeOffOnBit(channel.dataCallConfirmed));
+    writeBitField(payload, base * 8 + CHANNEL_EMERGENCY_ALARM_ACK_BIT_OFFSET, 1, encodeOffOnBit(channel.emergencyAlarmAck));
+    writeBitField(payload, base * 8 + CHANNEL_COMPRESSED_UDP_HEADER_BIT_OFFSET, 1, encodeOffOnBit(channel.compressedUdpDataHeader));
+    writeBitField(payload, base * 8 + CHANNEL_DISPLAY_PTT_ID_BIT_OFFSET, 1, encodeOnOffBit(channel.displayPttId));
+    writeBitField(payload, base * 8 + CHANNEL_PRIVACY_BIT_OFFSET, 2, encodePrivacy(channel.privacy));
+    writeBitField(payload, base * 8 + CHANNEL_PRIVACY_NUMBER_BIT_OFFSET, 4, Math.max(0, Math.min(15, channel.privacyNumber - 1)));
+    writeBitField(payload, base * 8 + CHANNEL_EMERGENCY_SYSTEM_BIT_OFFSET, 8, Math.max(0, Math.min(32, channel.emergencySystem)));
+    writeBitField(payload, base * 8 + CHANNEL_TOT_BIT_OFFSET, 8, encodeTotSec(channel.totSec));
+    writeBitField(payload, base * 8 + CHANNEL_TOT_REKEY_DELAY_BIT_OFFSET, 8, Math.max(0, Math.min(255, channel.totRekeyDelaySec)));
+    writeBitField(payload, base * 8 + CHANNEL_RX_REF_FREQUENCY_BIT_OFFSET, 2, encodeRefFrequency(channel.rxRefFrequency));
+    writeBitField(payload, base * 8 + CHANNEL_TX_REF_FREQUENCY_BIT_OFFSET, 2, encodeRefFrequency(channel.txRefFrequency));
+    writeBitField(payload, base * 8 + CHANNEL_CTCSS_DECODE_BIT_OFFSET, 16, encodeCtcssDcs(channel.ctcssDecode));
+    writeBitField(payload, base * 8 + CHANNEL_CTCSS_ENCODE_BIT_OFFSET, 16, encodeCtcssDcs(channel.ctcssEncode));
+    writeBitField(payload, base * 8 + CHANNEL_QT_REVERSE_BIT_OFFSET, 1, channel.qtReverse === "120" ? 1 : 0);
+    writeBitField(payload, base * 8 + CHANNEL_REVERSE_BURST_BIT_OFFSET, 1, encodeOffOnBit(channel.reverseBurst));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE1_BIT_OFFSET, 1, encodeOffOnBit(channel.decode1));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE2_BIT_OFFSET, 1, encodeOffOnBit(channel.decode2));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE3_BIT_OFFSET, 1, encodeOffOnBit(channel.decode3));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE4_BIT_OFFSET, 1, encodeOffOnBit(channel.decode4));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE5_BIT_OFFSET, 1, encodeOffOnBit(channel.decode5));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE6_BIT_OFFSET, 1, encodeOffOnBit(channel.decode6));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE7_BIT_OFFSET, 1, encodeOffOnBit(channel.decode7));
+    writeBitField(payload, base * 8 + CHANNEL_DECODE8_BIT_OFFSET, 1, encodeOffOnBit(channel.decode8));
+    writeBitField(payload, base * 8 + CHANNEL_DCDM_SWITCH_BIT_OFFSET, 1, encodeOnOffBit(channel.dcdmSwitch));
+    writeBitField(payload, base * 8 + CHANNEL_LEADER_MS_BIT_OFFSET, 1, encodeOnOffBit(channel.leaderMs));
+    writeBitField(payload, base * 8 + CHANNEL_ALLOW_INTERRUPT_BIT_OFFSET, 1, encodeOnOffBit(channel.allowInterrupt));
+    writeBitField(payload, base * 8 + CHANNEL_RX_SIGNALLING_SYSTEM_BIT_OFFSET, 8, encodeSignallingSystem(channel.rxSignallingSystem));
+    writeBitField(payload, base * 8 + CHANNEL_TX_SIGNALLING_SYSTEM_BIT_OFFSET, 8, encodeSignallingSystem(channel.txSignallingSystem));
+    writeBitField(payload, base * 8 + CHANNEL_RECEIVE_GPS_INFO_BIT_OFFSET, 1, encodeOnOffBit(channel.receiveGpsInfo));
+    writeBitField(payload, base * 8 + CHANNEL_SEND_GPS_INFO_BIT_OFFSET, 1, encodeOnOffBit(channel.sendGpsInfo));
     writeBitField(payload, base * 8 + CHANNEL_COLOR_CODE_BIT_OFFSET, 4, Math.min(15, Math.max(0, channel.colorCode)));
     writeBitField(payload, base * 8 + CHANNEL_SLOT_BIT_OFFSET, 2, encodeSlot(channel.repeaterSlot));
     writeBitField(payload, base * 8 + CHANNEL_POWER_BIT_OFFSET, 1, encodePower(channel.power));
     writeUcs2String(payload, base + CHANNEL_NAME_OFFSET, CHANNEL_NAME_SIZE, channel.name);
     const contactSlot = channel.contactId ? contactSlotById.get(channel.contactId) ?? 0 : 0;
     writeLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2, contactSlot);
+    const scanListSlot = channel.scanListId ? scanListSlotById.get(channel.scanListId) ?? 0 : 0;
+    const groupListSlot = channel.groupListId ? groupListSlotById.get(channel.groupListId) ?? 0 : 0;
+    writeBitField(payload, base * 8 + CHANNEL_SCAN_LIST_INDEX_OFFSET * 8, 8, scanListSlot);
+    writeBitField(payload, base * 8 + CHANNEL_GROUP_LIST_INDEX_OFFSET * 8, 8, groupListSlot);
+    payload[base + 5] = preservedByte5;
   }
 
   return channelSlotById;
@@ -760,6 +1038,58 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     });
   }
 
+  for (let index = 0; index < GROUP_LISTS_MAX; index += 1) {
+    const base = GROUP_LISTS_OFFSET + index * GROUP_LISTS_RECORD_SIZE;
+    if (base + GROUP_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base + GROUP_LISTS_DELETED_OFFSET] === 0) {
+      continue;
+    }
+    const name = readUcs2String(payload, base + GROUP_LIST_NAME_OFFSET, GROUP_LIST_NAME_SIZE);
+    if (!name) {
+      continue;
+    }
+    groupLists.push({
+      id: groupLists.length + 1,
+      name,
+      slot: index + 1,
+    });
+  }
+
+  for (let index = 0; index < SCAN_LISTS_MAX; index += 1) {
+    const base = SCAN_LISTS_OFFSET + index * SCAN_LISTS_RECORD_SIZE;
+    if (base + SCAN_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base + SCAN_LISTS_DELETED_OFFSET] === 0) {
+      continue;
+    }
+    const name = readUcs2String(payload, base + SCAN_LIST_NAME_OFFSET, SCAN_LIST_NAME_SIZE);
+    if (!name) {
+      continue;
+    }
+    scanLists.push({
+      id: scanLists.length + 1,
+      name,
+      slot: index + 1,
+    });
+  }
+
+  const groupListSlotToId = new Map<number, number>();
+  for (const groupList of groupLists) {
+    if (groupList.slot) {
+      groupListSlotToId.set(groupList.slot, groupList.id);
+    }
+  }
+
+  const scanListSlotToId = new Map<number, number>();
+  for (const scanList of scanLists) {
+    if (scanList.slot) {
+      scanListSlotToId.set(scanList.slot, scanList.id);
+    }
+  }
+
   for (let index = 0; index < CHANNELS_MAX; index += 1) {
     const base = CHANNELS_OFFSET + index * CHANNELS_RECORD_SIZE;
     if (base + CHANNELS_RECORD_SIZE > payload.byteLength) {
@@ -775,16 +1105,64 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
 
     const contactRef = readLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2);
     const contactId = contactRef > 0 && contactRef <= contacts.length ? contactRef : undefined;
+    const scanRef = readBitField(payload, base * 8 + CHANNEL_SCAN_LIST_INDEX_OFFSET * 8, 8);
+    const groupRef = readBitField(payload, base * 8 + CHANNEL_GROUP_LIST_INDEX_OFFSET * 8, 8);
     const logicalId = channels.length + 1;
     channelSlotToLogicalId.set(index + 1, logicalId);
+
+    const rxFrequencyMHz = readFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET);
+    const txFrequencyMHz = readFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET);
 
     channels.push({
       id: logicalId,
       name,
       contactId,
-      rxFrequencyMHz: readFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET),
-      txFrequencyMHz: readFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET),
+      scanListId: scanRef > 0 ? scanListSlotToId.get(scanRef) : undefined,
+      groupListId: groupRef > 0 ? groupListSlotToId.get(groupRef) : undefined,
+      rxFrequencyMHz,
+      txFrequencyMHz,
+      txOffsetMHz: Number((txFrequencyMHz - rxFrequencyMHz).toFixed(5)),
       channelMode: parseMode(readBitField(payload, base * 8 + CHANNEL_MODE_BIT_OFFSET, 2)),
+      admitCriteria: decodeAdmitCriteria(readBitField(payload, base * 8 + CHANNEL_ADMIT_CRITERIA_BIT_OFFSET, 2)),
+      inCallCriteria: decodeInCallCriteria(readBitField(payload, base * 8 + CHANNEL_IN_CALL_CRITERIA_BIT_OFFSET, 1)),
+      rxOnly: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_RX_ONLY_BIT_OFFSET, 1)),
+      autoscan: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_AUTOSCAN_BIT_OFFSET, 1)),
+      loneWorker: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_LONE_WORKER_BIT_OFFSET, 1)),
+      vox: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_VOX_BIT_OFFSET, 1)),
+      allowTalkaround: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_ALLOW_TALKAROUND_BIT_OFFSET, 1)),
+      talkaround: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_TALKAROUND_BIT_OFFSET, 1)),
+      privateCallConfirmed: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_PRIVATE_CALL_CONFIRMED_BIT_OFFSET, 1)),
+      dataCallConfirmed: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DATA_CALL_CONFIRMED_BIT_OFFSET, 1)),
+      emergencyAlarmAck: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_EMERGENCY_ALARM_ACK_BIT_OFFSET, 1)),
+      compressedUdpDataHeader: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_COMPRESSED_UDP_HEADER_BIT_OFFSET, 1)),
+      displayPttId: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_DISPLAY_PTT_ID_BIT_OFFSET, 1)),
+      privacy: decodePrivacy(readBitField(payload, base * 8 + CHANNEL_PRIVACY_BIT_OFFSET, 2)),
+      privacyNumber: readBitField(payload, base * 8 + CHANNEL_PRIVACY_NUMBER_BIT_OFFSET, 4) + 1,
+      emergencySystem: readBitField(payload, base * 8 + CHANNEL_EMERGENCY_SYSTEM_BIT_OFFSET, 8),
+      totSec: decodeTotSec(readBitField(payload, base * 8 + CHANNEL_TOT_BIT_OFFSET, 8)),
+      totRekeyDelaySec: readBitField(payload, base * 8 + CHANNEL_TOT_REKEY_DELAY_BIT_OFFSET, 8),
+      rxRefFrequency: decodeRefFrequency(readBitField(payload, base * 8 + CHANNEL_RX_REF_FREQUENCY_BIT_OFFSET, 2)),
+      txRefFrequency: decodeRefFrequency(readBitField(payload, base * 8 + CHANNEL_TX_REF_FREQUENCY_BIT_OFFSET, 2)),
+      ctcssDecode: decodeCtcssDcs(readBitField(payload, base * 8 + CHANNEL_CTCSS_DECODE_BIT_OFFSET, 16)),
+      ctcssEncode: decodeCtcssDcs(readBitField(payload, base * 8 + CHANNEL_CTCSS_ENCODE_BIT_OFFSET, 16)),
+      qtReverse: readBitField(payload, base * 8 + CHANNEL_QT_REVERSE_BIT_OFFSET, 1) === 1 ? "120" : "180",
+      reverseBurst: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_REVERSE_BURST_BIT_OFFSET, 1)),
+      decode1: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE1_BIT_OFFSET, 1)),
+      decode2: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE2_BIT_OFFSET, 1)),
+      decode3: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE3_BIT_OFFSET, 1)),
+      decode4: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE4_BIT_OFFSET, 1)),
+      decode5: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE5_BIT_OFFSET, 1)),
+      decode6: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE6_BIT_OFFSET, 1)),
+      decode7: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE7_BIT_OFFSET, 1)),
+      decode8: parseOffOnBit(readBitField(payload, base * 8 + CHANNEL_DECODE8_BIT_OFFSET, 1)),
+      dcdmSwitch: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_DCDM_SWITCH_BIT_OFFSET, 1)),
+      leaderMs: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_LEADER_MS_BIT_OFFSET, 1)),
+      allowInterrupt: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_ALLOW_INTERRUPT_BIT_OFFSET, 1)),
+      nonQtDqtTurnoffFreq: decodeDqtTurnoffFreq(readBitField(payload, base * 8 + CHANNEL_DQTTURNOFF_FREQ_BIT_OFFSET, 2)),
+      rxSignallingSystem: decodeSignallingSystem(readBitField(payload, base * 8 + CHANNEL_RX_SIGNALLING_SYSTEM_BIT_OFFSET, 8)),
+      txSignallingSystem: decodeSignallingSystem(readBitField(payload, base * 8 + CHANNEL_TX_SIGNALLING_SYSTEM_BIT_OFFSET, 8)),
+      receiveGpsInfo: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_RECEIVE_GPS_INFO_BIT_OFFSET, 1)),
+      sendGpsInfo: parseOnOffBit(readBitField(payload, base * 8 + CHANNEL_SEND_GPS_INFO_BIT_OFFSET, 1)),
       colorCode: readBitField(payload, base * 8 + CHANNEL_COLOR_CODE_BIT_OFFSET, 4),
       repeaterSlot: parseSlot(readBitField(payload, base * 8 + CHANNEL_SLOT_BIT_OFFSET, 2)),
       bandwidthKhz: parseBandwidth(readBitField(payload, base * 8 + CHANNEL_BANDWIDTH_BIT_OFFSET, 2)),
@@ -821,44 +1199,6 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       id: zones.length + 1,
       name,
       channelIds,
-      slot: index + 1,
-    });
-  }
-
-  for (let index = 0; index < GROUP_LISTS_MAX; index += 1) {
-    const base = GROUP_LISTS_OFFSET + index * GROUP_LISTS_RECORD_SIZE;
-    if (base + GROUP_LISTS_RECORD_SIZE > payload.byteLength) {
-      break;
-    }
-    if (payload[base + GROUP_LISTS_DELETED_OFFSET] === 0) {
-      continue;
-    }
-    const name = readUcs2String(payload, base + GROUP_LIST_NAME_OFFSET, GROUP_LIST_NAME_SIZE);
-    if (!name) {
-      continue;
-    }
-    groupLists.push({
-      id: groupLists.length + 1,
-      name,
-      slot: index + 1,
-    });
-  }
-
-  for (let index = 0; index < SCAN_LISTS_MAX; index += 1) {
-    const base = SCAN_LISTS_OFFSET + index * SCAN_LISTS_RECORD_SIZE;
-    if (base + SCAN_LISTS_RECORD_SIZE > payload.byteLength) {
-      break;
-    }
-    if (payload[base + SCAN_LISTS_DELETED_OFFSET] === 0) {
-      continue;
-    }
-    const name = readUcs2String(payload, base + SCAN_LIST_NAME_OFFSET, SCAN_LIST_NAME_SIZE);
-    if (!name) {
-      continue;
-    }
-    scanLists.push({
-      id: scanLists.length + 1,
-      name,
       slot: index + 1,
     });
   }
