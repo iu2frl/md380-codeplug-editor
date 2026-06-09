@@ -364,6 +364,7 @@ describe("newly enabled tabs", () => {
     expect(container.querySelector("#radio-transfer-connect")).not.toBeNull();
     expect(container.querySelector("#radio-transfer-read")).not.toBeNull();
     expect(container.querySelector("#radio-transfer-write")).not.toBeNull();
+    expect(container.querySelector("#radio-transfer-progress")).not.toBeNull();
     expect(container.textContent).toContain("Radio Transfer");
   });
 });
@@ -376,6 +377,7 @@ describe("landing entrypoints", () => {
     expect(container.querySelector("#create-new-btn")).not.toBeNull();
     expect(container.querySelector("#open-existing-btn")).not.toBeNull();
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
+    expect(container.querySelector("#landing-radio-progress")).not.toBeNull();
   });
 });
 

@@ -111,7 +111,7 @@ function renderState(
   uiState: UiState,
 ): void {
   if (!state.document) {
-    target.innerHTML = renderLanding(state.importError, uiState.riskAccepted);
+    target.innerHTML = renderLanding(state.importError, uiState.riskAccepted, uiState);
     bindFileInputs(target, store);
     bindLandingActions(target, store, state, channelState, uiState);
     return;
@@ -146,7 +146,7 @@ function renderState(
   bindActiveTab(target, store, state, channelState, uiState);
 }
 
-function renderLanding(importError: string | undefined, riskAccepted: boolean): string {
+function renderLanding(importError: string | undefined, riskAccepted: boolean, uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
