@@ -150,7 +150,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
   return `
     <main class="layout">
       <section class="hero card">
-        <h1>MD380 Codeplug Editor</h1>
+        <h1>IU2FRL MD380 Codeplug Editor</h1>
         <p>Read with the Python helper, edit in browser, then write back safely.</p>
       </section>
 
@@ -166,11 +166,15 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
         </label>
       </section>
 
+      ${uiState.radioProgressVisible
+        ? `
       <section class="card">
         <h2>Radio Transfer Progress</h2>
         <progress id="landing-radio-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
         <p class="muted-text">${escapeHtml(uiState.radioProgressLabel)}</p>
       </section>
+      `
+        : ""}
 
       <section class="tiles">
         <article class="card tile ${riskAccepted ? "" : "muted"}">
@@ -299,7 +303,7 @@ function renderLoadedLayout(state: AppState, uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
-        <h1>MD380 Codeplug Editor</h1>
+        <h1>IU2FRL MD380 Codeplug Editor</h1>
         <p>Loaded: ${escapeHtml(document.fileName)} (${document.format.toUpperCase()})</p>
         <p class="status-line">
           <span class="status-badge ${state.isDirty ? "dirty" : "clean"}">${state.isDirty ? "Unsaved changes" : "Saved"}</span>

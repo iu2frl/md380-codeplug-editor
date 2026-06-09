@@ -63,6 +63,15 @@ body {
   gap: 0.65rem;
 }
 
+.actions > .button,
+.actions > label.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.45rem;
+  margin-bottom: 0;
+}
+
 .status-line {
   margin-top: 0.7rem;
   display: flex;

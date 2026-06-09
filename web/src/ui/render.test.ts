@@ -377,7 +377,7 @@ describe("landing entrypoints", () => {
     expect(container.querySelector("#create-new-btn")).not.toBeNull();
     expect(container.querySelector("#open-existing-btn")).not.toBeNull();
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
-    expect(container.querySelector("#landing-radio-progress")).not.toBeNull();
+    expect(container.querySelector("#landing-radio-progress")).toBeNull();
   });
 });
 
