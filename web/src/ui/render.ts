@@ -18,8 +18,8 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
         <p>Load a local codeplug, validate references, edit key settings, and export safely.</p>
         <div class="actions">
           <label class="button">
-            Open .rdt/.bin/.dfu
-            <input id="file-input" type="file" accept=".rdt,.bin,.dfu" hidden />
+            Open .rdt/.bin
+            <input id="file-input" type="file" accept=".rdt,.bin" hidden />
           </label>
           <button id="export-btn" class="button ghost">Export Current File</button>
         </div>
@@ -83,7 +83,7 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
 
   if (!state.document) {
     summary.innerHTML = "<h2>Summary</h2><p>No file loaded yet.</p>";
-    settings.innerHTML = "<h2>Settings</h2><p>Load a file to edit radio name and ID.</p>";
+    settings.innerHTML = `<h2>Settings</h2><p>${state.importError ?? "Load a file to edit radio name and ID."}</p>`;
     contacts.innerHTML = "<h2>Contacts</h2><p>Load a file to edit contacts.</p>";
     channels.innerHTML = "<h2>Channels</h2><p>Load a file to edit channels.</p>";
     zones.innerHTML = "<h2>Zones</h2><p>Load a file to edit zones.</p>";

@@ -64,6 +64,16 @@ const BASIC_INFO_OFFSET = 0;
 const MODEL_NAME_OFFSET = 293;
 const MODEL_NAME_SIZE = 8;
 
+const SUPPORTED_D_MODELS = ["MD380", "DR780", "RT3"];
+const SUPPORTED_S_MODELS = ["MD390", "RT8"];
+
+export class CodeplugParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CodeplugParseError";
+  }
+}
+
 function detectVariantFromSize(size: number): RadioVariant {
   if (size === KNOWN_RDT_SIZE || size === KNOWN_RAW_SIZE) {
     return "D";
@@ -73,10 +83,10 @@ function detectVariantFromSize(size: number): RadioVariant {
 
 function detectVariantFromModel(model: string): RadioVariant {
   const normalized = model.trim().toUpperCase();
-  if (normalized.includes("390") || normalized.includes("RT8")) {
+  if (SUPPORTED_S_MODELS.some((token) => normalized.includes(token))) {
     return "S";
   }
-  if (normalized.length > 0) {
+  if (SUPPORTED_D_MODELS.some((token) => normalized.includes(token))) {
     return "D";
   }
   return "unknown";
@@ -302,7 +312,10 @@ function writeContacts(payload: Uint8Array, document: CodeplugDocument): Map<num
     }
 
     if (!activeSlots.has(slot)) {
-      payload[base + CONTACTS_DELETED_OFFSET] = CONTACTS_DELETED_VALUE;
+      const hasName = readUcs2String(payload, base + CONTACT_NAME_OFFSET, CONTACT_NAME_SIZE).length > 0;
+      if (hasName) {
+        payload[base + CONTACTS_DELETED_OFFSET] = CONTACTS_DELETED_VALUE;
+      }
       continue;
     }
 
@@ -336,7 +349,10 @@ function writeChannels(
     }
 
     if (!activeSlots.has(slot)) {
-      payload[base + CHANNELS_DELETED_OFFSET] = CHANNELS_DELETED_VALUE;
+      const hasName = readUcs2String(payload, base + CHANNEL_NAME_OFFSET, CHANNEL_NAME_SIZE).length > 0;
+      if (hasName) {
+        payload[base + CHANNELS_DELETED_OFFSET] = CHANNELS_DELETED_VALUE;
+      }
       continue;
     }
 
@@ -375,7 +391,10 @@ function writeZones(payload: Uint8Array, document: CodeplugDocument, channelSlot
     }
 
     if (!activeSlots.has(slot)) {
-      payload[base + ZONES_DELETED_OFFSET] = 0;
+      const hasName = readUcs2String(payload, base + ZONE_NAME_OFFSET, ZONE_NAME_SIZE).length > 0;
+      if (hasName) {
+        payload[base + ZONES_DELETED_OFFSET] = 0;
+      }
       continue;
     }
 
@@ -415,7 +434,41 @@ function getPayloadLayout(fileName: string, bytes: Uint8Array): { payloadOffset:
   return { payloadOffset: 0, payloadLength: bytes.byteLength };
 }
 
+function validateInput(fileName: string, bytes: Uint8Array): void {
+  if (bytes.byteLength === 0) {
+    throw new CodeplugParseError("File is empty. Please select a valid .rdt or .bin codeplug.");
+  }
+
+  const format = detectFormat(fileName);
+  if (format === "rdt") {
+    if (bytes.byteLength !== KNOWN_RDT_SIZE) {
+      throw new CodeplugParseError(
+        `Unsupported .rdt size (${bytes.byteLength} bytes). Expected ${KNOWN_RDT_SIZE} bytes for MD380/MD390 class files.`,
+      );
+    }
+
+    const magic = String.fromCharCode(...bytes.slice(0, 5));
+    if (magic !== "DfuSe") {
+      throw new CodeplugParseError("Invalid .rdt file header. Expected DfuSe signature.");
+    }
+    return;
+  }
+
+  if (format === "bin") {
+    if (bytes.byteLength !== KNOWN_RAW_SIZE) {
+      throw new CodeplugParseError(
+        `Unsupported .bin size (${bytes.byteLength} bytes). Expected ${KNOWN_RAW_SIZE} bytes for MD380/MD390 class files.`,
+      );
+    }
+    return;
+  }
+
+  throw new CodeplugParseError(".dfu import is not supported in-browser yet. Use .rdt or .bin files.");
+}
+
 export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocument {
+  validateInput(fileName, bytes);
+
   const layout = getPayloadLayout(fileName, bytes);
   const payload = bytes.subarray(layout.payloadOffset, layout.payloadOffset + layout.payloadLength);
 
@@ -565,6 +618,9 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       : "";
 
   const byModel = detectVariantFromModel(model);
+  if (model.trim().length > 0 && byModel === "unknown") {
+    throw new CodeplugParseError(`Unsupported radio model '${model}'. This build supports MD380/RT3 and MD390/RT8 variants.`);
+  }
 
   return {
     fileName,

@@ -7,6 +7,7 @@ export interface AppState {
   originalBytes?: Uint8Array;
   validationIssues: ValidationIssue[];
   isDirty: boolean;
+  importError?: string;
 }
 
 type Listener = (state: AppState) => void;
@@ -32,13 +33,22 @@ export class EditorStore {
   }
 
   load(fileName: string, bytes: Uint8Array): void {
-    const document = parseCodeplug(fileName, bytes);
-    this.state = {
-      document,
-      originalBytes: bytes,
-      validationIssues: validateDocument(document),
-      isDirty: false,
-    };
+    try {
+      const document = parseCodeplug(fileName, bytes);
+      this.state = {
+        document,
+        originalBytes: bytes,
+        validationIssues: validateDocument(document),
+        isDirty: false,
+        importError: undefined,
+      };
+    } catch (error) {
+      this.state = {
+        validationIssues: [],
+        isDirty: false,
+        importError: error instanceof Error ? error.message : "Failed to import file.",
+      };
+    }
     this.emit();
   }
 

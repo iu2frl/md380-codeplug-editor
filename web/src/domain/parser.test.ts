@@ -112,6 +112,7 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
 function buildRdtFixtureFromPayload(payload: Uint8Array): Uint8Array {
   const rdt = new Uint8Array(RDT_SIZE);
   rdt.fill(0x5a, 0, RDT_HEADER_SIZE);
+  rdt.set(new TextEncoder().encode("DfuSe"), 0);
   rdt.set(payload, RDT_HEADER_SIZE);
   rdt.fill(0xa5, RDT_HEADER_SIZE + PAYLOAD_SIZE);
   return rdt;
@@ -169,9 +170,40 @@ describe("parseCodeplug", () => {
     expect(doc.model).toBe("MD390");
     expect(doc.variant).toBe("S");
   });
+
+  it("rejects unsupported dfu import", () => {
+    const payload = buildPayloadFixture();
+    expect(() => parseCodeplug("fixture.dfu", payload)).toThrow(/not supported/i);
+  });
+
+  it("rejects invalid rdt header", () => {
+    const payload = buildPayloadFixture();
+    const rdt = buildRdtFixtureFromPayload(payload);
+    rdt[0] = 0x00;
+    expect(() => parseCodeplug("fixture.rdt", rdt)).toThrow(/header/i);
+  });
+
+  it("rejects unsupported bin size", () => {
+    expect(() => parseCodeplug("fixture.bin", new Uint8Array(1234))).toThrow(/Unsupported \.bin size/i);
+  });
 });
 
 describe("serializeCodeplug", () => {
+  it("keeps .bin bytes identical for no-edit export", () => {
+    const payload = buildPayloadFixture();
+    const doc = parseCodeplug("fixture.bin", payload);
+    const out = serializeCodeplug(doc, payload);
+    expect(out).toEqual(payload);
+  });
+
+  it("keeps .rdt bytes identical for no-edit export", () => {
+    const payload = buildPayloadFixture();
+    const rdt = buildRdtFixtureFromPayload(payload);
+    const doc = parseCodeplug("fixture.rdt", rdt);
+    const out = serializeCodeplug(doc, rdt);
+    expect(out).toEqual(rdt);
+  });
+
   it("persists settings and RF edits after reparse", () => {
     const payload = buildPayloadFixture();
     const doc = parseCodeplug("fixture.bin", payload);
