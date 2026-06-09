@@ -422,6 +422,41 @@ select {
   margin-top: 0.5rem;
 }
 
+.general-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.general-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 252, 244, 0.5);
+  padding: 0.75rem;
+}
+
+.general-section h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.field-help {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.field-error {
+  min-height: 1rem;
+  font-size: 0.78rem;
+  color: #8f1313;
+}
+
+.input-invalid {
+  border-color: #8f1313;
+  box-shadow: 0 0 0 2px rgba(143, 19, 19, 0.08);
+}
+
 @media (max-width: 720px) {
   .two-pane-layout {
     grid-template-columns: 1fr;
@@ -442,6 +477,10 @@ select {
 
   .toolbar,
   .bulkbar {
+    grid-template-columns: 1fr;
+  }
+
+  .general-grid {
     grid-template-columns: 1fr;
   }
 

@@ -270,18 +270,52 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
   if (activeTab === "general") {
     return `
       <h2>General</h2>
-      <label>
-        Radio Name
-        <input id="radio-name" type="text" value="${escapeHtml(document.settings.radioName)}" maxlength="16" />
-      </label>
-      <label>
-        DMR ID
-        <input id="radio-id" type="number" value="${document.settings.radioId}" min="1" step="1" />
-      </label>
-      <div class="disabled-grid">
-        <label>VOX Sensitivity<input id="vox-sensitivity" type="number" min="1" max="10" step="1" value="${document.settings.voxSensitivity}" /></label>
-        <label>TX Preamble Duration (ms)<input id="tx-preamble-duration" type="number" min="0" max="8640" step="60" value="${document.settings.txPreambleDurationMs}" /></label>
-        <label>RX Low Battery Alarm Interval (s)<input id="rx-low-battery-interval" type="number" min="0" max="635" step="5" value="${document.settings.rxLowBatteryIntervalSec}" /></label>
+      <div class="general-grid">
+        <section class="general-section">
+          <h3>Identity</h3>
+          <label>
+            Radio Name
+            <input id="radio-name" type="text" value="${escapeHtml(document.settings.radioName)}" maxlength="16" />
+            <small class="field-help">Max 16 characters.</small>
+            <small id="radio-name-error" class="field-error"></small>
+          </label>
+          <label>
+            DMR ID
+            <input id="radio-id" type="number" value="${document.settings.radioId}" min="1" step="1" />
+            <small class="field-help">Valid range: 1 to 16,777,215.</small>
+            <small id="radio-id-error" class="field-error"></small>
+          </label>
+          <label>
+            Boot Up Message Line 1
+            <input id="boot-line-1" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine1)}" />
+            <small class="field-help">Up to 10 characters.</small>
+            <small id="boot-line-1-error" class="field-error"></small>
+          </label>
+          <label>
+            Boot Up Message Line 2
+            <input id="boot-line-2" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine2)}" />
+            <small class="field-help">Up to 10 characters.</small>
+            <small id="boot-line-2-error" class="field-error"></small>
+          </label>
+        </section>
+
+        <section class="general-section disabled-grid">
+          <h3>Behavior</h3>
+          <label>
+            VOX Sensitivity
+            <input id="vox-sensitivity" type="number" min="1" max="10" step="1" value="${document.settings.voxSensitivity}" />
+            <small id="vox-sensitivity-error" class="field-error"></small>
+          </label>
+          <label>
+            TX Preamble Duration (ms)
+            <input id="tx-preamble-duration" type="number" min="0" max="8640" step="60" value="${document.settings.txPreambleDurationMs}" />
+            <small id="tx-preamble-duration-error" class="field-error"></small>
+          </label>
+          <label>
+            RX Low Battery Alarm Interval (s)
+            <input id="rx-low-battery-interval" type="number" min="0" max="635" step="5" value="${document.settings.rxLowBatteryIntervalSec}" />
+            <small id="rx-low-battery-interval-error" class="field-error"></small>
+          </label>
         <label>
           Backlight Timeout
           <select id="backlight-timeout">
@@ -300,8 +334,6 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             <option value="15" ${document.settings.keypadAutoLockSec === "15" ? "selected" : ""}>15</option>
           </select>
         </label>
-        <label>Boot Up Message Line 1<input id="boot-line-1" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine1)}" /></label>
-        <label>Boot Up Message Line 2<input id="boot-line-2" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine2)}" /></label>
         <label>
           Alert Tones
           <select id="alert-tones">
@@ -315,6 +347,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             ${TIME_ZONE_OPTIONS.map((zone) => `<option value="${zone}" ${document.settings.timeZone === zone ? "selected" : ""}>${zone}</option>`).join("")}
           </select>
         </label>
+        </section>
       </div>
     `;
   }
@@ -663,6 +696,44 @@ function bindActiveTab(
     const alertTonesSelect = panel?.querySelector<HTMLSelectElement>("#alert-tones");
     const timeZoneSelect = panel?.querySelector<HTMLSelectElement>("#time-zone");
 
+    const radioNameError = panel?.querySelector<HTMLElement>("#radio-name-error");
+    const radioIdError = panel?.querySelector<HTMLElement>("#radio-id-error");
+    const voxError = panel?.querySelector<HTMLElement>("#vox-sensitivity-error");
+    const preambleError = panel?.querySelector<HTMLElement>("#tx-preamble-duration-error");
+    const lowBatteryError = panel?.querySelector<HTMLElement>("#rx-low-battery-interval-error");
+    const bootLine1Error = panel?.querySelector<HTMLElement>("#boot-line-1-error");
+    const bootLine2Error = panel?.querySelector<HTMLElement>("#boot-line-2-error");
+
+    const setFieldError = (input: HTMLInputElement | null | undefined, error: HTMLElement | null | undefined, message: string): void => {
+      if (!input || !error) {
+        return;
+      }
+      error.textContent = message;
+      input.classList.toggle("input-invalid", message.length > 0);
+    };
+
+    const validate = (): boolean => {
+      if (!radioNameInput || !radioIdInput || !voxSensitivityInput || !txPreambleDurationInput || !rxLowBatteryIntervalInput || !bootLine1Input || !bootLine2Input) {
+        return false;
+      }
+
+      const radioName = radioNameInput.value.trim();
+      const radioId = Number.parseInt(radioIdInput.value, 10);
+      const vox = Number.parseInt(voxSensitivityInput.value, 10);
+      const preamble = Number.parseInt(txPreambleDurationInput.value, 10);
+      const lowBattery = Number.parseInt(rxLowBatteryIntervalInput.value, 10);
+
+      setFieldError(radioNameInput, radioNameError, radioName.length === 0 ? "Radio name is required." : "");
+      setFieldError(radioIdInput, radioIdError, Number.isNaN(radioId) || radioId < 1 || radioId > 16777215 ? "DMR ID must be between 1 and 16,777,215." : "");
+      setFieldError(voxSensitivityInput, voxError, Number.isNaN(vox) || vox < 1 || vox > 10 ? "VOX sensitivity must be between 1 and 10." : "");
+      setFieldError(txPreambleDurationInput, preambleError, Number.isNaN(preamble) || preamble < 0 || preamble > 8640 || preamble % 60 !== 0 ? "Preamble must be 0-8640 ms in 60 ms steps." : "");
+      setFieldError(rxLowBatteryIntervalInput, lowBatteryError, Number.isNaN(lowBattery) || lowBattery < 0 || lowBattery > 635 || lowBattery % 5 !== 0 ? "Low battery interval must be 0-635 s in 5 s steps." : "");
+      setFieldError(bootLine1Input, bootLine1Error, bootLine1Input.value.length > 10 ? "Line 1 must be 10 chars or fewer." : "");
+      setFieldError(bootLine2Input, bootLine2Error, bootLine2Input.value.length > 10 ? "Line 2 must be 10 chars or fewer." : "");
+
+      return panel.querySelector(".field-error:not(:empty)") === null;
+    };
+
     const commit = (): void => {
       if (
         !radioNameInput ||
@@ -677,6 +748,9 @@ function bindActiveTab(
         !alertTonesSelect ||
         !timeZoneSelect
       ) {
+        return;
+      }
+      if (!validate()) {
         return;
       }
       const parsedId = Number.parseInt(radioIdInput.value, 10);
@@ -712,17 +786,18 @@ function bindActiveTab(
       });
     };
 
-    radioNameInput?.addEventListener("change", commit);
-    radioIdInput?.addEventListener("change", commit);
-    voxSensitivityInput?.addEventListener("change", commit);
-    txPreambleDurationInput?.addEventListener("change", commit);
-    rxLowBatteryIntervalInput?.addEventListener("change", commit);
+    radioNameInput?.addEventListener("input", commit);
+    radioIdInput?.addEventListener("input", commit);
+    voxSensitivityInput?.addEventListener("input", commit);
+    txPreambleDurationInput?.addEventListener("input", commit);
+    rxLowBatteryIntervalInput?.addEventListener("input", commit);
     backlightTimeoutSelect?.addEventListener("change", commit);
     keypadAutoLockSelect?.addEventListener("change", commit);
-    bootLine1Input?.addEventListener("change", commit);
-    bootLine2Input?.addEventListener("change", commit);
+    bootLine1Input?.addEventListener("input", commit);
+    bootLine2Input?.addEventListener("input", commit);
     alertTonesSelect?.addEventListener("change", commit);
     timeZoneSelect?.addEventListener("change", commit);
+    validate();
     return;
   }
 
