@@ -470,6 +470,15 @@ function writeHexString(bytes: Uint8Array, offset: number, size: number, value: 
   }
 }
 
+function reverseHexByteOrder(value: string): string {
+  const normalized = value.toLowerCase().replace(/[^0-9a-f]/g, "");
+  const pairs: string[] = [];
+  for (let index = 0; index + 1 < normalized.length; index += 2) {
+    pairs.push(normalized.slice(index, index + 2));
+  }
+  return pairs.reverse().join("");
+}
+
 function readUcs2String(bytes: Uint8Array, offset: number, length: number): string {
   const chars: string[] = [];
   for (let index = 0; index < length; index += 2) {
@@ -1441,14 +1450,14 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     if (offset + PRIVACY_ENHANCED_KEY_SIZE > payload.byteLength) {
       break;
     }
-    privacySettings.enhancedKeys.push(readHexString(payload, offset, PRIVACY_ENHANCED_KEY_SIZE));
+    privacySettings.enhancedKeys.push(reverseHexByteOrder(readHexString(payload, offset, PRIVACY_ENHANCED_KEY_SIZE)));
   }
   for (let index = 0; index < PRIVACY_BASIC_KEYS_MAX; index += 1) {
     const offset = PRIVACY_SETTINGS_OFFSET + PRIVACY_BASIC_KEYS_OFFSET + index * PRIVACY_BASIC_KEY_SIZE;
     if (offset + PRIVACY_BASIC_KEY_SIZE > payload.byteLength) {
       break;
     }
-    privacySettings.basicKeys.push(readHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE));
+    privacySettings.basicKeys.push(reverseHexByteOrder(readHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE)));
   }
 
   const frequencyRangeIndex =
@@ -1646,7 +1655,12 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     if (offset + PRIVACY_ENHANCED_KEY_SIZE > payload.byteLength) {
       break;
     }
-    writeHexString(payload, offset, PRIVACY_ENHANCED_KEY_SIZE, document.privacySettings.enhancedKeys[index] ?? "");
+    writeHexString(
+      payload,
+      offset,
+      PRIVACY_ENHANCED_KEY_SIZE,
+      reverseHexByteOrder(document.privacySettings.enhancedKeys[index] ?? ""),
+    );
   }
 
   for (let index = 0; index < PRIVACY_BASIC_KEYS_MAX; index += 1) {
@@ -1654,7 +1668,12 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     if (offset + PRIVACY_BASIC_KEY_SIZE > payload.byteLength) {
       break;
     }
-    writeHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE, document.privacySettings.basicKeys[index] ?? "");
+    writeHexString(
+      payload,
+      offset,
+      PRIVACY_BASIC_KEY_SIZE,
+      reverseHexByteOrder(document.privacySettings.basicKeys[index] ?? ""),
+    );
   }
 
   if (BASIC_CPS_VERSION_OFFSET + BASIC_CPS_VERSION_SIZE <= payload.byteLength) {

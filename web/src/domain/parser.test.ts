@@ -235,10 +235,10 @@ describe("parseCodeplug", () => {
     expect(doc.textMessages[0].text).toBe("Test message A");
     expect(doc.textMessages[1].text).toBe("Test message B");
 
-    expect(doc.privacySettings.enhancedKeys[0]).toBe("00112233445566778899aabbccddeeff");
-    expect(doc.privacySettings.enhancedKeys[1]).toBe("ffeeddccbbaa99887766554433221100");
-    expect(doc.privacySettings.basicKeys[0]).toBe("1234");
-    expect(doc.privacySettings.basicKeys[1]).toBe("abcd");
+    expect(doc.privacySettings.enhancedKeys[0]).toBe("ffeeddccbbaa99887766554433221100");
+    expect(doc.privacySettings.enhancedKeys[1]).toBe("00112233445566778899aabbccddeeff");
+    expect(doc.privacySettings.basicKeys[0]).toBe("3412");
+    expect(doc.privacySettings.basicKeys[1]).toBe("cdab");
 
     expect(doc.contacts).toHaveLength(1);
     expect(doc.contacts[0].name).toBe("TG9 Local");
