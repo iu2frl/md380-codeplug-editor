@@ -317,12 +317,14 @@ select {
 
 .two-pane-layout {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: minmax(240px, clamp(280px, 32vw, 360px)) 1fr;
   gap: 1rem;
   margin-top: 0.7rem;
 }
 
 .pane-left {
+  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -335,6 +337,7 @@ select {
 }
 
 .pane-right {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1rem;
@@ -457,6 +460,70 @@ select {
   box-shadow: 0 0 0 2px rgba(143, 19, 19, 0.08);
 }
 
+.zone-editor-meta {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.zone-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.zone-editor-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 252, 244, 0.6);
+  padding: 0.65rem;
+}
+
+.zone-editor-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+}
+
+.zone-channel-pool {
+  max-height: 270px;
+  overflow: auto;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.zone-channel-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.45rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.zone-selected-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.zone-selected-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdf7;
+  padding: 0.45rem;
+}
+
+.zone-selected-name {
+  font-size: 0.9rem;
+}
+
+.zone-selected-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
 @media (max-width: 720px) {
   .two-pane-layout {
     grid-template-columns: 1fr;
@@ -481,6 +548,10 @@ select {
   }
 
   .general-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zone-editor-grid {
     grid-template-columns: 1fr;
   }
 

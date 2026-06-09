@@ -8,6 +8,14 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
   const seenContactNames = new Set<string>();
 
   for (const zone of doc.zones) {
+    if (zone.channelIds.length > 16) {
+      issues.push({
+        level: "error",
+        code: "ZONE_MAX_CHANNELS",
+        message: `Zone ${zone.name} has ${zone.channelIds.length} channels. Maximum is 16.`,
+      });
+    }
+
     for (const channelId of zone.channelIds) {
       if (!channelIds.has(channelId)) {
         issues.push({

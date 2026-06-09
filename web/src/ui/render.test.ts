@@ -135,7 +135,8 @@ describe("zones tab", () => {
     click(container, '[data-tab="zones"]');
     click(container, '[data-zone-select="1"]');
     expect(container.querySelector("#zone-editor-name")).not.toBeNull();
-    expect(container.querySelector("#zone-editor-channels")).not.toBeNull();
+    expect(container.querySelector("[data-zone-channel-toggle]")).not.toBeNull();
+    expect(container.querySelector("#zone-selected-channels")).not.toBeNull();
   });
 
   it("selected zone editor name matches the zone name", () => {
@@ -143,6 +144,14 @@ describe("zones tab", () => {
     click(container, '[data-zone-select="1"]');
     const input = container.querySelector<HTMLInputElement>("#zone-editor-name");
     expect(input?.value).toBe("Zone One");
+  });
+
+  it("renders zone selected list controls for sorting", () => {
+    click(container, '[data-tab="zones"]');
+    click(container, '[data-zone-select="1"]');
+    expect(container.querySelector('[data-zone-channel-up="2"]')).not.toBeNull();
+    expect(container.querySelector('[data-zone-channel-down="1"]')).not.toBeNull();
+    expect(container.querySelector('[data-zone-channel-remove="1"]')).not.toBeNull();
   });
 });
 

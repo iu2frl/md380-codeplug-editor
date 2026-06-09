@@ -402,13 +402,60 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
                 <input id="zone-editor-name" type="text" value="${escapeHtml(selectedZone.name)}" maxlength="16" />
               </label>
             </div>
-            <div class="form-group">
-              <label>
-                Channel IDs (comma-separated)
-                <input id="zone-editor-channels" type="text" value="${selectedZone.channelIds.join(",")}" placeholder="e.g. 1,2,3" />
-              </label>
-              <p class="muted-text">Maximum 16 channels per zone</p>
+
+            <div class="zone-editor-meta">
+              <strong>${selectedZone.channelIds.length}/16 channels selected</strong>
+              <small class="muted-text">Pick channels on the left, then reorder on the right.</small>
+              <small id="zone-editor-error" class="field-error"></small>
             </div>
+
+            <div class="zone-editor-grid">
+              <section class="zone-editor-panel">
+                <h3>Available Channels</h3>
+                <div class="zone-channel-pool">
+                  ${document.channels.length === 0
+                    ? `<p class="muted-text">No channels available.</p>`
+                    : document.channels
+                        .map(
+                          (channel) => `
+                            <label class="zone-channel-toggle">
+                              <input
+                                type="checkbox"
+                                data-zone-channel-toggle="${channel.id}"
+                                ${selectedZone.channelIds.includes(channel.id) ? "checked" : ""}
+                              />
+                              <span>#${channel.id} ${escapeHtml(channel.name)}</span>
+                            </label>
+                          `,
+                        )
+                        .join("")}
+                </div>
+              </section>
+
+              <section class="zone-editor-panel">
+                <h3>Selected Channel Order</h3>
+                <div id="zone-selected-channels" class="zone-selected-list">
+                  ${selectedZone.channelIds.length === 0
+                    ? `<p class="muted-text">No channels selected.</p>`
+                    : selectedZone.channelIds
+                        .map((channelId, index) => {
+                          const channel = document.channels.find((item) => item.id === channelId);
+                          return `
+                            <div class="zone-selected-row" data-zone-selected-row="${channelId}">
+                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
+                              <div class="zone-selected-actions">
+                                <button class="button ghost tiny" data-zone-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>Up</button>
+                                <button class="button ghost tiny" data-zone-channel-down="${channelId}" ${index === selectedZone.channelIds.length - 1 ? "disabled" : ""}>Down</button>
+                                <button class="button ghost tiny" data-zone-channel-remove="${channelId}">Remove</button>
+                              </div>
+                            </div>
+                          `;
+                        })
+                        .join("")}
+                </div>
+              </section>
+            </div>
+
             <div class="form-actions">
               <button class="button tiny" id="zone-editor-delete">Delete Zone</button>
             </div>
@@ -868,24 +915,101 @@ function bindActiveTab(
 
     // Editor fields
     const nameInput = panel.querySelector<HTMLInputElement>("#zone-editor-name");
-    const channelsInput = panel.querySelector<HTMLInputElement>("#zone-editor-channels");
     const deleteButton = panel.querySelector<HTMLButtonElement>("#zone-editor-delete");
+    const zoneError = panel.querySelector<HTMLElement>("#zone-editor-error");
+
+    const selectedZone = uiState.selectedZoneId
+      ? state.document.zones.find((zone) => zone.id === uiState.selectedZoneId)
+      : undefined;
+
+    const updateZoneChannels = (nextChannelIds: number[]): void => {
+      if (!uiState.selectedZoneId || !selectedZone) {
+        return;
+      }
+      store.updateZone(uiState.selectedZoneId, nameInput?.value ?? selectedZone.name, nextChannelIds);
+    };
 
     if (nameInput) {
-      nameInput.addEventListener("change", () => {
+      nameInput.addEventListener("input", () => {
         if (uiState.selectedZoneId) {
-          const channelIds = parseZoneChannels(channelsInput?.value ?? "");
-          store.updateZone(uiState.selectedZoneId, nameInput.value, channelIds);
+          const existingIds = selectedZone?.channelIds ?? [];
+          store.updateZone(uiState.selectedZoneId, nameInput.value, existingIds);
         }
       });
     }
 
-    if (channelsInput) {
-      channelsInput.addEventListener("change", () => {
-        if (uiState.selectedZoneId) {
-          const channelIds = parseZoneChannels(channelsInput.value);
-          store.updateZone(uiState.selectedZoneId, nameInput?.value ?? `Zone ${uiState.selectedZoneId}`, channelIds);
+    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-zone-channel-toggle]")) {
+      toggle.addEventListener("change", () => {
+        const channelId = Number.parseInt(toggle.dataset.zoneChannelToggle ?? "", 10);
+        if (!selectedZone || Number.isNaN(channelId)) {
+          return;
         }
+
+        const current = [...selectedZone.channelIds];
+        const exists = current.includes(channelId);
+
+        if (toggle.checked && !exists) {
+          if (current.length >= 16) {
+            toggle.checked = false;
+            if (zoneError) {
+              zoneError.textContent = "A zone can contain at most 16 channels.";
+            }
+            return;
+          }
+          updateZoneChannels([...current, channelId]);
+          return;
+        }
+
+        if (!toggle.checked && exists) {
+          updateZoneChannels(current.filter((id) => id !== channelId));
+          return;
+        }
+
+        if (zoneError) {
+          zoneError.textContent = "";
+        }
+      });
+    }
+
+    for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-zone-channel-up]")) {
+      moveUp.addEventListener("click", () => {
+        const channelId = Number.parseInt(moveUp.dataset.zoneChannelUp ?? "", 10);
+        if (!selectedZone || Number.isNaN(channelId)) {
+          return;
+        }
+        const next = [...selectedZone.channelIds];
+        const index = next.indexOf(channelId);
+        if (index <= 0) {
+          return;
+        }
+        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+        updateZoneChannels(next);
+      });
+    }
+
+    for (const moveDown of panel.querySelectorAll<HTMLButtonElement>("[data-zone-channel-down]")) {
+      moveDown.addEventListener("click", () => {
+        const channelId = Number.parseInt(moveDown.dataset.zoneChannelDown ?? "", 10);
+        if (!selectedZone || Number.isNaN(channelId)) {
+          return;
+        }
+        const next = [...selectedZone.channelIds];
+        const index = next.indexOf(channelId);
+        if (index < 0 || index >= next.length - 1) {
+          return;
+        }
+        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+        updateZoneChannels(next);
+      });
+    }
+
+    for (const removeButton of panel.querySelectorAll<HTMLButtonElement>("[data-zone-channel-remove]")) {
+      removeButton.addEventListener("click", () => {
+        const channelId = Number.parseInt(removeButton.dataset.zoneChannelRemove ?? "", 10);
+        if (!selectedZone || Number.isNaN(channelId)) {
+          return;
+        }
+        updateZoneChannels(selectedZone.channelIds.filter((id) => id !== channelId));
       });
     }
 
@@ -1038,13 +1162,6 @@ function inferMaker(model: string): string {
     return "Retevis";
   }
   return "Unknown";
-}
-
-function parseZoneChannels(value: string): number[] {
-  return value
-    .split(",")
-    .map((part) => Number.parseInt(part.trim(), 10))
-    .filter((id) => !Number.isNaN(id) && id > 0);
 }
 
 function escapeHtml(value: string): string {
