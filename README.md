@@ -6,11 +6,9 @@ Static browser-first editor for MD380/MD390/RT3/RT8 codeplug files, with local h
 
 Beta.
 
-## Safety Warning
-
-Use this software at your own risk.
-
-Incorrect operations can brick or damage your transceiver. The maintainer is not responsible for device damage, data loss, or other consequences.
+> [!WARNING]
+> Use this software at your own risk.
+> Incorrect operations can brick or damage your transceiver. The maintainer is not responsible for device damage, data loss, or other consequences.
 
 ## What This Project Includes
 
