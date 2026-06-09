@@ -1,6 +1,9 @@
-# Phase 1 Codeplug Helper Guide
+# Local Helper Guide (Phase 1 + Phase 2)
 
-This guide covers the local helper workflow for Phase 1 codeplug read/write.
+This guide covers the local helper workflow for both:
+
+- Phase 1: codeplug read/write
+- Phase 2: callsign database build/flash
 
 ## What This Helper Does
 
@@ -10,6 +13,8 @@ The helper is intentionally separate from the web app hosting flow.
 - Write an edited codeplug file back to radio.
 - Create backup-before-write by default.
 - Produce JSON manifests with checksums for artifacts.
+- Build callsign database binaries in `linear` and `indexed` formats.
+- Backup/flash/restore callsign SPI regions at the dedicated address.
 
 ## Prerequisites
 
@@ -77,6 +82,14 @@ python tools/radio_codeplug_helper.py read-radio --out artifacts/codeplug/read/r
 python tools/radio_codeplug_helper.py write-radio --in artifacts/codeplug/edited/edited.rdt --yes
 ```
 
+Phase 2 callsign commands:
+
+```bash
+python tools/radio_callsign_helper.py callsign-build --source examples/md380tools/db/fixed.csv --format linear
+python tools/radio_callsign_helper.py callsign-build --source examples/md380tools/db/fixed.csv --format indexed
+python tools/radio_callsign_helper.py callsign-flash --file artifacts/callsign/build/callsign-indexed-<timestamp>.bin --yes
+```
+
 ## Recommended Manual Workflow
 
 1. Read from radio:
@@ -94,6 +107,35 @@ python tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/r
 ```bash
 python tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/radio_dump-edited.rdt --yes
 ```
+
+## Phase 2 Callsign Workflow
+
+1. Build a normalized callsign DB artifact from CSV path or URL:
+
+```bash
+python tools/radio_callsign_helper.py callsign-build --source <csv-or-url> --format indexed --profile global
+```
+
+2. Flash to SPI flash at `0x100000` (backup-before-write default):
+
+```bash
+python tools/radio_callsign_helper.py callsign-flash --file artifacts/callsign/build/<artifact>.bin --yes
+```
+
+3. Optional manual backup/restore commands:
+
+```bash
+python tools/radio_callsign_helper.py callsign-backup --out artifacts/callsign/backup/callsign.bin --address 0x100000 --size 262144
+python tools/radio_callsign_helper.py callsign-restore --file artifacts/callsign/backup/callsign.bin --address 0x100000 --yes
+```
+
+Notes:
+
+- Callsign and codeplug artifacts are intentionally separated:
+  - `artifacts/codeplug/*`
+  - `artifacts/callsign/*`
+- Callsign flash uses SPI flow (`md380_tool.py spiflashwrite`) and is separate from codeplug DFU read/write.
+- Every generated artifact includes a `.json` manifest with source, checksum, format, target address, and timestamp.
 
 ## D/S Validation Log Template
 

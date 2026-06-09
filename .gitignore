@@ -372,3 +372,4 @@ __marimo__/
 web/testdata/known/*
 examples/*
 web/test-results/*
+artifacts/callsign/raw/*
