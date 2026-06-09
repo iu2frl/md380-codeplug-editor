@@ -74,6 +74,11 @@ body {
   cursor: pointer;
 }
 
+.button.tiny {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+}
+
 .button.ghost {
   background: transparent;
   border: 1px solid var(--line);
@@ -125,6 +130,37 @@ input {
   padding: 0.55rem;
   font: inherit;
   background: #fffdf7;
+}
+
+select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem;
+  font: inherit;
+  background: #fffdf7;
+}
+
+.rows {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.row {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 1.2fr 1fr auto;
+}
+
+.zone-row {
+  grid-template-columns: 1fr 1.4fr auto;
+}
+
+@media (max-width: 720px) {
+  .row,
+  .zone-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ok {

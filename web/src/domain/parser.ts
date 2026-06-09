@@ -123,6 +123,143 @@ function writeLittleInt(bytes: Uint8Array, offset: number, size: number, value: 
   }
 }
 
+function normalizeSlot(slot: number | undefined, max: number, used: Set<number>): number | undefined {
+  if (!slot || slot < 1 || slot > max || used.has(slot)) {
+    return undefined;
+  }
+  return slot;
+}
+
+function allocateSlot(max: number, used: Set<number>): number | undefined {
+  for (let slot = 1; slot <= max; slot += 1) {
+    if (!used.has(slot)) {
+      used.add(slot);
+      return slot;
+    }
+  }
+  return undefined;
+}
+
+function resolveSlots(
+  items: Array<{ id: number; slot?: number }>,
+  max: number,
+): Map<number, number> {
+  const used = new Set<number>();
+  const mapping = new Map<number, number>();
+
+  for (const item of items) {
+    const valid = normalizeSlot(item.slot, max, used);
+    if (valid) {
+      used.add(valid);
+      mapping.set(item.id, valid);
+    }
+  }
+
+  for (const item of items) {
+    if (mapping.has(item.id)) {
+      continue;
+    }
+    const allocated = allocateSlot(max, used);
+    if (allocated) {
+      mapping.set(item.id, allocated);
+    }
+  }
+
+  return mapping;
+}
+
+function writeContacts(payload: Uint8Array, document: CodeplugDocument): Map<number, number> {
+  const contactSlotById = resolveSlots(document.contacts, CONTACTS_MAX);
+  const activeSlots = new Set<number>(contactSlotById.values());
+
+  for (let slot = 1; slot <= CONTACTS_MAX; slot += 1) {
+    const base = CONTACTS_OFFSET + (slot - 1) * CONTACTS_RECORD_SIZE;
+    if (base + CONTACTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+
+    if (!activeSlots.has(slot)) {
+      payload[base + CONTACTS_DELETED_OFFSET] = CONTACTS_DELETED_VALUE;
+      continue;
+    }
+
+    const contact = document.contacts.find((item) => contactSlotById.get(item.id) === slot);
+    if (!contact) {
+      continue;
+    }
+
+    writeLittleInt(payload, base + CONTACT_CALL_ID_OFFSET, CONTACT_CALL_ID_SIZE, contact.callId);
+    writeUcs2String(payload, base + CONTACT_NAME_OFFSET, CONTACT_NAME_SIZE, contact.name);
+    if (payload[base + CONTACTS_DELETED_OFFSET] === CONTACTS_DELETED_VALUE) {
+      payload[base + CONTACTS_DELETED_OFFSET] = 0;
+    }
+  }
+
+  return contactSlotById;
+}
+
+function writeChannels(
+  payload: Uint8Array,
+  document: CodeplugDocument,
+  contactSlotById: Map<number, number>,
+): Map<number, number> {
+  const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
+  const activeSlots = new Set<number>(channelSlotById.values());
+
+  for (let slot = 1; slot <= CHANNELS_MAX; slot += 1) {
+    const base = CHANNELS_OFFSET + (slot - 1) * CHANNELS_RECORD_SIZE;
+    if (base + CHANNELS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+
+    if (!activeSlots.has(slot)) {
+      payload[base + CHANNELS_DELETED_OFFSET] = CHANNELS_DELETED_VALUE;
+      continue;
+    }
+
+    const channel = document.channels.find((item) => channelSlotById.get(item.id) === slot);
+    if (!channel) {
+      continue;
+    }
+
+    writeUcs2String(payload, base + CHANNEL_NAME_OFFSET, CHANNEL_NAME_SIZE, channel.name);
+    const contactSlot = channel.contactId ? contactSlotById.get(channel.contactId) ?? 0 : 0;
+    writeLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2, contactSlot);
+    payload[base + CHANNELS_DELETED_OFFSET] = 0;
+  }
+
+  return channelSlotById;
+}
+
+function writeZones(payload: Uint8Array, document: CodeplugDocument, channelSlotById: Map<number, number>): void {
+  const zoneSlotById = resolveSlots(document.zones, ZONES_MAX);
+  const activeSlots = new Set<number>(zoneSlotById.values());
+
+  for (let slot = 1; slot <= ZONES_MAX; slot += 1) {
+    const base = ZONES_OFFSET + (slot - 1) * ZONES_RECORD_SIZE;
+    if (base + ZONES_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+
+    if (!activeSlots.has(slot)) {
+      payload[base + ZONES_DELETED_OFFSET] = 0;
+      continue;
+    }
+
+    const zone = document.zones.find((item) => zoneSlotById.get(item.id) === slot);
+    if (!zone) {
+      continue;
+    }
+
+    writeUcs2String(payload, base + ZONE_NAME_OFFSET, ZONE_NAME_SIZE, zone.name);
+    for (let channelIndex = 0; channelIndex < ZONE_CHANNELS_MAX; channelIndex += 1) {
+      const channelId = zone.channelIds[channelIndex];
+      const channelSlot = channelId ? channelSlotById.get(channelId) ?? 0 : 0;
+      writeLittleInt(payload, base + ZONE_CHANNELS_OFFSET + channelIndex * 2, 2, channelSlot);
+    }
+  }
+}
+
 function outputNameFor(fileName: string): string {
   const lower = fileName.toLowerCase();
   if (lower.endsWith(".rdt") || lower.endsWith(".bin") || lower.endsWith(".dfu")) {
@@ -175,6 +312,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       id: contacts.length + 1,
       name,
       callId: readLittleInt(payload, base + CONTACT_CALL_ID_OFFSET, CONTACT_CALL_ID_SIZE),
+      slot: index + 1,
     });
   }
 
@@ -200,6 +338,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       id: logicalId,
       name,
       contactId,
+      slot: index + 1,
     });
   }
 
@@ -231,6 +370,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       id: zones.length + 1,
       name,
       channelIds,
+      slot: index + 1,
     });
   }
 
@@ -275,6 +415,10 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   if (GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET + RADIO_NAME_SIZE <= payload.byteLength) {
     writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, RADIO_NAME_SIZE, document.settings.radioName);
   }
+
+  const contactSlotById = writeContacts(payload, document);
+  const channelSlotById = writeChannels(payload, document, contactSlotById);
+  writeZones(payload, document, channelSlotById);
 
   return out;
 }

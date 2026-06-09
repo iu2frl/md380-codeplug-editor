@@ -4,18 +4,21 @@ export interface Channel {
   id: number;
   name: string;
   contactId?: number;
+  slot?: number;
 }
 
 export interface Zone {
   id: number;
   name: string;
   channelIds: number[];
+  slot?: number;
 }
 
 export interface Contact {
   id: number;
   name: string;
   callId: number;
+  slot?: number;
 }
 
 export interface RadioSettings {
