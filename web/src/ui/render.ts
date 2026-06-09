@@ -117,7 +117,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean): 
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Open Existing Codeplug</h2>
           <ol>
-            <li>Run <code>python tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/radio_dump.rdt</code>.</li>
+            <li>See: <a href="https://github.com/iu2frl/md380-codeplug-editor/tree/main/tools" target="_blank">tools</a> for instructions.</li>
             <li>Select the generated <code>.rdt</code> or <code>.bin</code> file below.</li>
             <li>Edit and export, then write back with <code>radio-write</code>.</li>
           </ol>
