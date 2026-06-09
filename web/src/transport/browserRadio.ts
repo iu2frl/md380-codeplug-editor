@@ -18,13 +18,21 @@ export interface BrowserRadioDevice {
   interfaceNumber?: number;
 }
 
+export interface BrowserTransferProgress {
+  direction: "read" | "write";
+  completedBlocks: number;
+  totalBlocks: number;
+  bytesTransferred: number;
+  totalBytes: number;
+}
+
 export interface BrowserRadioTransport {
   connect(): Promise<BrowserRadioDevice>;
   disconnect(): Promise<void>;
   isConnected(): boolean;
   getConnectedDevice(): BrowserRadioDevice | null;
-  readCodeplug(): Promise<Uint8Array>;
-  writeCodeplug(data: Uint8Array): Promise<void>;
+  readCodeplug(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
+  writeCodeplug(data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
 }
 
 interface UsbRequestFilter {
@@ -70,6 +78,25 @@ interface UsbDeviceLike {
   claimInterface?: (interfaceNumber: number) => Promise<void>;
   releaseInterface?: (interfaceNumber: number) => Promise<void>;
   selectAlternateInterface?: (interfaceNumber: number, alternateSetting: number) => Promise<void>;
+  controlTransferOut?: (setup: UsbControlTransferParametersLike, data?: BufferSource) => Promise<UsbOutTransferResultLike>;
+  controlTransferIn?: (setup: UsbControlTransferParametersLike, length: number) => Promise<UsbInTransferResultLike>;
+}
+
+interface UsbControlTransferParametersLike {
+  requestType: "class" | "standard" | "vendor";
+  recipient: "device" | "interface" | "endpoint" | "other";
+  request: number;
+  value: number;
+  index: number;
+}
+
+interface UsbOutTransferResultLike {
+  status: "ok" | "stall" | "babble";
+}
+
+interface UsbInTransferResultLike {
+  status: "ok" | "stall" | "babble";
+  data?: DataView;
 }
 
 interface UsbNavigatorLike {
@@ -84,6 +111,20 @@ const MD380_USB_FILTERS: UsbRequestFilter[] = [
 const DFU_INTERFACE_CLASS = 0xfe;
 const DFU_INTERFACE_SUBCLASS = 0x01;
 const DFU_INTERFACE_PROTOCOL = 0x02;
+const DFU_REQUEST_DNLOAD = 1;
+const DFU_REQUEST_UPLOAD = 2;
+const DFU_REQUEST_GETSTATUS = 3;
+const DFU_REQUEST_CLRSTATUS = 4;
+const DFU_REQUEST_GETSTATE = 5;
+const DFU_REQUEST_ABORT = 6;
+const DFU_STATE_DFU_IDLE = 2;
+const DFU_STATE_DFU_DNLOAD_IDLE = 5;
+const DFU_STATE_DFU_UPLOAD_IDLE = 9;
+const DFU_STATE_DFU_ERROR = 10;
+const CODEPLUG_BLOCK_SIZE = 1024;
+const CODEPLUG_TOTAL_SIZE = 262144;
+const CODEPLUG_BLOCK_START = 2;
+const CODEPLUG_BLOCK_COUNT = CODEPLUG_TOTAL_SIZE / CODEPLUG_BLOCK_SIZE;
 
 export function detectBrowserRadioCapabilities(
   nav: Navigator | undefined = globalThis.navigator,
@@ -223,12 +264,291 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     return this.connectedDevice;
   }
 
-  async readCodeplug(): Promise<Uint8Array> {
-    throw new Error("Browser transport read is not implemented yet.");
+  async readCodeplug(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array> {
+    const device = this.requireConnectedDevice();
+    await this.enterCodeplugTransferMode(device, false);
+    await this.setAddress(device, 0x00000000);
+
+    const out = new Uint8Array(CODEPLUG_TOTAL_SIZE);
+    onProgress?.({
+      direction: "read",
+      completedBlocks: 0,
+      totalBlocks: CODEPLUG_BLOCK_COUNT,
+      bytesTransferred: 0,
+      totalBytes: CODEPLUG_TOTAL_SIZE,
+    });
+    for (let index = 0; index < CODEPLUG_BLOCK_COUNT; index += 1) {
+      const blockNumber = CODEPLUG_BLOCK_START + index;
+      const block = await this.upload(device, blockNumber, CODEPLUG_BLOCK_SIZE);
+      if (block.byteLength !== CODEPLUG_BLOCK_SIZE) {
+        throw new Error(`Short codeplug block at ${blockNumber}: expected ${CODEPLUG_BLOCK_SIZE} bytes, got ${block.byteLength}.`);
+      }
+      out.set(block, index * CODEPLUG_BLOCK_SIZE);
+      await this.getStatus(device);
+      onProgress?.({
+        direction: "read",
+        completedBlocks: index + 1,
+        totalBlocks: CODEPLUG_BLOCK_COUNT,
+        bytesTransferred: (index + 1) * CODEPLUG_BLOCK_SIZE,
+        totalBytes: CODEPLUG_TOTAL_SIZE,
+      });
+    }
+
+    return out;
   }
 
-  async writeCodeplug(_data: Uint8Array): Promise<void> {
-    throw new Error("Browser transport write is not implemented yet.");
+  async writeCodeplug(data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void> {
+    const device = this.requireConnectedDevice();
+    if (data.byteLength !== CODEPLUG_TOTAL_SIZE) {
+      throw new Error(`Codeplug write expects ${CODEPLUG_TOTAL_SIZE} bytes, received ${data.byteLength}.`);
+    }
+
+    await this.enterCodeplugTransferMode(device, true);
+    for (const address of [0x00000000, 0x00010000, 0x00020000, 0x00030000]) {
+      await this.eraseBlock(device, address);
+    }
+    await this.setAddress(device, 0x00000000);
+
+    onProgress?.({
+      direction: "write",
+      completedBlocks: 0,
+      totalBlocks: CODEPLUG_BLOCK_COUNT,
+      bytesTransferred: 0,
+      totalBytes: CODEPLUG_TOTAL_SIZE,
+    });
+
+    for (let index = 0; index < CODEPLUG_BLOCK_COUNT; index += 1) {
+      const blockNumber = CODEPLUG_BLOCK_START + index;
+      const start = index * CODEPLUG_BLOCK_SIZE;
+      const end = start + CODEPLUG_BLOCK_SIZE;
+      const block = data.subarray(start, end);
+      await this.download(device, blockNumber, block);
+      await this.waitForDownloadIdle(device);
+      onProgress?.({
+        direction: "write",
+        completedBlocks: index + 1,
+        totalBlocks: CODEPLUG_BLOCK_COUNT,
+        bytesTransferred: (index + 1) * CODEPLUG_BLOCK_SIZE,
+        totalBytes: CODEPLUG_TOTAL_SIZE,
+      });
+    }
+  }
+
+  private requireConnectedDevice(): UsbDeviceLike {
+    if (!this.device || this.claimedInterfaceNumber === null || !this.device.opened) {
+      throw new Error("Connect a radio first.");
+    }
+    return this.device;
+  }
+
+  private interfaceIndex(): number {
+    if (this.claimedInterfaceNumber === null) {
+      throw new Error("No claimed USB interface for DFU transfers.");
+    }
+    return this.claimedInterfaceNumber;
+  }
+
+  private async enterCodeplugTransferMode(device: UsbDeviceLike, includeDoubleProgrammingMode: boolean): Promise<void> {
+    await this.enterDfuIdle(device);
+    await this.md380Custom(device, 0x91, 0x01);
+    if (includeDoubleProgrammingMode) {
+      await this.md380Custom(device, 0x91, 0x01);
+    }
+    await this.md380Custom(device, 0xa2, 0x02);
+    await this.md380Custom(device, 0xa2, 0x02);
+    await this.md380Custom(device, 0xa2, 0x03);
+    await this.md380Custom(device, 0xa2, 0x04);
+    await this.md380Custom(device, 0xa2, 0x07);
+  }
+
+  private async md380Custom(device: UsbDeviceLike, first: number, second: number): Promise<void> {
+    await this.download(device, 0, new Uint8Array([first & 0xff, second & 0xff]));
+    await this.syncStatusAndReturnIdle(device);
+  }
+
+  private async setAddress(device: UsbDeviceLike, address: number): Promise<void> {
+    const payload = new Uint8Array([
+      0x21,
+      address & 0xff,
+      (address >> 8) & 0xff,
+      (address >> 16) & 0xff,
+      (address >> 24) & 0xff,
+    ]);
+    await this.download(device, 0, payload);
+    await this.syncStatusAndReturnIdle(device);
+  }
+
+  private async eraseBlock(device: UsbDeviceLike, address: number): Promise<void> {
+    const payload = new Uint8Array([
+      0x41,
+      address & 0xff,
+      (address >> 8) & 0xff,
+      (address >> 16) & 0xff,
+      (address >> 24) & 0xff,
+    ]);
+    await this.download(device, 0, payload);
+    await this.syncStatusAndReturnIdle(device);
+  }
+
+  private async download(device: UsbDeviceLike, blockNumber: number, data: Uint8Array): Promise<void> {
+    if (typeof device.controlTransferOut !== "function") {
+      throw new Error("Browser cannot send DFU download transfers for this device.");
+    }
+    const result = await device.controlTransferOut(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_DNLOAD,
+        value: blockNumber,
+        index: this.interfaceIndex(),
+      },
+      data,
+    );
+    if (result.status !== "ok") {
+      throw new Error(`USB download transfer failed with status: ${result.status}.`);
+    }
+  }
+
+  private async upload(device: UsbDeviceLike, blockNumber: number, length: number): Promise<Uint8Array> {
+    if (typeof device.controlTransferIn !== "function") {
+      throw new Error("Browser cannot receive DFU upload transfers for this device.");
+    }
+    const result = await device.controlTransferIn(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_UPLOAD,
+        value: blockNumber,
+        index: this.interfaceIndex(),
+      },
+      length,
+    );
+    if (result.status !== "ok") {
+      throw new Error(`USB upload transfer failed with status: ${result.status}.`);
+    }
+    if (!result.data) {
+      throw new Error("USB upload transfer returned no data.");
+    }
+    return new Uint8Array(result.data.buffer, result.data.byteOffset, result.data.byteLength);
+  }
+
+  private async getStatus(device: UsbDeviceLike): Promise<number> {
+    if (typeof device.controlTransferIn !== "function") {
+      throw new Error("Browser cannot query DFU status for this device.");
+    }
+    const result = await device.controlTransferIn(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_GETSTATUS,
+        value: 0,
+        index: this.interfaceIndex(),
+      },
+      6,
+    );
+    if (result.status !== "ok" || !result.data || result.data.byteLength < 5) {
+      throw new Error("Unable to read DFU status from USB device.");
+    }
+    return result.data.getUint8(4);
+  }
+
+  private async getState(device: UsbDeviceLike): Promise<number> {
+    if (typeof device.controlTransferIn !== "function") {
+      throw new Error("Browser cannot query DFU state for this device.");
+    }
+    const result = await device.controlTransferIn(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_GETSTATE,
+        value: 0,
+        index: this.interfaceIndex(),
+      },
+      1,
+    );
+    if (result.status !== "ok" || !result.data || result.data.byteLength < 1) {
+      throw new Error("Unable to read DFU state from USB device.");
+    }
+    return result.data.getUint8(0);
+  }
+
+  private async clearStatus(device: UsbDeviceLike): Promise<void> {
+    if (typeof device.controlTransferOut !== "function") {
+      throw new Error("Browser cannot clear DFU status for this device.");
+    }
+    const result = await device.controlTransferOut(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_CLRSTATUS,
+        value: 0,
+        index: this.interfaceIndex(),
+      },
+      new Uint8Array(0),
+    );
+    if (result.status !== "ok") {
+      throw new Error(`USB clear-status transfer failed with status: ${result.status}.`);
+    }
+  }
+
+  private async abort(device: UsbDeviceLike): Promise<void> {
+    if (typeof device.controlTransferOut !== "function") {
+      throw new Error("Browser cannot send DFU abort for this device.");
+    }
+    const result = await device.controlTransferOut(
+      {
+        requestType: "class",
+        recipient: "interface",
+        request: DFU_REQUEST_ABORT,
+        value: 0,
+        index: this.interfaceIndex(),
+      },
+      new Uint8Array(0),
+    );
+    if (result.status !== "ok") {
+      throw new Error(`USB abort transfer failed with status: ${result.status}.`);
+    }
+  }
+
+  private async waitForDownloadIdle(device: UsbDeviceLike): Promise<void> {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      const state = await this.getStatus(device);
+      if (state === DFU_STATE_DFU_DNLOAD_IDLE) {
+        return;
+      }
+      if (state === DFU_STATE_DFU_ERROR) {
+        throw new Error("DFU device entered error state during download.");
+      }
+    }
+    throw new Error("Timed out waiting for DFU download idle state.");
+  }
+
+  private async syncStatusAndReturnIdle(device: UsbDeviceLike): Promise<void> {
+    await this.getStatus(device);
+    const state = await this.getStatus(device);
+    if (state !== DFU_STATE_DFU_DNLOAD_IDLE) {
+      throw new Error("DFU command did not complete in download-idle state.");
+    }
+    await this.enterDfuIdle(device);
+  }
+
+  private async enterDfuIdle(device: UsbDeviceLike): Promise<void> {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const state = await this.getState(device);
+      if (state === DFU_STATE_DFU_IDLE) {
+        return;
+      }
+      if (state === DFU_STATE_DFU_ERROR) {
+        await this.clearStatus(device);
+        continue;
+      }
+      if (state === DFU_STATE_DFU_DNLOAD_IDLE || state === DFU_STATE_DFU_UPLOAD_IDLE) {
+        await this.abort(device);
+        continue;
+      }
+      await this.clearStatus(device);
+    }
+    throw new Error("Timed out entering DFU idle state.");
   }
 }
 

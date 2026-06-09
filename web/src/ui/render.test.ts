@@ -368,3 +368,14 @@ describe("newly enabled tabs", () => {
   });
 });
 
+describe("landing entrypoints", () => {
+  it("shows create, upload, and read-from-radio entrypoints", () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    expect(container.querySelector("#create-new-btn")).not.toBeNull();
+    expect(container.querySelector("#open-existing-btn")).not.toBeNull();
+    expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
+  });
+});
+

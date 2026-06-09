@@ -227,4 +227,131 @@ describe("detectBrowserRadioCapabilities", () => {
       },
     );
   });
+
+  it("reads full codeplug over DFU upload blocks", async () => {
+    const seenUploadBlocks: number[] = [];
+    const fakeDevice = {
+      vendorId: 0x0483,
+      productId: 0xdf11,
+      opened: false,
+      configuration: null,
+      open: async () => {
+        fakeDevice.opened = true;
+      },
+      close: async () => {
+        fakeDevice.opened = false;
+      },
+      selectConfiguration: async (value: number) => {
+        fakeDevice.configuration = {
+          configurationValue: value,
+          interfaces: [{ interfaceNumber: 1, alternates: [{ alternateSetting: 0 }] }],
+        };
+      },
+      claimInterface: async () => Promise.resolve(),
+      releaseInterface: async () => Promise.resolve(),
+      controlTransferOut: async () => ({ status: "ok" as const }),
+      controlTransferIn: async (setup: { request: number; value: number }, length: number) => {
+        if (setup.request === 5) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(2).buffer) };
+        }
+        if (setup.request === 3) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(0, 0, 0, 0, 5, 0).buffer) };
+        }
+        if (setup.request === 2) {
+          seenUploadBlocks.push(setup.value);
+          const block = new Uint8Array(length);
+          block.fill(setup.value & 0xff);
+          return { status: "ok" as const, data: new DataView(block.buffer) };
+        }
+        throw new Error(`unexpected controlTransferIn request ${setup.request}`);
+      },
+    };
+
+    await withMockUsb(
+      {
+        requestDevice: async () => fakeDevice,
+      },
+      async () => {
+        const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
+        const transport = createBrowserRadioTransport(caps);
+        expect(transport).not.toBeNull();
+        await transport!.connect();
+
+        const bytes = await transport!.readCodeplug();
+        expect(bytes.byteLength).toBe(262144);
+        expect(bytes[0]).toBe(2);
+        expect(bytes[bytes.byteLength - 1]).toBe(0x01);
+        expect(seenUploadBlocks[0]).toBe(2);
+        expect(seenUploadBlocks[seenUploadBlocks.length - 1]).toBe(257);
+        expect(seenUploadBlocks.length).toBe(256);
+      },
+    );
+  });
+
+  it("writes full codeplug over DFU download blocks", async () => {
+    const downloadBlocks: Array<{ value: number; size: number }> = [];
+    const fakeDevice = {
+      vendorId: 0x0483,
+      productId: 0xdf11,
+      opened: false,
+      configuration: null,
+      open: async () => {
+        fakeDevice.opened = true;
+      },
+      close: async () => {
+        fakeDevice.opened = false;
+      },
+      selectConfiguration: async (value: number) => {
+        fakeDevice.configuration = {
+          configurationValue: value,
+          interfaces: [{ interfaceNumber: 1, alternates: [{ alternateSetting: 0 }] }],
+        };
+      },
+      claimInterface: async () => Promise.resolve(),
+      releaseInterface: async () => Promise.resolve(),
+      controlTransferOut: async (setup: { request: number; value: number }, data?: BufferSource) => {
+        if (setup.request === 1) {
+          const size = data instanceof Uint8Array ? data.byteLength : 0;
+          downloadBlocks.push({ value: setup.value, size });
+        }
+        return { status: "ok" as const };
+      },
+      controlTransferIn: async (setup: { request: number }, _length: number) => {
+        if (setup.request === 5) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(2).buffer) };
+        }
+        if (setup.request === 3) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(0, 0, 0, 0, 5, 0).buffer) };
+        }
+        if (setup.request === 2) {
+          return { status: "ok" as const, data: new DataView(new Uint8Array(32).buffer) };
+        }
+        throw new Error(`unexpected controlTransferIn request ${setup.request}`);
+      },
+    };
+
+    await withMockUsb(
+      {
+        requestDevice: async () => fakeDevice,
+      },
+      async () => {
+        const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
+        const transport = createBrowserRadioTransport(caps);
+        expect(transport).not.toBeNull();
+        await transport!.connect();
+
+        const bytes = new Uint8Array(262144);
+        for (let index = 0; index < bytes.length; index += 1) {
+          bytes[index] = index & 0xff;
+        }
+
+        await transport!.writeCodeplug(bytes);
+
+        const dataBlocks = downloadBlocks.filter((item) => item.value >= 2);
+        expect(dataBlocks.length).toBe(256);
+        expect(dataBlocks[0]).toEqual({ value: 2, size: 1024 });
+        expect(dataBlocks[dataBlocks.length - 1]).toEqual({ value: 257, size: 1024 });
+      },
+    );
+  });
 });

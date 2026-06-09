@@ -3,6 +3,7 @@ import { radioButtonActionOptions } from "../domain/parser";
 import {
   createBrowserRadioTransport,
   detectBrowserRadioCapabilities,
+  type BrowserTransferProgress,
   type BrowserRadioTransport,
 } from "../transport/browserRadio";
 
@@ -35,6 +36,9 @@ interface UiState {
   radioTransport: BrowserRadioTransport | null;
   radioStatusMessage: string;
   radioBusy: boolean;
+  radioProgressPercent: number;
+  radioProgressLabel: string;
+  radioProgressVisible: boolean;
 }
 
 const TIME_ZONE_OPTIONS = [
@@ -91,6 +95,9 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
     radioTransport: null,
     radioStatusMessage: "Not connected.",
     radioBusy: false,
+    radioProgressPercent: 0,
+    radioProgressLabel: "No transfer in progress.",
+    radioProgressVisible: false,
   };
 
   store.subscribe((state) => renderState(target, store, state, channelState, uiState));
@@ -159,6 +166,12 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean): 
         </label>
       </section>
 
+      <section class="card">
+        <h2>Radio Transfer Progress</h2>
+        <progress id="landing-radio-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
+        <p class="muted-text">${escapeHtml(uiState.radioProgressLabel)}</p>
+      </section>
+
       <section class="tiles">
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
@@ -177,6 +190,16 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean): 
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
+
+        <article class="card tile ${riskAccepted ? "" : "muted"}">
+          <h2>Read From Radio</h2>
+          <ol>
+            <li>Connect radio in programming mode and approve WebUSB access.</li>
+            <li>Read codeplug directly into this browser session.</li>
+            <li>Edit and export or write back from Radio Transfer.</li>
+          </ol>
+          <button id="landing-read-radio-btn" class="button" ${riskAccepted ? "" : "disabled"}>Read From Radio</button>
+        </article>
       </section>
     </main>
   `;
@@ -189,6 +212,15 @@ function bindLandingActions(
   channelState: ChannelPanelState,
   uiState: UiState,
 ): void {
+  const applyProgress = (progress: BrowserTransferProgress): void => {
+    uiState.radioProgressVisible = true;
+    uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
+    uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
+    if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
+      renderState(target, store, store.getState(), channelState, uiState);
+    }
+  };
+
   target.querySelector<HTMLInputElement>("#risk-ack")?.addEventListener("change", (event) => {
     uiState.riskAccepted = (event.currentTarget as HTMLInputElement).checked;
     renderState(target, store, state, channelState, uiState);
@@ -206,6 +238,55 @@ function bindLandingActions(
       return;
     }
     window.alert("Create new codeplug is not available yet.");
+  });
+
+  target.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.addEventListener("click", async () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+
+    const capabilities = detectBrowserRadioCapabilities();
+    if (!capabilities.supported) {
+      window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+      return;
+    }
+
+    const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
+    if (!transport) {
+      window.alert("Unable to initialize WebUSB transport in this browser.");
+      return;
+    }
+
+    let connected = false;
+    try {
+      uiState.radioTransport = transport;
+      uiState.radioProgressVisible = true;
+      uiState.radioProgressPercent = 0;
+      uiState.radioProgressLabel = "Starting radio read...";
+      renderState(target, store, store.getState(), channelState, uiState);
+      await transport.connect();
+      connected = true;
+      const bytes = await transport.readCodeplug(applyProgress);
+      store.load("radio-read.bin", bytes);
+      uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
+      uiState.radioProgressPercent = 100;
+      uiState.radioProgressLabel = "Read complete.";
+      window.alert(`Read complete: ${bytes.byteLength} bytes loaded into editor.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Read failed.";
+      uiState.radioStatusMessage = `Read failed: ${message}`;
+      uiState.radioProgressLabel = `Read failed: ${message}`;
+      window.alert(`Read failed: ${message}`);
+    } finally {
+      if (connected) {
+        try {
+          await transport.disconnect();
+        } catch {
+          // Ignore disconnect cleanup errors after a read attempt.
+        }
+      }
+      uiState.radioTransport = null;
+    }
   });
 }
 
@@ -545,7 +626,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     const writeEnabled = isConnected && !uiState.radioBusy;
     return `
       <h2>Radio Transfer</h2>
-      <p class="muted-text">Browser-native radio read/write preparation using WebUSB.</p>
+      <p class="muted-text">Browser-native radio read/write using WebUSB.</p>
 
       <div class="radio-transfer-grid">
         <section class="radio-transfer-card">
@@ -568,7 +649,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
         </section>
 
         <section class="radio-transfer-card">
-          <h3>Planned Browser Workflow</h3>
+          <h3>Browser Workflow</h3>
           <ol class="radio-transfer-list">
             <li>Connect radio over USB and grant browser permission.</li>
             <li>Read codeplug directly into the editor.</li>
@@ -576,12 +657,16 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             <li>Write codeplug back with explicit confirmation and backup options.</li>
           </ol>
           <p class="muted-text" id="radio-transfer-status">Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
+          <div class="radio-transfer-progress ${uiState.radioProgressVisible ? "" : "hidden"}">
+            <progress id="radio-transfer-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
+            <p class="muted-text" id="radio-transfer-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
+          </div>
           <div class="actions">
             <button id="radio-transfer-connect" class="button ghost" ${(capabilities.supported && !uiState.radioBusy) || isConnected ? "" : "disabled"}>${connectLabel}</button>
             <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>Read From Radio</button>
             <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>Write To Radio</button>
           </div>
-          <p class="muted-text">Until this is finalized, continue using local helper flow for reliable read/write.</p>
+          <p class="muted-text">If your browser blocks WebUSB, use the local helper fallback flow.</p>
         </section>
       </div>
     `;
@@ -1498,15 +1583,31 @@ function bindActiveTab(
         return;
       }
 
+      const applyProgress = (progress: BrowserTransferProgress): void => {
+        uiState.radioProgressVisible = true;
+        uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
+        uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
+        if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
+          renderState(target, store, store.getState(), channelState, uiState);
+        }
+      };
+
       uiState.radioBusy = true;
+      uiState.radioProgressVisible = true;
+      uiState.radioProgressPercent = 0;
+      uiState.radioProgressLabel = "Starting radio read...";
       renderState(target, store, store.getState(), channelState, uiState);
       try {
-        const bytes = await uiState.radioTransport.readCodeplug();
-        uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes.`;
-        window.alert(`Read complete: ${bytes.byteLength} bytes.`);
+        const bytes = await uiState.radioTransport.readCodeplug(applyProgress);
+        store.load("radio-read.bin", bytes);
+        uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
+        uiState.radioProgressPercent = 100;
+        uiState.radioProgressLabel = "Read complete.";
+        window.alert(`Read complete: ${bytes.byteLength} bytes loaded into editor.`);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
         uiState.radioStatusMessage = `Read failed: ${message}`;
+        uiState.radioProgressLabel = `Read failed: ${message}`;
         window.alert(`Read failed: ${message}`);
       } finally {
         uiState.radioBusy = false;
@@ -1526,15 +1627,30 @@ function bindActiveTab(
         return;
       }
 
+      const applyProgress = (progress: BrowserTransferProgress): void => {
+        uiState.radioProgressVisible = true;
+        uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
+        uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
+        if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
+          renderState(target, store, store.getState(), channelState, uiState);
+        }
+      };
+
       uiState.radioBusy = true;
+      uiState.radioProgressVisible = true;
+      uiState.radioProgressPercent = 0;
+      uiState.radioProgressLabel = "Starting radio write...";
       renderState(target, store, store.getState(), channelState, uiState);
       try {
-        await uiState.radioTransport.writeCodeplug(bytes);
+        await uiState.radioTransport.writeCodeplug(bytes, applyProgress);
         uiState.radioStatusMessage = `Write complete: ${bytes.byteLength} bytes sent.`;
+        uiState.radioProgressPercent = 100;
+        uiState.radioProgressLabel = "Write complete.";
         window.alert(`Write complete: ${bytes.byteLength} bytes sent.`);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
         uiState.radioStatusMessage = `Write failed: ${message}`;
+        uiState.radioProgressLabel = `Write failed: ${message}`;
         window.alert(`Write failed: ${message}`);
       } finally {
         uiState.radioBusy = false;
