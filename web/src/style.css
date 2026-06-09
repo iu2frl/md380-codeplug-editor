@@ -322,6 +322,17 @@ select {
   margin-top: 0.7rem;
 }
 
+.memories-rows {
+  width: 100%;
+}
+
+@media (min-width: 721px) {
+  .memories-rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+}
+
 .pane-left {
   width: 100%;
   max-width: 360px;
@@ -599,7 +610,15 @@ select {
 
   .pane-left,
   .pane-right {
-    max-height: none;
+    width: 100%;
+    max-width: none;
+    max-height: 42vh;
+  }
+
+  .memories-rows {
+    width: 100%;
+    max-height: 42vh;
+    overflow-y: auto;
   }
 }
 

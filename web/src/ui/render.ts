@@ -569,7 +569,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     return `
       <h2>Digital Text Message</h2>
       <button class="button tiny" id="add-text-message" ${document.textMessages.length >= 50 ? "disabled" : ""}>Add Message</button>
-      <div class="rows">
+      <div class="rows memories-rows">
         ${document.textMessages
           .map(
             (item) => `
