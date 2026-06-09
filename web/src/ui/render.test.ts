@@ -49,6 +49,48 @@ function makeDocument(): CodeplugDocument {
       alertTones: "On",
       timeZone: "UTC+8:00",
     },
+    menuSettings: {
+      hangTime: "10",
+      radioDisable: "Off",
+      radioEnable: "Off",
+      remoteMonitor: "Off",
+      radioCheck: "Off",
+      manualDial: "On",
+      edit: "On",
+      callAlert: "On",
+      textMessage: "On",
+      toneOrAlert: "On",
+      talkaround: "On",
+      outgoingRadio: "On",
+      answered: "On",
+      missed: "On",
+      editList: "On",
+      scan: "On",
+      programKey: "On",
+      vox: "Off",
+      squelch: "On",
+      ledIndicator: "On",
+      keyboardLock: "On",
+      introScreen: "On",
+      backlight: "On",
+      power: "On",
+      gps: "Off",
+      programRadio: "Off",
+      displayMode: "On",
+      passwordAndLock: "On",
+    },
+    radioButtons: [
+      { id: 1, name: "Side Button 1 Short Press", actionCode: 0 },
+      { id: 2, name: "Side Button 1 Long Press", actionCode: 14 },
+      { id: 3, name: "Side Button 2 Short Press", actionCode: 4 },
+      { id: 4, name: "Side Button 2 Long Press", actionCode: 5 },
+    ],
+    longPressDurationMs: 1000,
+    textMessages: [{ id: 1, text: "Hello world", slot: 1 }],
+    privacySettings: {
+      enhancedKeys: Array.from({ length: 8 }, () => "ffffffffffffffffffffffffffffffff"),
+      basicKeys: Array.from({ length: 16 }, () => "ffff"),
+    },
     channels: [
       {
         id: 1,
@@ -202,6 +244,37 @@ describe("channels tab", () => {
     searchInput.dispatchEvent(new Event("input", { bubbles: true }));
     const items = container.querySelectorAll("[data-channel-select]");
     expect(items.length).toBe(1);
+  });
+});
+
+describe("newly enabled tabs", () => {
+  let container: HTMLElement;
+  let store: EditorStore;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    ({ container, store } = mountApp());
+    store.loadDocument(makeDocument());
+  });
+
+  it("renders menu controls", () => {
+    click(container, '[data-tab="menus"]');
+    expect(container.querySelector("#menu-hang-time")).not.toBeNull();
+    expect(container.querySelector('[data-menu-toggle="scan"]')).not.toBeNull();
+  });
+
+  it("renders buttons/text/encryption controls", () => {
+    click(container, '[data-tab="buttons"]');
+    expect(container.querySelector("#long-press-duration")).not.toBeNull();
+    expect(container.querySelector('[data-radio-button="1"]')).not.toBeNull();
+
+    click(container, '[data-tab="digital-text"]');
+    expect(container.querySelector("#add-text-message")).not.toBeNull();
+    expect(container.querySelector("[data-text-message]")).not.toBeNull();
+
+    click(container, '[data-tab="encryption"]');
+    expect(container.querySelector("[data-enhanced-key]")).not.toBeNull();
+    expect(container.querySelector("[data-basic-key]")).not.toBeNull();
   });
 });
 

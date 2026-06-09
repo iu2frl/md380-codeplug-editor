@@ -1,4 +1,5 @@
 import type { AppState, EditorStore } from "../state/store";
+import { radioButtonActionOptions } from "../domain/parser";
 
 interface ChannelPanelState {
   query: string;
@@ -215,10 +216,10 @@ function renderLoadedLayout(state: AppState, uiState: UiState): string {
         <div class="tabs" role="tablist" aria-label="Codeplug sections">
           ${renderTabButton("basic", "Basic", uiState.activeTab, false)}
           ${renderTabButton("general", "General", uiState.activeTab, false)}
-          ${renderTabButton("menus", "Menus", uiState.activeTab, true)}
-          ${renderTabButton("buttons", "Buttons", uiState.activeTab, true)}
-          ${renderTabButton("digital-text", "Digital Text Message", uiState.activeTab, true)}
-          ${renderTabButton("encryption", "Encryption", uiState.activeTab, true)}
+          ${renderTabButton("menus", "Menus", uiState.activeTab, false)}
+          ${renderTabButton("buttons", "Buttons", uiState.activeTab, false)}
+          ${renderTabButton("digital-text", "Digital Text Message", uiState.activeTab, false)}
+          ${renderTabButton("encryption", "Encryption", uiState.activeTab, false)}
           ${renderTabButton("digital-contacts", "Digital Contacts", uiState.activeTab, false)}
           ${renderTabButton("zones", "Zones", uiState.activeTab, false)}
           ${renderTabButton("group-lists", "Group Lists", uiState.activeTab, false)}
@@ -365,6 +366,146 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
                 <input data-contact-call-id="${contact.id}" type="number" min="1" max="16777215" value="${contact.callId}" />
                 <button class="button ghost tiny" data-contact-delete="${contact.id}">Delete</button>
               </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "menus") {
+    const rows: Array<{ key: keyof typeof document.menuSettings; label: string }> = [
+      { key: "radioDisable", label: "Radio Disable" },
+      { key: "radioEnable", label: "Radio Enable" },
+      { key: "remoteMonitor", label: "Remote Monitor" },
+      { key: "radioCheck", label: "Radio Check" },
+      { key: "manualDial", label: "Manual Dial" },
+      { key: "edit", label: "Edit" },
+      { key: "callAlert", label: "Call Alert" },
+      { key: "textMessage", label: "Text Message" },
+      { key: "toneOrAlert", label: "Tone Or Alert" },
+      { key: "talkaround", label: "Talkaround" },
+      { key: "outgoingRadio", label: "Outgoing Radio" },
+      { key: "answered", label: "Answered" },
+      { key: "missed", label: "Missed" },
+      { key: "editList", label: "Edit List" },
+      { key: "scan", label: "Scan" },
+      { key: "programKey", label: "Program Key" },
+      { key: "vox", label: "VOX" },
+      { key: "squelch", label: "Squelch" },
+      { key: "ledIndicator", label: "LED Indicator" },
+      { key: "keyboardLock", label: "Keyboard Lock" },
+      { key: "introScreen", label: "Intro Screen" },
+      { key: "backlight", label: "Backlight" },
+      { key: "power", label: "Power" },
+      { key: "gps", label: "GPS" },
+      { key: "programRadio", label: "Program Radio" },
+      { key: "displayMode", label: "Display Mode" },
+      { key: "passwordAndLock", label: "Password And Lock" },
+    ];
+    return `
+      <h2>Menus</h2>
+      <label>
+        Hang Time
+        <select id="menu-hang-time">
+          <option value="Hang" ${document.menuSettings.hangTime === "Hang" ? "selected" : ""}>Hang</option>
+          ${Array.from({ length: 31 }, (_, i) => `<option value="${i}" ${document.menuSettings.hangTime === `${i}` ? "selected" : ""}>${i}</option>`).join("")}
+        </select>
+      </label>
+      <div class="disabled-grid">
+        ${rows
+          .map(
+            (row) => `
+              <label>
+                ${row.label}
+                <select data-menu-toggle="${row.key}">
+                  <option value="On" ${document.menuSettings[row.key] === "On" ? "selected" : ""}>On</option>
+                  <option value="Off" ${document.menuSettings[row.key] === "Off" ? "selected" : ""}>Off</option>
+                </select>
+              </label>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "buttons") {
+    const options = radioButtonActionOptions();
+    return `
+      <h2>Buttons</h2>
+      <label>
+        Long Press Duration (ms)
+        <input id="long-press-duration" type="number" min="1000" max="3750" step="250" value="${document.longPressDurationMs}" />
+      </label>
+      <div class="rows">
+        ${document.radioButtons
+          .map(
+            (item) => `
+              <label>
+                ${escapeHtml(item.name)}
+                <select data-radio-button="${item.id}">
+                  ${options
+                    .map(
+                      (option) =>
+                        `<option value="${option.code}" ${item.actionCode === option.code ? "selected" : ""}>${escapeHtml(option.label)}</option>`,
+                    )
+                    .join("")}
+                </select>
+              </label>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "digital-text") {
+    return `
+      <h2>Digital Text Message</h2>
+      <button class="button tiny" id="add-text-message" ${document.textMessages.length >= 50 ? "disabled" : ""}>Add Message</button>
+      <div class="rows">
+        ${document.textMessages
+          .map(
+            (item) => `
+              <div class="row zone-row">
+                <input value="${item.slot ?? item.id}" disabled />
+                <input data-text-message="${item.id}" value="${escapeHtml(item.text)}" maxlength="144" />
+                <button class="button ghost tiny" data-text-message-delete="${item.id}">Delete</button>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "encryption") {
+    return `
+      <h2>Encryption</h2>
+      <p class="muted-text">Privacy keys from the codeplug library layout.</p>
+      <h3>Enhanced Keys (32 hex chars each)</h3>
+      <div class="rows">
+        ${document.privacySettings.enhancedKeys
+          .map(
+            (key, index) => `
+              <label>
+                Enhanced ${index + 1}
+                <input data-enhanced-key="${index}" value="${escapeHtml(key)}" maxlength="32" />
+              </label>
+            `,
+          )
+          .join("")}
+      </div>
+      <h3>Basic Keys (4 hex chars each)</h3>
+      <div class="rows">
+        ${document.privacySettings.basicKeys
+          .map(
+            (key, index) => `
+              <label>
+                Basic ${index + 1}
+                <input data-basic-key="${index}" value="${escapeHtml(key)}" maxlength="4" />
+              </label>
             `,
           )
           .join("")}
@@ -650,6 +791,8 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
       </div>
     `;
   }
+
+  return `<p class="muted-text">Tab is not available in this build.</p>`;
 }
 
 function bindFileInputs(target: HTMLElement, store: EditorStore): void {
@@ -705,6 +848,10 @@ function bindTabs(
       if (
         key === "basic" ||
         key === "general" ||
+        key === "menus" ||
+        key === "buttons" ||
+        key === "digital-text" ||
+        key === "encryption" ||
         key === "digital-contacts" ||
         key === "zones" ||
         key === "group-lists" ||
@@ -845,6 +992,128 @@ function bindActiveTab(
     alertTonesSelect?.addEventListener("change", commit);
     timeZoneSelect?.addEventListener("change", commit);
     validate();
+    return;
+  }
+
+  if (uiState.activeTab === "menus") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    const hangTime = panel.querySelector<HTMLSelectElement>("#menu-hang-time");
+    const commitMenu = (): void => {
+      if (!hangTime) {
+        return;
+      }
+      store.updateMenuSettings({
+        hangTime: hangTime.value,
+      });
+    };
+    hangTime?.addEventListener("change", commitMenu);
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-menu-toggle]")) {
+      select.addEventListener("change", () => {
+        const key = select.dataset.menuToggle as keyof NonNullable<AppState["document"]>["menuSettings"];
+        if (!key) {
+          return;
+        }
+        store.updateMenuSettings({
+          [key]: select.value === "Off" ? "Off" : "On",
+        });
+      });
+    }
+    return;
+  }
+
+  if (uiState.activeTab === "buttons") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector<HTMLInputElement>("#long-press-duration")?.addEventListener("change", (event) => {
+      const value = Number.parseInt((event.currentTarget as HTMLInputElement).value, 10);
+      if (Number.isNaN(value)) {
+        return;
+      }
+      store.updateLongPressDurationMs(value);
+    });
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-radio-button]")) {
+      select.addEventListener("change", () => {
+        const id = Number.parseInt(select.dataset.radioButton ?? "", 10);
+        const actionCode = Number.parseInt(select.value, 10);
+        if (Number.isNaN(id) || Number.isNaN(actionCode)) {
+          return;
+        }
+        store.updateRadioButtonAssignment(id, actionCode);
+      });
+    }
+    return;
+  }
+
+  if (uiState.activeTab === "digital-text") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector<HTMLButtonElement>("#add-text-message")?.addEventListener("click", () => {
+      store.addTextMessage();
+    });
+
+    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-text-message]")) {
+      input.addEventListener("change", () => {
+        const id = Number.parseInt(input.dataset.textMessage ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.updateTextMessage(id, input.value);
+      });
+    }
+
+    for (const button of panel.querySelectorAll<HTMLButtonElement>("[data-text-message-delete]")) {
+      button.addEventListener("click", () => {
+        const id = Number.parseInt(button.dataset.textMessageDelete ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.removeTextMessage(id);
+      });
+    }
+    return;
+  }
+
+  if (uiState.activeTab === "encryption") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-enhanced-key]")) {
+      input.addEventListener("change", () => {
+        const index = Number.parseInt(input.dataset.enhancedKey ?? "", 10);
+        if (Number.isNaN(index)) {
+          return;
+        }
+        const next = [...state.document.privacySettings.enhancedKeys];
+        next[index] = input.value;
+        store.updatePrivacySettings({ enhancedKeys: next });
+      });
+    }
+
+    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-basic-key]")) {
+      input.addEventListener("change", () => {
+        const index = Number.parseInt(input.dataset.basicKey ?? "", 10);
+        if (Number.isNaN(index)) {
+          return;
+        }
+        const next = [...state.document.privacySettings.basicKeys];
+        next[index] = input.value;
+        store.updatePrivacySettings({ basicKeys: next });
+      });
+    }
     return;
   }
 

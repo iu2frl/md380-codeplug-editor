@@ -6,6 +6,50 @@ const RDT_HEADER_SIZE = 549;
 const PAYLOAD_SIZE = 262144;
 
 const GENERAL_SETTINGS_OFFSET = 8256;
+const MENU_SETTINGS_OFFSET = 8981;
+const RADIO_BUTTONS_OFFSET = 8999;
+const RADIO_BUTTONS_MAX = 4;
+const BUTTON_DEFINITIONS_OFFSET = 9014;
+const ONE_LONG_PRESS_DURATION_BIT_OFFSET = 0;
+const TEXT_MESSAGES_OFFSET = 9125;
+const TEXT_MESSAGES_MAX = 50;
+const TEXT_MESSAGE_RECORD_SIZE = 288;
+const PRIVACY_SETTINGS_OFFSET = 23525;
+const PRIVACY_RECORD_SIZE = 176;
+const PRIVACY_ENHANCED_KEYS_MAX = 8;
+const PRIVACY_ENHANCED_KEY_SIZE = 16;
+const PRIVACY_BASIC_KEYS_MAX = 16;
+const PRIVACY_BASIC_KEYS_OFFSET = 144;
+const PRIVACY_BASIC_KEY_SIZE = 2;
+
+const MENU_HANG_TIME_BIT_OFFSET = 0;
+const MENU_RADIO_DISABLE_BIT_OFFSET = 8;
+const MENU_RADIO_ENABLE_BIT_OFFSET = 9;
+const MENU_REMOTE_MONITOR_BIT_OFFSET = 10;
+const MENU_RADIO_CHECK_BIT_OFFSET = 11;
+const MENU_MANUAL_DIAL_BIT_OFFSET = 12;
+const MENU_EDIT_BIT_OFFSET = 13;
+const MENU_CALL_ALERT_BIT_OFFSET = 14;
+const MENU_TEXT_MESSAGE_BIT_OFFSET = 15;
+const MENU_TONE_OR_ALERT_BIT_OFFSET = 16;
+const MENU_TALKAROUND_BIT_OFFSET = 17;
+const MENU_OUTGOING_RADIO_BIT_OFFSET = 18;
+const MENU_ANSWERED_BIT_OFFSET = 19;
+const MENU_MISSED_BIT_OFFSET = 20;
+const MENU_EDIT_LIST_BIT_OFFSET = 21;
+const MENU_SCAN_BIT_OFFSET = 22;
+const MENU_PROGRAM_KEY_BIT_OFFSET = 23;
+const MENU_VOX_BIT_OFFSET = 24;
+const MENU_SQUELCH_BIT_OFFSET = 26;
+const MENU_LED_INDICATOR_BIT_OFFSET = 27;
+const MENU_KEYBOARD_LOCK_BIT_OFFSET = 28;
+const MENU_INTRO_SCREEN_BIT_OFFSET = 29;
+const MENU_BACKLIGHT_BIT_OFFSET = 30;
+const MENU_POWER_BIT_OFFSET = 31;
+const MENU_GPS_BIT_OFFSET = 36;
+const MENU_PROGRAM_RADIO_BIT_OFFSET = 37;
+const MENU_DISPLAY_MODE_BIT_OFFSET = 38;
+const MENU_PASSWORD_AND_LOCK_BIT_OFFSET = 39;
 const INTRO_SCREEN_LINE1_OFFSET = 0;
 const INTRO_SCREEN_LINE_SIZE = 20;
 const INTRO_SCREEN_LINE2_OFFSET = INTRO_SCREEN_LINE1_OFFSET + INTRO_SCREEN_LINE_SIZE;
@@ -110,6 +154,40 @@ const TIME_ZONE_OPTIONS = [
   "UTC+10:00",
   "UTC+11:00",
   "UTC+12:00",
+] as const;
+
+const RADIO_BUTTON_ACTIONS = [
+  { code: 0, label: "Unassigned (default)" },
+  { code: 1, label: "All alert Tones On/Off" },
+  { code: 2, label: "Emergency On" },
+  { code: 3, label: "Emergency Off" },
+  { code: 4, label: "High/Low Power" },
+  { code: 5, label: "Monitor" },
+  { code: 6, label: "Nuisance Delete" },
+  { code: 7, label: "One Touch Access 1" },
+  { code: 8, label: "One Touch Access 2" },
+  { code: 9, label: "One Touch Access 3" },
+  { code: 10, label: "One Touch Access 4" },
+  { code: 11, label: "One Touch Access 5" },
+  { code: 12, label: "One Touch Access 6" },
+  { code: 13, label: "Repeater/Talkaround" },
+  { code: 14, label: "Scan On/Off" },
+  { code: 21, label: "Squelch Tight/Normal" },
+  { code: 22, label: "Privacy On/Off" },
+  { code: 23, label: "VOX On/Off" },
+  { code: 24, label: "Zone +" },
+  { code: 25, label: "Zone Toggle" },
+  { code: 26, label: "Battery Indicator" },
+  { code: 30, label: "Manual Dial For Private" },
+  { code: 31, label: "Lone Work On/Off" },
+  { code: 38, label: "1750 Hz" },
+  { code: 80, label: "Toggle Backlight (md380tools)" },
+  { code: 81, label: "Set Talkgroup (md380tools)" },
+  { code: 82, label: "Morse Narrator (md380tools)" },
+  { code: 83, label: "Morse Repeat (md380tools)" },
+  { code: 84, label: "Screen Toggle (md380tools)" },
+  { code: 85, label: "Mic Gain 0/3/6 dB (md380tools)" },
+  { code: 86, label: "Promiscuous Mode On/Off (md380tools)" },
 ] as const;
 
 const SUPPORTED_D_MODELS = ["MD380", "DR780", "RT3"];
@@ -233,6 +311,52 @@ function decodeTimeZone(raw: number): string {
 function encodeTimeZone(value: string): number {
   const index = TIME_ZONE_OPTIONS.indexOf(value as (typeof TIME_ZONE_OPTIONS)[number]);
   return index >= 0 ? index : 12;
+}
+
+function parseOffOnBit(value: number): "On" | "Off" {
+  return value === 0 ? "Off" : "On";
+}
+
+function encodeOffOnBit(value: "On" | "Off"): number {
+  return value === "On" ? 1 : 0;
+}
+
+function parseMenuHangTime(raw: number): string {
+  return raw === 0 ? "Hang" : `${raw}`;
+}
+
+function encodeMenuHangTime(value: string): number {
+  if (value === "Hang") {
+    return 0;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return 10;
+  }
+  return Math.max(0, Math.min(30, parsed));
+}
+
+function labelForRadioButtonAction(code: number): string {
+  const found = RADIO_BUTTON_ACTIONS.find((item) => item.code === code);
+  return found ? found.label : `Unknown (${code})`;
+}
+
+function readHexString(bytes: Uint8Array, offset: number, size: number): string {
+  if (offset + size > bytes.byteLength) {
+    return "";
+  }
+  return Array.from(bytes.subarray(offset, offset + size))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function writeHexString(bytes: Uint8Array, offset: number, size: number, value: string): void {
+  const normalized = value.toLowerCase().replace(/[^0-9a-f]/g, "").padEnd(size * 2, "f").slice(0, size * 2);
+  for (let index = 0; index < size; index += 1) {
+    const pair = normalized.slice(index * 2, index * 2 + 2);
+    const parsed = Number.parseInt(pair, 16);
+    bytes[offset + index] = Number.isNaN(parsed) ? 0xff : parsed;
+  }
 }
 
 function readUcs2String(bytes: Uint8Array, offset: number, length: number): string {
@@ -788,6 +912,183 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       ? readUcs2String(payload, settingsBase + INTRO_SCREEN_LINE2_OFFSET, INTRO_SCREEN_LINE_SIZE)
       : "";
 
+  const menuBase = MENU_SETTINGS_OFFSET;
+  const menuSettings = {
+    hangTime:
+      menuBase + 5 <= payload.byteLength
+        ? parseMenuHangTime(readBitField(payload, menuBase * 8 + MENU_HANG_TIME_BIT_OFFSET, 8))
+        : "10",
+    radioDisable:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1))
+        : "Off",
+    radioEnable:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1))
+        : "Off",
+    remoteMonitor:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1))
+        : "Off",
+    radioCheck:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1))
+        : "Off",
+    manualDial:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1))
+        : "On",
+    edit:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_EDIT_BIT_OFFSET, 1))
+        : "On",
+    callAlert:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1))
+        : "On",
+    textMessage:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1))
+        : "On",
+    toneOrAlert:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1))
+        : "On",
+    talkaround:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TALKAROUND_BIT_OFFSET, 1))
+        : "On",
+    outgoingRadio:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1))
+        : "On",
+    answered:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_ANSWERED_BIT_OFFSET, 1))
+        : "On",
+    missed:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_MISSED_BIT_OFFSET, 1))
+        : "On",
+    editList:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1))
+        : "On",
+    scan:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_SCAN_BIT_OFFSET, 1))
+        : "On",
+    programKey:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1))
+        : "On",
+    vox:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_VOX_BIT_OFFSET, 1))
+        : "Off",
+    squelch:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_SQUELCH_BIT_OFFSET, 1))
+        : "On",
+    ledIndicator:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1))
+        : "On",
+    keyboardLock:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1))
+        : "On",
+    introScreen:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1))
+        : "On",
+    backlight:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1))
+        : "On",
+    power:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_POWER_BIT_OFFSET, 1))
+        : "On",
+    gps:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_GPS_BIT_OFFSET, 1))
+        : "Off",
+    programRadio:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1))
+        : "Off",
+    displayMode:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1))
+        : "On",
+    passwordAndLock:
+      menuBase + 5 <= payload.byteLength
+        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1))
+        : "On",
+  };
+
+  const radioButtons = [];
+  for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
+    const offset = RADIO_BUTTONS_OFFSET + index;
+    if (offset >= payload.byteLength) {
+      break;
+    }
+    const actionCode = payload[offset];
+    radioButtons.push({
+      id: index + 1,
+      name:
+        index === 0
+          ? "Side Button 1 Short Press"
+          : index === 1
+            ? "Side Button 1 Long Press"
+            : index === 2
+              ? "Side Button 2 Short Press"
+              : "Side Button 2 Long Press",
+      actionCode,
+    });
+  }
+
+  const longPressDurationMs =
+    BUTTON_DEFINITIONS_OFFSET < payload.byteLength
+      ? Math.max(4, Math.min(15, payload[BUTTON_DEFINITIONS_OFFSET])) * 250
+      : 1000;
+
+  const textMessages = [];
+  for (let index = 0; index < TEXT_MESSAGES_MAX; index += 1) {
+    const base = TEXT_MESSAGES_OFFSET + index * TEXT_MESSAGE_RECORD_SIZE;
+    if (base + TEXT_MESSAGE_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base] === 0) {
+      continue;
+    }
+    const text = readUcs2String(payload, base, TEXT_MESSAGE_RECORD_SIZE);
+    if (!text) {
+      continue;
+    }
+    textMessages.push({ id: textMessages.length + 1, text, slot: index + 1 });
+  }
+
+  const privacySettings = {
+    enhancedKeys: [] as string[],
+    basicKeys: [] as string[],
+  };
+  for (let index = 0; index < PRIVACY_ENHANCED_KEYS_MAX; index += 1) {
+    const offset = PRIVACY_SETTINGS_OFFSET + index * PRIVACY_ENHANCED_KEY_SIZE;
+    if (offset + PRIVACY_ENHANCED_KEY_SIZE > payload.byteLength) {
+      break;
+    }
+    privacySettings.enhancedKeys.push(readHexString(payload, offset, PRIVACY_ENHANCED_KEY_SIZE));
+  }
+  for (let index = 0; index < PRIVACY_BASIC_KEYS_MAX; index += 1) {
+    const offset = PRIVACY_SETTINGS_OFFSET + PRIVACY_BASIC_KEYS_OFFSET + index * PRIVACY_BASIC_KEY_SIZE;
+    if (offset + PRIVACY_BASIC_KEY_SIZE > payload.byteLength) {
+      break;
+    }
+    privacySettings.basicKeys.push(readHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE));
+  }
+
   const frequencyRangeIndex =
     BASIC_INFO_OFFSET + Math.floor(BASIC_FREQUENCY_RANGE_BIT_OFFSET / 8) < payload.byteLength
       ? readBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8)
@@ -845,6 +1146,11 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       alertTones,
       timeZone,
     },
+    menuSettings,
+    radioButtons,
+    longPressDurationMs,
+    textMessages,
+    privacySettings,
   };
 }
 
@@ -918,6 +1224,77 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     writeBitField(payload, settingsBase * 8 + TIME_ZONE_BIT_OFFSET, 5, encodeTimeZone(document.settings.timeZone));
   }
 
+  if (MENU_SETTINGS_OFFSET + 5 <= payload.byteLength) {
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_HANG_TIME_BIT_OFFSET, 8, encodeMenuHangTime(document.menuSettings.hangTime));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioDisable));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioEnable));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.remoteMonitor));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioCheck));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.manualDial));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.edit));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.callAlert));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.textMessage));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.toneOrAlert));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TALKAROUND_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.talkaround));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.outgoingRadio));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_ANSWERED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.answered));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_MISSED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.missed));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.editList));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_SCAN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.scan));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programKey));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_VOX_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.vox));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_SQUELCH_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.squelch));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.ledIndicator));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.keyboardLock));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.introScreen));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.backlight));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_POWER_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.power));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_GPS_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.gps));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programRadio));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.displayMode));
+    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.passwordAndLock));
+  }
+
+  if (BUTTON_DEFINITIONS_OFFSET < payload.byteLength) {
+    payload[BUTTON_DEFINITIONS_OFFSET] = Math.max(4, Math.min(15, Math.round(document.longPressDurationMs / 250)));
+  }
+
+  for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
+    const offset = RADIO_BUTTONS_OFFSET + index;
+    if (offset >= payload.byteLength) {
+      break;
+    }
+    const assignment = document.radioButtons.find((item) => item.id === index + 1);
+    payload[offset] = assignment ? Math.max(0, Math.min(255, assignment.actionCode)) : 0;
+  }
+
+  for (const message of document.textMessages) {
+    if (!message.slot || message.slot < 1 || message.slot > TEXT_MESSAGES_MAX) {
+      continue;
+    }
+    const base = TEXT_MESSAGES_OFFSET + (message.slot - 1) * TEXT_MESSAGE_RECORD_SIZE;
+    if (base + TEXT_MESSAGE_RECORD_SIZE > payload.byteLength) {
+      continue;
+    }
+    writeUcs2String(payload, base, TEXT_MESSAGE_RECORD_SIZE, message.text);
+  }
+
+  for (let index = 0; index < PRIVACY_ENHANCED_KEYS_MAX; index += 1) {
+    const offset = PRIVACY_SETTINGS_OFFSET + index * PRIVACY_ENHANCED_KEY_SIZE;
+    if (offset + PRIVACY_ENHANCED_KEY_SIZE > payload.byteLength) {
+      break;
+    }
+    writeHexString(payload, offset, PRIVACY_ENHANCED_KEY_SIZE, document.privacySettings.enhancedKeys[index] ?? "");
+  }
+
+  for (let index = 0; index < PRIVACY_BASIC_KEYS_MAX; index += 1) {
+    const offset = PRIVACY_SETTINGS_OFFSET + PRIVACY_BASIC_KEYS_OFFSET + index * PRIVACY_BASIC_KEY_SIZE;
+    if (offset + PRIVACY_BASIC_KEY_SIZE > payload.byteLength) {
+      break;
+    }
+    writeHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE, document.privacySettings.basicKeys[index] ?? "");
+  }
+
   if (BASIC_CPS_VERSION_OFFSET + BASIC_CPS_VERSION_SIZE <= payload.byteLength) {
     writeNibbleDecimalString(payload, BASIC_CPS_VERSION_OFFSET, BASIC_CPS_VERSION_SIZE, document.basicInfo.cpsVersion);
   }
@@ -933,4 +1310,12 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   writeZones(payload, document, channelSlotById);
 
   return out;
+}
+
+export function radioButtonActionOptions(): Array<{ code: number; label: string }> {
+  return RADIO_BUTTON_ACTIONS.map((item) => ({ code: item.code, label: item.label }));
+}
+
+export function radioButtonActionLabel(code: number): string {
+  return labelForRadioButtonAction(code);
 }

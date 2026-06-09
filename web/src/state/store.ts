@@ -119,6 +119,101 @@ export class EditorStore {
     this.refreshDirty();
   }
 
+  updateMenuSettings(patch: Partial<CodeplugDocument["menuSettings"]>): void {
+    if (!this.state.document) {
+      return;
+    }
+
+    this.beginMutation();
+    this.state.document.menuSettings = {
+      ...this.state.document.menuSettings,
+      ...patch,
+    };
+    this.refreshDirty();
+  }
+
+  updateRadioButtonAssignment(id: number, actionCode: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const assignment = this.state.document.radioButtons.find((item) => item.id === id);
+    if (!assignment) {
+      return;
+    }
+    this.beginMutation();
+    assignment.actionCode = actionCode;
+    this.refreshDirty();
+  }
+
+  updateLongPressDurationMs(value: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    this.state.document.longPressDurationMs = value;
+    this.refreshDirty();
+  }
+
+  addTextMessage(): void {
+    if (!this.state.document) {
+      return;
+    }
+    if (this.state.document.textMessages.length >= 50) {
+      return;
+    }
+
+    this.beginMutation();
+    const usedSlots = new Set(this.state.document.textMessages.map((item) => item.slot));
+    let slot: number | undefined;
+    for (let index = 1; index <= 50; index += 1) {
+      if (!usedSlots.has(index)) {
+        slot = index;
+        break;
+      }
+    }
+    if (!slot) {
+      return;
+    }
+    const id = this.nextId(this.state.document.textMessages.map((item) => item.id));
+    this.state.document.textMessages.push({ id, text: `Message ${id}`, slot });
+    this.refreshDirty();
+  }
+
+  updateTextMessage(id: number, text: string): void {
+    if (!this.state.document) {
+      return;
+    }
+    const message = this.state.document.textMessages.find((item) => item.id === id);
+    if (!message) {
+      return;
+    }
+    this.beginMutation();
+    message.text = text;
+    this.refreshDirty();
+  }
+
+  removeTextMessage(id: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    this.state.document.textMessages = this.state.document.textMessages.filter((item) => item.id !== id);
+    this.refreshDirty();
+  }
+
+  updatePrivacySettings(patch: Partial<CodeplugDocument["privacySettings"]>): void {
+    if (!this.state.document) {
+      return;
+    }
+
+    this.beginMutation();
+    this.state.document.privacySettings = {
+      ...this.state.document.privacySettings,
+      ...patch,
+    };
+    this.refreshDirty();
+  }
+
   addContact(): void {
     if (!this.state.document) {
       return;

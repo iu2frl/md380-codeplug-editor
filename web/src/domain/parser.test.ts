@@ -7,6 +7,13 @@ const RDT_HEADER_SIZE = 549;
 const RDT_SIZE = 262709;
 
 const GENERAL_SETTINGS_OFFSET = 8256;
+const MENU_SETTINGS_OFFSET = 8981;
+const RADIO_BUTTONS_OFFSET = 8999;
+const BUTTON_DEFINITIONS_OFFSET = 9014;
+const TEXT_MESSAGES_OFFSET = 9125;
+const TEXT_MESSAGE_RECORD_SIZE = 288;
+const PRIVACY_SETTINGS_OFFSET = 23525;
+const PRIVACY_BASIC_KEYS_OFFSET = 144;
 const RADIO_ID_OFFSET = 68;
 const RADIO_NAME_OFFSET = 112;
 const INTRO_LINE1_OFFSET = 0;
@@ -18,6 +25,11 @@ const RX_LOW_BATTERY_INTERVAL_BIT_OFFSET = 624;
 const BACKLIGHT_TIMEOUT_BIT_OFFSET = 686;
 const KEYPAD_AUTO_LOCK_BIT_OFFSET = 688;
 const TIME_ZONE_BIT_OFFSET = 856;
+
+const MENU_HANG_TIME_BIT_OFFSET = 0;
+const MENU_RADIO_DISABLE_BIT_OFFSET = 8;
+const MENU_SCAN_BIT_OFFSET = 22;
+const MENU_PASSWORD_AND_LOCK_BIT_OFFSET = 39;
 
 const CONTACTS_OFFSET = 24448;
 const CONTACT_RECORD_SIZE = 36;
@@ -78,6 +90,14 @@ function writeBcdTimestamp(bytes: Uint8Array, offset: number, digits14: string):
   }
 }
 
+function writeHex(bytes: Uint8Array, offset: number, hex: string): void {
+  const clean = hex.toLowerCase().replace(/[^0-9a-f]/g, "");
+  const even = clean.length % 2 === 0 ? clean : `${clean}0`;
+  for (let index = 0; index < even.length / 2; index += 1) {
+    bytes[offset + index] = Number.parseInt(even.slice(index * 2, index * 2 + 2), 16);
+  }
+}
+
 function intToBcd(value: number): number {
   let input = Math.max(0, Math.floor(value));
   let out = 0;
@@ -122,6 +142,25 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
   writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + BACKLIGHT_TIMEOUT_BIT_OFFSET, 2, 2);
   writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + KEYPAD_AUTO_LOCK_BIT_OFFSET, 8, 10);
   writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + TIME_ZONE_BIT_OFFSET, 5, 20);
+
+  writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_HANG_TIME_BIT_OFFSET, 8, 12);
+  writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1, 1);
+  writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_SCAN_BIT_OFFSET, 1, 0);
+  writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1, 1);
+
+  payload[RADIO_BUTTONS_OFFSET] = 14;
+  payload[RADIO_BUTTONS_OFFSET + 1] = 4;
+  payload[RADIO_BUTTONS_OFFSET + 2] = 5;
+  payload[RADIO_BUTTONS_OFFSET + 3] = 23;
+  payload[BUTTON_DEFINITIONS_OFFSET] = 5;
+
+  writeUcs2(payload, TEXT_MESSAGES_OFFSET, TEXT_MESSAGE_RECORD_SIZE, "Test message A");
+  writeUcs2(payload, TEXT_MESSAGES_OFFSET + TEXT_MESSAGE_RECORD_SIZE, TEXT_MESSAGE_RECORD_SIZE, "Test message B");
+
+  writeHex(payload, PRIVACY_SETTINGS_OFFSET, "00112233445566778899aabbccddeeff");
+  writeHex(payload, PRIVACY_SETTINGS_OFFSET + 16, "ffeeddccbbaa99887766554433221100");
+  writeHex(payload, PRIVACY_SETTINGS_OFFSET + PRIVACY_BASIC_KEYS_OFFSET, "1234");
+  writeHex(payload, PRIVACY_SETTINGS_OFFSET + PRIVACY_BASIC_KEYS_OFFSET + 2, "abcd");
 
   writeBitField(payload, FREQUENCY_RANGE_BIT_OFFSET, 8, 2);
   writeBcdTimestamp(payload, LAST_PROGRAMMED_TIME_OFFSET, "20240609123045");
@@ -181,6 +220,24 @@ describe("parseCodeplug", () => {
     expect(doc.settings.bootUpMessageLine2).toBe("WORLD");
     expect(doc.settings.alertTones).toBe("On");
     expect(doc.settings.timeZone).toBe("UTC+8:00");
+
+    expect(doc.menuSettings.hangTime).toBe("12");
+    expect(doc.menuSettings.radioDisable).toBe("On");
+    expect(doc.menuSettings.scan).toBe("Off");
+    expect(doc.menuSettings.passwordAndLock).toBe("On");
+
+    expect(doc.radioButtons).toHaveLength(4);
+    expect(doc.radioButtons[0].actionCode).toBe(14);
+    expect(doc.longPressDurationMs).toBe(1250);
+
+    expect(doc.textMessages).toHaveLength(2);
+    expect(doc.textMessages[0].text).toBe("Test message A");
+    expect(doc.textMessages[1].text).toBe("Test message B");
+
+    expect(doc.privacySettings.enhancedKeys[0]).toBe("00112233445566778899aabbccddeeff");
+    expect(doc.privacySettings.enhancedKeys[1]).toBe("ffeeddccbbaa99887766554433221100");
+    expect(doc.privacySettings.basicKeys[0]).toBe("1234");
+    expect(doc.privacySettings.basicKeys[1]).toBe("abcd");
 
     expect(doc.contacts).toHaveLength(1);
     expect(doc.contacts[0].name).toBe("TG9 Local");
@@ -272,6 +329,13 @@ describe("serializeCodeplug", () => {
     doc.settings.bootUpMessageLine2 = "LINE-TWO";
     doc.settings.alertTones = "Off";
     doc.settings.timeZone = "UTC+3:00";
+    doc.menuSettings.hangTime = "Hang";
+    doc.menuSettings.scan = "On";
+    doc.radioButtons[0].actionCode = 22;
+    doc.longPressDurationMs = 3000;
+    doc.textMessages[0].text = "Edited Message";
+    doc.privacySettings.enhancedKeys[0] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    doc.privacySettings.basicKeys[0] = "0f0f";
     doc.basicInfo.cpsVersion = "2025";
     doc.channels[0].rxFrequencyMHz = 439.01234;
     doc.channels[0].txFrequencyMHz = 431.01234;
@@ -295,6 +359,13 @@ describe("serializeCodeplug", () => {
     expect(reparsed.settings.bootUpMessageLine2).toBe("LINE-TWO");
     expect(reparsed.settings.alertTones).toBe("Off");
     expect(reparsed.settings.timeZone).toBe("UTC+3:00");
+    expect(reparsed.menuSettings.hangTime).toBe("Hang");
+    expect(reparsed.menuSettings.scan).toBe("On");
+    expect(reparsed.radioButtons[0].actionCode).toBe(22);
+    expect(reparsed.longPressDurationMs).toBe(3000);
+    expect(reparsed.textMessages[0].text).toBe("Edited Message");
+    expect(reparsed.privacySettings.enhancedKeys[0]).toBe("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(reparsed.privacySettings.basicKeys[0]).toBe("0f0f");
     expect(reparsed.basicInfo.cpsVersion).toBe("2025");
     expect(reparsed.channels[0].rxFrequencyMHz).toBeCloseTo(439.01234, 5);
     expect(reparsed.channels[0].txFrequencyMHz).toBeCloseTo(431.01234, 5);

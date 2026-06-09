@@ -54,6 +54,54 @@ export interface RadioSettings {
   timeZone: string;
 }
 
+export interface MenuSettings {
+  hangTime: string;
+  radioDisable: "On" | "Off";
+  radioEnable: "On" | "Off";
+  remoteMonitor: "On" | "Off";
+  radioCheck: "On" | "Off";
+  manualDial: "On" | "Off";
+  edit: "On" | "Off";
+  callAlert: "On" | "Off";
+  textMessage: "On" | "Off";
+  toneOrAlert: "On" | "Off";
+  talkaround: "On" | "Off";
+  outgoingRadio: "On" | "Off";
+  answered: "On" | "Off";
+  missed: "On" | "Off";
+  editList: "On" | "Off";
+  scan: "On" | "Off";
+  programKey: "On" | "Off";
+  vox: "On" | "Off";
+  squelch: "On" | "Off";
+  ledIndicator: "On" | "Off";
+  keyboardLock: "On" | "Off";
+  introScreen: "On" | "Off";
+  backlight: "On" | "Off";
+  power: "On" | "Off";
+  gps: "On" | "Off";
+  programRadio: "On" | "Off";
+  displayMode: "On" | "Off";
+  passwordAndLock: "On" | "Off";
+}
+
+export interface RadioButtonAssignment {
+  id: number;
+  name: string;
+  actionCode: number;
+}
+
+export interface TextMessage {
+  id: number;
+  text: string;
+  slot?: number;
+}
+
+export interface PrivacySettings {
+  enhancedKeys: string[];
+  basicKeys: string[];
+}
+
 export interface BasicRadioInfo {
   firmwareVersion: string;
   cpsVersion: string;
@@ -79,6 +127,11 @@ export interface CodeplugDocument {
   groupLists: GroupList[];
   scanLists: ScanList[];
   settings: RadioSettings;
+  menuSettings: MenuSettings;
+  radioButtons: RadioButtonAssignment[];
+  longPressDurationMs: number;
+  textMessages: TextMessage[];
+  privacySettings: PrivacySettings;
 }
 
 export interface ValidationIssue {
