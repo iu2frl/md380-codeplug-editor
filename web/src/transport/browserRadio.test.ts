@@ -126,10 +126,15 @@ describe("detectBrowserRadioCapabilities", () => {
         const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
         const transport = createBrowserRadioTransport(caps);
         expect(transport).not.toBeNull();
+        expect(transport!.isConnected()).toBe(false);
+        expect(transport!.getConnectedDevice()).toBeNull();
+
         const connected = await transport!.connect();
         expect(connected.vendorId).toBe(0x0483);
         expect(connected.productId).toBe(0xdf11);
         expect(connected.interfaceNumber).toBe(2);
+        expect(transport!.isConnected()).toBe(true);
+        expect(transport!.getConnectedDevice()?.vendorId).toBe(0x0483);
         expect(calls).toEqual([
           "requestDevice",
           "open",
@@ -154,6 +159,71 @@ describe("detectBrowserRadioCapabilities", () => {
         const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
         const transport = createBrowserRadioTransport(caps);
         await expect(transport!.connect()).rejects.toThrow("No USB device was selected");
+      },
+    );
+  });
+
+  it("disconnect releases claimed interface and closes USB device", async () => {
+    const calls: string[] = [];
+    const fakeDevice = {
+      vendorId: 0x0483,
+      productId: 0xdf11,
+      opened: false,
+      configuration: null,
+      open: async () => {
+        calls.push("open");
+        fakeDevice.opened = true;
+      },
+      close: async () => {
+        calls.push("close");
+        fakeDevice.opened = false;
+      },
+      selectConfiguration: async (value: number) => {
+        calls.push(`selectConfiguration:${value}`);
+        fakeDevice.configuration = {
+          configurationValue: value,
+          interfaces: [
+            {
+              interfaceNumber: 1,
+              alternates: [{ alternateSetting: 0 }],
+            },
+          ],
+        };
+      },
+      claimInterface: async (interfaceNumber: number) => {
+        calls.push(`claimInterface:${interfaceNumber}`);
+      },
+      releaseInterface: async (interfaceNumber: number) => {
+        calls.push(`releaseInterface:${interfaceNumber}`);
+      },
+    };
+
+    await withMockUsb(
+      {
+        requestDevice: async () => {
+          calls.push("requestDevice");
+          return fakeDevice;
+        },
+      },
+      async () => {
+        const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
+        const transport = createBrowserRadioTransport(caps);
+        expect(transport).not.toBeNull();
+
+        await transport!.connect();
+        expect(transport!.isConnected()).toBe(true);
+        await transport!.disconnect();
+        expect(transport!.isConnected()).toBe(false);
+        expect(transport!.getConnectedDevice()).toBeNull();
+
+        expect(calls).toEqual([
+          "requestDevice",
+          "open",
+          "selectConfiguration:1",
+          "claimInterface:1",
+          "releaseInterface:1",
+          "close",
+        ]);
       },
     );
   });

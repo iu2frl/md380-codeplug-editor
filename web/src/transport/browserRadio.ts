@@ -20,6 +20,9 @@ export interface BrowserRadioDevice {
 
 export interface BrowserRadioTransport {
   connect(): Promise<BrowserRadioDevice>;
+  disconnect(): Promise<void>;
+  isConnected(): boolean;
+  getConnectedDevice(): BrowserRadioDevice | null;
   readCodeplug(): Promise<Uint8Array>;
   writeCodeplug(data: Uint8Array): Promise<void>;
 }
@@ -62,8 +65,10 @@ interface UsbDeviceLike {
   opened?: boolean;
   configuration?: UsbConfigurationLike | null;
   open?: () => Promise<void>;
+  close?: () => Promise<void>;
   selectConfiguration?: (configurationValue: number) => Promise<void>;
   claimInterface?: (interfaceNumber: number) => Promise<void>;
+  releaseInterface?: (interfaceNumber: number) => Promise<void>;
   selectAlternateInterface?: (interfaceNumber: number, alternateSetting: number) => Promise<void>;
 }
 
@@ -116,12 +121,19 @@ export function detectBrowserRadioCapabilities(
 
 class WebUsbRadioTransport implements BrowserRadioTransport {
   private readonly usb: UsbNavigatorLike;
+  private device: UsbDeviceLike | null = null;
+  private claimedInterfaceNumber: number | null = null;
+  private connectedDevice: BrowserRadioDevice | null = null;
 
   constructor(usb: UsbNavigatorLike) {
     this.usb = usb;
   }
 
   async connect(): Promise<BrowserRadioDevice> {
+    if (this.device?.opened && this.connectedDevice) {
+      return this.connectedDevice;
+    }
+
     let device: UsbDeviceLike;
     try {
       device = await this.usb.requestDevice({ filters: MD380_USB_FILTERS });
@@ -164,7 +176,9 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
       }
       await device.claimInterface(selectedInterface.interfaceNumber);
 
-      return {
+      this.device = device;
+      this.claimedInterfaceNumber = selectedInterface.interfaceNumber;
+      this.connectedDevice = {
         vendorId: device.vendorId,
         productId: device.productId,
         productName: device.productName,
@@ -173,9 +187,40 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
         configurationValue: configuration.configurationValue,
         interfaceNumber: selectedInterface.interfaceNumber,
       };
+      return this.connectedDevice;
     } catch (error) {
       throw new Error(normalizeUsbError(error));
     }
+  }
+
+  async disconnect(): Promise<void> {
+    if (!this.device) {
+      return;
+    }
+
+    try {
+      if (this.claimedInterfaceNumber !== null && typeof this.device.releaseInterface === "function") {
+        await this.device.releaseInterface(this.claimedInterfaceNumber);
+      }
+
+      if (this.device.opened && typeof this.device.close === "function") {
+        await this.device.close();
+      }
+    } catch (error) {
+      throw new Error(normalizeUsbError(error));
+    } finally {
+      this.device = null;
+      this.claimedInterfaceNumber = null;
+      this.connectedDevice = null;
+    }
+  }
+
+  isConnected(): boolean {
+    return Boolean(this.device?.opened && this.connectedDevice);
+  }
+
+  getConnectedDevice(): BrowserRadioDevice | null {
+    return this.connectedDevice;
   }
 
   async readCodeplug(): Promise<Uint8Array> {

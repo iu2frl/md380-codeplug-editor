@@ -1,6 +1,10 @@
 import type { AppState, EditorStore } from "../state/store";
 import { radioButtonActionOptions } from "../domain/parser";
-import { createBrowserRadioTransport, detectBrowserRadioCapabilities } from "../transport/browserRadio";
+import {
+  createBrowserRadioTransport,
+  detectBrowserRadioCapabilities,
+  type BrowserRadioTransport,
+} from "../transport/browserRadio";
 
 interface ChannelPanelState {
   query: string;
@@ -28,6 +32,9 @@ interface UiState {
   riskAccepted: boolean;
   selectedZoneId: number | null;
   selectedChannelId: number | null;
+  radioTransport: BrowserRadioTransport | null;
+  radioStatusMessage: string;
+  radioBusy: boolean;
 }
 
 const TIME_ZONE_OPTIONS = [
@@ -81,6 +88,9 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
     riskAccepted: false,
     selectedZoneId: null,
     selectedChannelId: null,
+    radioTransport: null,
+    radioStatusMessage: "Not connected.",
+    radioBusy: false,
   };
 
   store.subscribe((state) => renderState(target, store, state, channelState, uiState));
@@ -529,6 +539,10 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
 
   if (activeTab === "radio-transfer") {
     const capabilities = detectBrowserRadioCapabilities();
+    const isConnected = uiState.radioTransport?.isConnected() ?? false;
+    const connectLabel = isConnected ? "Disconnect Device" : "Connect Device";
+    const readEnabled = isConnected && !uiState.radioBusy;
+    const writeEnabled = isConnected && !uiState.radioBusy;
     return `
       <h2>Radio Transfer (Phase 3 Preview)</h2>
       <p class="muted-text">Browser-native radio read/write preparation using WebUSB.</p>
@@ -561,10 +575,11 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             <li>Edit and validate in-browser.</li>
             <li>Write codeplug back with explicit confirmation and backup options.</li>
           </ol>
+          <p class="muted-text" id="radio-transfer-status">Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
           <div class="actions">
-            <button id="radio-transfer-connect" class="button ghost" ${capabilities.supported ? "" : "disabled"}>Connect Device</button>
-            <button id="radio-transfer-read" class="button ghost" disabled>Read From Radio (Coming Soon)</button>
-            <button id="radio-transfer-write" class="button ghost" disabled>Write To Radio (Coming Soon)</button>
+            <button id="radio-transfer-connect" class="button ghost" ${(capabilities.supported && !uiState.radioBusy) || isConnected ? "" : "disabled"}>${connectLabel}</button>
+            <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>Read From Radio</button>
+            <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>Write To Radio</button>
           </div>
           <p class="muted-text">Until this is finalized, continue using local helper flow for reliable read/write.</p>
         </section>
@@ -1427,35 +1442,104 @@ function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", async () => {
       const capabilities = detectBrowserRadioCapabilities();
-      if (!capabilities.supported) {
+      const isConnected = uiState.radioTransport?.isConnected() ?? false;
+      if (!isConnected && !capabilities.supported) {
         window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
         return;
       }
 
-      const transport = createBrowserRadioTransport(capabilities);
+      uiState.radioBusy = true;
+      renderState(target, store, store.getState(), channelState, uiState);
+
+      if (isConnected && uiState.radioTransport) {
+        try {
+          await uiState.radioTransport.disconnect();
+          uiState.radioStatusMessage = "Disconnected.";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Disconnect failed.";
+          uiState.radioStatusMessage = `Disconnect failed: ${message}`;
+        } finally {
+          uiState.radioBusy = false;
+          renderState(target, store, store.getState(), channelState, uiState);
+        }
+        return;
+      }
+
+      const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
       if (!transport) {
+        uiState.radioBusy = false;
+        uiState.radioStatusMessage = "Unable to initialize WebUSB transport in this browser.";
+        renderState(target, store, store.getState(), channelState, uiState);
         window.alert("Unable to initialize WebUSB transport in this browser.");
         return;
       }
 
       try {
+        uiState.radioTransport = transport;
         const device = await transport.connect();
         const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
+        uiState.radioStatusMessage = `Connected: ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`;
         window.alert(
           `Connected to ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : "WebUSB connection failed.";
+        uiState.radioStatusMessage = `Connect failed: ${message}`;
         window.alert(`Connect failed: ${message}`);
+      } finally {
+        uiState.radioBusy = false;
+        renderState(target, store, store.getState(), channelState, uiState);
       }
     });
 
-    panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", () => {
-      window.alert("Read from radio is not implemented yet in browser transport.");
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", async () => {
+      if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
+        window.alert("Connect a radio first.");
+        return;
+      }
+
+      uiState.radioBusy = true;
+      renderState(target, store, store.getState(), channelState, uiState);
+      try {
+        const bytes = await uiState.radioTransport.readCodeplug();
+        uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes.`;
+        window.alert(`Read complete: ${bytes.byteLength} bytes.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Read failed.";
+        uiState.radioStatusMessage = `Read failed: ${message}`;
+        window.alert(`Read failed: ${message}`);
+      } finally {
+        uiState.radioBusy = false;
+        renderState(target, store, store.getState(), channelState, uiState);
+      }
     });
 
-    panel.querySelector<HTMLButtonElement>("#radio-transfer-write")?.addEventListener("click", () => {
-      window.alert("Write to radio is not implemented yet in browser transport.");
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-write")?.addEventListener("click", async () => {
+      if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
+        window.alert("Connect a radio first.");
+        return;
+      }
+
+      const bytes = store.exportBytes();
+      if (!bytes) {
+        window.alert("Nothing to write. Load or edit a codeplug first.");
+        return;
+      }
+
+      uiState.radioBusy = true;
+      renderState(target, store, store.getState(), channelState, uiState);
+      try {
+        await uiState.radioTransport.writeCodeplug(bytes);
+        uiState.radioStatusMessage = `Write complete: ${bytes.byteLength} bytes sent.`;
+        window.alert(`Write complete: ${bytes.byteLength} bytes sent.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Write failed.";
+        uiState.radioStatusMessage = `Write failed: ${message}`;
+        window.alert(`Write failed: ${message}`);
+      } finally {
+        uiState.radioBusy = false;
+        renderState(target, store, store.getState(), channelState, uiState);
+      }
     });
 
     return;
