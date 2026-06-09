@@ -27,6 +27,30 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         message: `Channel ${channel.name} references missing contact #${channel.contactId}.`,
       });
     }
+
+    if (!(channel.rxFrequencyMHz > 0)) {
+      issues.push({
+        level: "error",
+        code: "CHANNEL_RX_INVALID",
+        message: `Channel ${channel.name} has invalid RX frequency.`,
+      });
+    }
+
+    if (!(channel.txFrequencyMHz > 0)) {
+      issues.push({
+        level: "error",
+        code: "CHANNEL_TX_INVALID",
+        message: `Channel ${channel.name} has invalid TX frequency.`,
+      });
+    }
+
+    if (channel.colorCode < 0 || channel.colorCode > 15) {
+      issues.push({
+        level: "error",
+        code: "CHANNEL_COLOR_CODE_RANGE",
+        message: `Channel ${channel.name} color code must be 0-15.`,
+      });
+    }
   }
 
   for (const contact of doc.contacts) {
@@ -38,6 +62,15 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         message: `Contact name ${contact.name} is duplicated.`,
       });
     }
+
+    if (contact.callId <= 0 || contact.callId >= 16777216) {
+      issues.push({
+        level: "error",
+        code: "CONTACT_CALL_ID_RANGE",
+        message: `Contact ${contact.name} call ID must be 1-16777215.`,
+      });
+    }
+
     seenContactNames.add(key);
   }
 

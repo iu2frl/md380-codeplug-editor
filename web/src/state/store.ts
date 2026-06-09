@@ -101,11 +101,31 @@ export class EditorStore {
     this.state.document.channels.push({
       id,
       name: `Channel ${id}`,
+      rxFrequencyMHz: 446.0,
+      txFrequencyMHz: 446.0,
+      channelMode: "Digital",
+      colorCode: 1,
+      repeaterSlot: 1,
+      bandwidthKhz: "12.5",
+      power: "High",
     });
     this.refreshDirty();
   }
 
-  updateChannel(id: number, name: string, contactId?: number): void {
+  updateChannel(
+    id: number,
+    patch: {
+      name?: string;
+      contactId?: number;
+      rxFrequencyMHz?: number;
+      txFrequencyMHz?: number;
+      channelMode?: "Analog" | "Digital";
+      colorCode?: number;
+      repeaterSlot?: 1 | 2;
+      bandwidthKhz?: "12.5" | "20" | "25";
+      power?: "Low" | "High";
+    },
+  ): void {
     if (!this.state.document) {
       return;
     }
@@ -113,8 +133,33 @@ export class EditorStore {
     if (!channel) {
       return;
     }
-    channel.name = name;
-    channel.contactId = contactId;
+    if (patch.name !== undefined) {
+      channel.name = patch.name;
+    }
+    if (patch.contactId !== undefined || Object.hasOwn(patch, "contactId")) {
+      channel.contactId = patch.contactId;
+    }
+    if (patch.rxFrequencyMHz !== undefined) {
+      channel.rxFrequencyMHz = patch.rxFrequencyMHz;
+    }
+    if (patch.txFrequencyMHz !== undefined) {
+      channel.txFrequencyMHz = patch.txFrequencyMHz;
+    }
+    if (patch.channelMode !== undefined) {
+      channel.channelMode = patch.channelMode;
+    }
+    if (patch.colorCode !== undefined) {
+      channel.colorCode = patch.colorCode;
+    }
+    if (patch.repeaterSlot !== undefined) {
+      channel.repeaterSlot = patch.repeaterSlot;
+    }
+    if (patch.bandwidthKhz !== undefined) {
+      channel.bandwidthKhz = patch.bandwidthKhz;
+    }
+    if (patch.power !== undefined) {
+      channel.power = patch.power;
+    }
     this.refreshDirty();
   }
 

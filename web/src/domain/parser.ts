@@ -29,6 +29,13 @@ const CHANNELS_DELETED_VALUE = 0xff;
 const CHANNEL_NAME_OFFSET = 32;
 const CHANNEL_NAME_SIZE = 32;
 const CHANNEL_CONTACT_INDEX_OFFSET = 6;
+const CHANNEL_BANDWIDTH_BIT_OFFSET = 4;
+const CHANNEL_MODE_BIT_OFFSET = 6;
+const CHANNEL_COLOR_CODE_BIT_OFFSET = 8;
+const CHANNEL_SLOT_BIT_OFFSET = 12;
+const CHANNEL_POWER_BIT_OFFSET = 34;
+const CHANNEL_RX_FREQ_OFFSET = 16;
+const CHANNEL_TX_FREQ_OFFSET = 20;
 
 const ZONES_OFFSET = 84997;
 const ZONES_MAX = 250;
@@ -121,6 +128,108 @@ function writeLittleInt(bytes: Uint8Array, offset: number, size: number, value: 
   for (let index = 0; index < size; index += 1) {
     bytes[offset + index] = (value >> (index * 8)) & 0xff;
   }
+}
+
+function readBitField(record: Uint8Array, bitOffset: number, bitSize: number): number {
+  const byteOffset = Math.floor(bitOffset / 8);
+  const rightOffset = (bitOffset + bitSize) % 8;
+  let value = record[byteOffset];
+  if (rightOffset !== 0) {
+    value >>= 8 - rightOffset;
+  }
+  return value & ((1 << bitSize) - 1);
+}
+
+function writeBitField(record: Uint8Array, bitOffset: number, bitSize: number, value: number): void {
+  const byteOffset = Math.floor(bitOffset / 8);
+  let mask = (1 << bitSize) - 1;
+  let shiftedValue = value;
+  const rightOffset = (bitOffset + bitSize) % 8;
+  if (rightOffset !== 0) {
+    mask <<= 8 - rightOffset;
+    shiftedValue <<= 8 - rightOffset;
+  }
+  record[byteOffset] = (record[byteOffset] & (~mask & 0xff)) | (shiftedValue & mask);
+}
+
+function bcdToInt(value: number): number {
+  let input = value;
+  let out = 0;
+  let multiplier = 1;
+  for (let index = 0; index < 8; index += 1) {
+    const digit = input & 0xf;
+    if (digit > 9) {
+      return 0;
+    }
+    out += digit * multiplier;
+    multiplier *= 10;
+    input >>= 4;
+  }
+  return out;
+}
+
+function intToBcd(value: number): number {
+  let input = Math.max(0, Math.floor(value));
+  let out = 0;
+  for (let index = 0; index < 8; index += 1) {
+    out |= (input % 10) << (4 * index);
+    input = Math.floor(input / 10);
+  }
+  return out;
+}
+
+function readFrequencyMHz(record: Uint8Array, offset: number): number {
+  const raw = readLittleInt(record, offset, 4);
+  return bcdToInt(raw) / 100000;
+}
+
+function writeFrequencyMHz(record: Uint8Array, offset: number, mhz: number): void {
+  const bcd = intToBcd(Math.round(mhz * 100000));
+  writeLittleInt(record, offset, 4, bcd);
+}
+
+function parseMode(value: number): "Analog" | "Digital" {
+  return value === 2 ? "Digital" : "Analog";
+}
+
+function encodeMode(value: "Analog" | "Digital"): number {
+  return value === "Digital" ? 2 : 1;
+}
+
+function parseBandwidth(value: number): "12.5" | "20" | "25" {
+  if (value === 1) {
+    return "20";
+  }
+  if (value === 2) {
+    return "25";
+  }
+  return "12.5";
+}
+
+function encodeBandwidth(value: "12.5" | "20" | "25"): number {
+  if (value === "20") {
+    return 1;
+  }
+  if (value === "25") {
+    return 2;
+  }
+  return 0;
+}
+
+function parseSlot(value: number): 1 | 2 {
+  return value === 2 ? 2 : 1;
+}
+
+function encodeSlot(value: 1 | 2): number {
+  return value === 2 ? 2 : 1;
+}
+
+function parsePower(value: number): "Low" | "High" {
+  return value === 0 ? "Low" : "High";
+}
+
+function encodePower(value: "Low" | "High"): number {
+  return value === "Low" ? 0 : 1;
 }
 
 function normalizeSlot(slot: number | undefined, max: number, used: Set<number>): number | undefined {
@@ -222,6 +331,17 @@ function writeChannels(
       continue;
     }
 
+    if (channel.slot === undefined) {
+      payload.fill(0, base, base + CHANNELS_RECORD_SIZE);
+    }
+
+    writeFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET, channel.rxFrequencyMHz);
+    writeFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET, channel.txFrequencyMHz);
+    writeBitField(payload, base * 8 + CHANNEL_BANDWIDTH_BIT_OFFSET, 2, encodeBandwidth(channel.bandwidthKhz));
+    writeBitField(payload, base * 8 + CHANNEL_MODE_BIT_OFFSET, 2, encodeMode(channel.channelMode));
+    writeBitField(payload, base * 8 + CHANNEL_COLOR_CODE_BIT_OFFSET, 4, Math.min(15, Math.max(0, channel.colorCode)));
+    writeBitField(payload, base * 8 + CHANNEL_SLOT_BIT_OFFSET, 2, encodeSlot(channel.repeaterSlot));
+    writeBitField(payload, base * 8 + CHANNEL_POWER_BIT_OFFSET, 1, encodePower(channel.power));
     writeUcs2String(payload, base + CHANNEL_NAME_OFFSET, CHANNEL_NAME_SIZE, channel.name);
     const contactSlot = channel.contactId ? contactSlotById.get(channel.contactId) ?? 0 : 0;
     writeLittleInt(payload, base + CHANNEL_CONTACT_INDEX_OFFSET, 2, contactSlot);
@@ -338,6 +458,13 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       id: logicalId,
       name,
       contactId,
+      rxFrequencyMHz: readFrequencyMHz(payload, base + CHANNEL_RX_FREQ_OFFSET),
+      txFrequencyMHz: readFrequencyMHz(payload, base + CHANNEL_TX_FREQ_OFFSET),
+      channelMode: parseMode(readBitField(payload, base * 8 + CHANNEL_MODE_BIT_OFFSET, 2)),
+      colorCode: readBitField(payload, base * 8 + CHANNEL_COLOR_CODE_BIT_OFFSET, 4),
+      repeaterSlot: parseSlot(readBitField(payload, base * 8 + CHANNEL_SLOT_BIT_OFFSET, 2)),
+      bandwidthKhz: parseBandwidth(readBitField(payload, base * 8 + CHANNEL_BANDWIDTH_BIT_OFFSET, 2)),
+      power: parsePower(readBitField(payload, base * 8 + CHANNEL_POWER_BIT_OFFSET, 1)),
       slot: index + 1,
     });
   }

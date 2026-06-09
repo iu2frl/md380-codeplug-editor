@@ -4,6 +4,13 @@ export interface Channel {
   id: number;
   name: string;
   contactId?: number;
+  rxFrequencyMHz: number;
+  txFrequencyMHz: number;
+  channelMode: "Analog" | "Digital";
+  colorCode: number;
+  repeaterSlot: 1 | 2;
+  bandwidthKhz: "12.5" | "20" | "25";
+  power: "Low" | "High";
   slot?: number;
 }
 

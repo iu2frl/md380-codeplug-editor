@@ -197,8 +197,28 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
       ${document.channels
         .map(
           (channel) => `
-            <div class="row">
+            <div class="row channel-row">
               <input data-channel-name="${channel.id}" value="${escapeHtml(channel.name)}" maxlength="16" />
+              <input data-channel-rx="${channel.id}" type="number" step="0.00001" min="100" max="1000" value="${channel.rxFrequencyMHz.toFixed(5)}" />
+              <input data-channel-tx="${channel.id}" type="number" step="0.00001" min="100" max="1000" value="${channel.txFrequencyMHz.toFixed(5)}" />
+              <select data-channel-mode="${channel.id}">
+                <option value="Analog" ${channel.channelMode === "Analog" ? "selected" : ""}>Analog</option>
+                <option value="Digital" ${channel.channelMode === "Digital" ? "selected" : ""}>Digital</option>
+              </select>
+              <input data-channel-color-code="${channel.id}" type="number" min="0" max="15" step="1" value="${channel.colorCode}" />
+              <select data-channel-slot="${channel.id}">
+                <option value="1" ${channel.repeaterSlot === 1 ? "selected" : ""}>TS1</option>
+                <option value="2" ${channel.repeaterSlot === 2 ? "selected" : ""}>TS2</option>
+              </select>
+              <select data-channel-bandwidth="${channel.id}">
+                <option value="12.5" ${channel.bandwidthKhz === "12.5" ? "selected" : ""}>12.5</option>
+                <option value="20" ${channel.bandwidthKhz === "20" ? "selected" : ""}>20</option>
+                <option value="25" ${channel.bandwidthKhz === "25" ? "selected" : ""}>25</option>
+              </select>
+              <select data-channel-power="${channel.id}">
+                <option value="Low" ${channel.power === "Low" ? "selected" : ""}>Low</option>
+                <option value="High" ${channel.power === "High" ? "selected" : ""}>High</option>
+              </select>
               <select data-channel-contact-id="${channel.id}">
                 <option value="">No Contact</option>
                 ${document.contacts
@@ -223,18 +243,91 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
   for (const nameInput of channels.querySelectorAll<HTMLInputElement>("[data-channel-name]")) {
     nameInput.addEventListener("change", () => {
       const id = Number.parseInt(nameInput.dataset.channelName ?? "", 10);
-      const contactInput = channels.querySelector<HTMLSelectElement>(`[data-channel-contact-id=\"${id}\"]`);
-      const contactId = Number.parseInt(contactInput?.value ?? "", 10);
-      store.updateChannel(id, nameInput.value, Number.isNaN(contactId) ? undefined : contactId);
+      if (Number.isNaN(id)) {
+        return;
+      }
+      store.updateChannel(id, { name: nameInput.value });
     });
   }
 
   for (const contactInput of channels.querySelectorAll<HTMLSelectElement>("[data-channel-contact-id]")) {
     contactInput.addEventListener("change", () => {
       const id = Number.parseInt(contactInput.dataset.channelContactId ?? "", 10);
-      const nameInput = channels.querySelector<HTMLInputElement>(`[data-channel-name=\"${id}\"]`);
+      if (Number.isNaN(id)) {
+        return;
+      }
       const contactId = Number.parseInt(contactInput.value, 10);
-      store.updateChannel(id, nameInput?.value ?? `Channel ${id}`, Number.isNaN(contactId) ? undefined : contactId);
+      store.updateChannel(id, { contactId: Number.isNaN(contactId) ? undefined : contactId });
+    });
+  }
+
+  for (const rxInput of channels.querySelectorAll<HTMLInputElement>("[data-channel-rx]")) {
+    rxInput.addEventListener("change", () => {
+      const id = Number.parseInt(rxInput.dataset.channelRx ?? "", 10);
+      const value = Number.parseFloat(rxInput.value);
+      if (!Number.isNaN(id) && !Number.isNaN(value)) {
+        store.updateChannel(id, { rxFrequencyMHz: value });
+      }
+    });
+  }
+
+  for (const txInput of channels.querySelectorAll<HTMLInputElement>("[data-channel-tx]")) {
+    txInput.addEventListener("change", () => {
+      const id = Number.parseInt(txInput.dataset.channelTx ?? "", 10);
+      const value = Number.parseFloat(txInput.value);
+      if (!Number.isNaN(id) && !Number.isNaN(value)) {
+        store.updateChannel(id, { txFrequencyMHz: value });
+      }
+    });
+  }
+
+  for (const modeInput of channels.querySelectorAll<HTMLSelectElement>("[data-channel-mode]")) {
+    modeInput.addEventListener("change", () => {
+      const id = Number.parseInt(modeInput.dataset.channelMode ?? "", 10);
+      if (!Number.isNaN(id)) {
+        store.updateChannel(id, { channelMode: modeInput.value === "Digital" ? "Digital" : "Analog" });
+      }
+    });
+  }
+
+  for (const colorCodeInput of channels.querySelectorAll<HTMLInputElement>("[data-channel-color-code]")) {
+    colorCodeInput.addEventListener("change", () => {
+      const id = Number.parseInt(colorCodeInput.dataset.channelColorCode ?? "", 10);
+      const value = Number.parseInt(colorCodeInput.value, 10);
+      if (!Number.isNaN(id) && !Number.isNaN(value)) {
+        store.updateChannel(id, { colorCode: value });
+      }
+    });
+  }
+
+  for (const slotInput of channels.querySelectorAll<HTMLSelectElement>("[data-channel-slot]")) {
+    slotInput.addEventListener("change", () => {
+      const id = Number.parseInt(slotInput.dataset.channelSlot ?? "", 10);
+      const value = Number.parseInt(slotInput.value, 10);
+      if (!Number.isNaN(id)) {
+        store.updateChannel(id, { repeaterSlot: value === 2 ? 2 : 1 });
+      }
+    });
+  }
+
+  for (const bandwidthInput of channels.querySelectorAll<HTMLSelectElement>("[data-channel-bandwidth]")) {
+    bandwidthInput.addEventListener("change", () => {
+      const id = Number.parseInt(bandwidthInput.dataset.channelBandwidth ?? "", 10);
+      if (!Number.isNaN(id)) {
+        const value = bandwidthInput.value;
+        store.updateChannel(id, {
+          bandwidthKhz: value === "20" || value === "25" ? value : "12.5",
+        });
+      }
+    });
+  }
+
+  for (const powerInput of channels.querySelectorAll<HTMLSelectElement>("[data-channel-power]")) {
+    powerInput.addEventListener("change", () => {
+      const id = Number.parseInt(powerInput.dataset.channelPower ?? "", 10);
+      if (!Number.isNaN(id)) {
+        store.updateChannel(id, { power: powerInput.value === "Low" ? "Low" : "High" });
+      }
     });
   }
 
