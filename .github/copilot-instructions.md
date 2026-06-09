@@ -3,11 +3,14 @@
 ## Product Intent
 Build a static GitHub Pages web application for MD380/MD390/RT3/RT8 codeplug editing.
 
-Primary source documents:
-- ../specs.md
-- ../roadmap.md
-
 When there is a conflict, follow roadmap.md sequencing and architecture.
+
+## Requirements
+
+- Roadmap with milestones and achievements: [roadmap.md](../roadmap.md)
+- Full specifications: [specs.md](../specs.md)
+- UI requirements: [ui.md](../ui.md)
+- Parser tests: [tests.md](../tests.md)
 
 ## Phase Priority
 Implement work in this order:
