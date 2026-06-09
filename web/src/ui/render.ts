@@ -1,5 +1,6 @@
 import type { AppState, EditorStore } from "../state/store";
 import { radioButtonActionOptions } from "../domain/parser";
+import { detectBrowserRadioCapabilities } from "../transport/browserRadio";
 
 interface ChannelPanelState {
   query: string;
@@ -8,7 +9,19 @@ interface ChannelPanelState {
   bulkPower: "" | "Low" | "High";
 }
 
-type ActiveTab = "basic" | "general" | "digital-contacts" | "zones" | "group-lists" | "scan-lists" | "channels";
+type ActiveTab =
+  | "basic"
+  | "general"
+  | "menus"
+  | "buttons"
+  | "digital-text"
+  | "encryption"
+  | "digital-contacts"
+  | "zones"
+  | "group-lists"
+  | "scan-lists"
+  | "channels"
+  | "radio-transfer";
 
 interface UiState {
   activeTab: ActiveTab;
@@ -225,6 +238,7 @@ function renderLoadedLayout(state: AppState, uiState: UiState): string {
           ${renderTabButton("group-lists", "Group Lists", uiState.activeTab, false)}
           ${renderTabButton("scan-lists", "Scan Lists", uiState.activeTab, false)}
           ${renderTabButton("channels", "Channels", uiState.activeTab, false)}
+          ${renderTabButton("radio-transfer", "Radio Transfer", uiState.activeTab, false)}
         </div>
         <article id="active-tab-panel" class="tab-panel"></article>
       </section>
@@ -509,6 +523,51 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             `,
           )
           .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "radio-transfer") {
+    const capabilities = detectBrowserRadioCapabilities();
+    return `
+      <h2>Radio Transfer (Phase 3 Preview)</h2>
+      <p class="muted-text">Browser-native radio read/write preparation using WebUSB.</p>
+
+      <div class="radio-transfer-grid">
+        <section class="radio-transfer-card">
+          <h3>Environment Compatibility</h3>
+          <ul class="radio-transfer-list">
+            <li>Secure Context: <strong>${capabilities.isSecureContext ? "Yes" : "No"}</strong></li>
+            <li>WebUSB API: <strong>${capabilities.hasNavigatorUsb && capabilities.hasRequestDevice ? "Available" : "Unavailable"}</strong></li>
+            <li>Browser: <strong>${escapeHtml(capabilities.userAgent)}</strong></li>
+          </ul>
+          ${
+            capabilities.blockers.length > 0
+              ? `<div class="radio-transfer-blocker">${capabilities.blockers.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
+              : `<p class="ok">This browser environment appears compatible with the upcoming WebUSB flow.</p>`
+          }
+          ${
+            capabilities.warnings.length > 0
+              ? `<div class="radio-transfer-warning">${capabilities.warnings.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
+              : ""
+          }
+        </section>
+
+        <section class="radio-transfer-card">
+          <h3>Planned Browser Workflow</h3>
+          <ol class="radio-transfer-list">
+            <li>Connect radio over USB and grant browser permission.</li>
+            <li>Read codeplug directly into the editor.</li>
+            <li>Edit and validate in-browser.</li>
+            <li>Write codeplug back with explicit confirmation and backup options.</li>
+          </ol>
+          <div class="actions">
+            <button id="radio-transfer-connect" class="button ghost" ${capabilities.supported ? "" : "disabled"}>Connect Device</button>
+            <button id="radio-transfer-read" class="button ghost" disabled>Read From Radio (Coming Soon)</button>
+            <button id="radio-transfer-write" class="button ghost" disabled>Write To Radio (Coming Soon)</button>
+          </div>
+          <p class="muted-text">Until this is finalized, continue using local helper flow for reliable read/write.</p>
+        </section>
       </div>
     `;
   }
@@ -1055,7 +1114,8 @@ function bindTabs(
         key === "zones" ||
         key === "group-lists" ||
         key === "scan-lists" ||
-        key === "channels"
+        key === "channels" ||
+        key === "radio-transfer"
       ) {
         uiState.activeTab = key;
         renderState(target, store, state, channelState, uiState);
@@ -1356,6 +1416,33 @@ function bindActiveTab(
         }
       });
     }
+    return;
+  }
+
+  if (uiState.activeTab === "radio-transfer") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", () => {
+      const capabilities = detectBrowserRadioCapabilities();
+      if (!capabilities.supported) {
+        window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+        return;
+      }
+
+      window.alert("Phase 3 connection flow scaffold is ready. Device connect implementation is the next milestone.");
+    });
+
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", () => {
+      window.alert("Read from radio is not implemented yet in browser transport.");
+    });
+
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-write")?.addEventListener("click", () => {
+      window.alert("Write to radio is not implemented yet in browser transport.");
+    });
+
     return;
   }
 

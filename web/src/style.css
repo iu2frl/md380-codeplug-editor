@@ -519,6 +519,56 @@ select {
   font-size: 0.9rem;
 }
 
+.radio-transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.radio-transfer-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 252, 244, 0.55);
+  padding: 0.75rem;
+}
+
+.radio-transfer-card h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+}
+
+.radio-transfer-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.radio-transfer-blocker,
+.radio-transfer-warning {
+  margin-top: 0.6rem;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+}
+
+.radio-transfer-blocker {
+  border: 1px solid rgba(143, 19, 19, 0.35);
+  background: rgba(255, 233, 233, 0.85);
+  color: #7a1a0f;
+}
+
+.radio-transfer-warning {
+  border: 1px solid rgba(182, 136, 16, 0.35);
+  background: rgba(255, 245, 222, 0.85);
+  color: #664a0b;
+}
+
+.radio-transfer-blocker p,
+.radio-transfer-warning p {
+  margin: 0;
+}
+
 .zone-selected-actions {
   display: flex;
   gap: 0.25rem;
@@ -526,6 +576,10 @@ select {
 
 @media (max-width: 720px) {
   .two-pane-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .radio-transfer-grid {
     grid-template-columns: 1fr;
   }
 

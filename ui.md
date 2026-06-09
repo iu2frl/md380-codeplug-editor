@@ -6,7 +6,8 @@ Define product and interface requirements for the Phase 1 web UI so implementati
 ## Scope
 - In scope: browser UI for codeplug import, editing, validation feedback, and export.
 - In scope: desktop and mobile web layouts for the same workflow.
-- Out of scope: browser-native radio transport (Phase 3), callsign DB workflows (Phase 2).
+- In scope: Phase 3 preparation UI (capability detection and compatibility messaging only).
+- Out of scope: browser-native radio transfer execution and callsign DB workflows.
 
 ## Target Users
 - Radio hobbyists and operators with low to moderate technical experience.

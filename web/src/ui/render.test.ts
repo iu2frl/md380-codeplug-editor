@@ -358,5 +358,13 @@ describe("newly enabled tabs", () => {
     expect(container.querySelector("[data-enhanced-key]")).not.toBeNull();
     expect(container.querySelector("[data-basic-key]")).not.toBeNull();
   });
+
+  it("renders phase 3 radio transfer preview", () => {
+    click(container, '[data-tab="radio-transfer"]');
+    expect(container.querySelector("#radio-transfer-connect")).not.toBeNull();
+    expect(container.querySelector("#radio-transfer-read")).not.toBeNull();
+    expect(container.querySelector("#radio-transfer-write")).not.toBeNull();
+    expect(container.textContent).toContain("Phase 3 Preview");
+  });
 });
 
