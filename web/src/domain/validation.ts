@@ -82,5 +82,29 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
     });
   }
 
+  if (doc.settings.voxSensitivity < 1 || doc.settings.voxSensitivity > 10) {
+    issues.push({
+      level: "error",
+      code: "SETTINGS_VOX_RANGE",
+      message: "VOX sensitivity must be between 1 and 10.",
+    });
+  }
+
+  if (doc.settings.txPreambleDurationMs < 0 || doc.settings.txPreambleDurationMs > 8640) {
+    issues.push({
+      level: "error",
+      code: "SETTINGS_TX_PREAMBLE_RANGE",
+      message: "TX preamble duration must be between 0 and 8640 ms.",
+    });
+  }
+
+  if (doc.settings.rxLowBatteryIntervalSec < 0 || doc.settings.rxLowBatteryIntervalSec > 635) {
+    issues.push({
+      level: "error",
+      code: "SETTINGS_RX_LOW_BATTERY_RANGE",
+      message: "RX low battery interval must be between 0 and 635 seconds.",
+    });
+  }
+
   return issues;
 }

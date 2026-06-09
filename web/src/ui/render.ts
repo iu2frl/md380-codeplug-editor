@@ -16,6 +16,34 @@ interface UiState {
   selectedChannelId: number | null;
 }
 
+const TIME_ZONE_OPTIONS = [
+  "UTC-12:00",
+  "UTC-11:00",
+  "UTC-10:00",
+  "UTC-9:00",
+  "UTC-8:00",
+  "UTC-7:00",
+  "UTC-6:00",
+  "UTC-5:00",
+  "UTC-4:00",
+  "UTC-3:00",
+  "UTC-2:00",
+  "UTC-1:00",
+  "UTC+0:00",
+  "UTC+1:00",
+  "UTC+2:00",
+  "UTC+3:00",
+  "UTC+4:00",
+  "UTC+5:00",
+  "UTC+6:00",
+  "UTC+7:00",
+  "UTC+8:00",
+  "UTC+9:00",
+  "UTC+10:00",
+  "UTC+11:00",
+  "UTC+12:00",
+];
+
 function downloadBytes(fileName: string, bytes: Uint8Array): void {
   const blob = new Blob([bytes], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
@@ -222,21 +250,18 @@ function renderTabButton(id: string, label: string, activeTab: ActiveTab, disabl
 
 function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab: ActiveTab, channelState: ChannelPanelState, uiState: UiState): string {
   if (activeTab === "basic") {
-    const firmware = "Not available in Phase 1";
-    const cps = "Not available in Phase 1";
-    const mcu = "Not available in Phase 1";
-    const deviceId = "Not available in Phase 1";
-    const frequencyRange = "Not available in Phase 1";
+    const basic = document.basicInfo;
     return `
       <h2>Basic</h2>
       <dl>
         <div><dt>Model</dt><dd>${escapeHtml(document.model || "Unknown")}</dd></div>
         <div><dt>Maker</dt><dd>${escapeHtml(inferMaker(document.model))}</dd></div>
-        <div><dt>Firmware Version</dt><dd>${firmware}</dd></div>
-        <div><dt>CPS Version</dt><dd>${cps}</dd></div>
-        <div><dt>MCU Version</dt><dd>${mcu}</dd></div>
-        <div><dt>Unique Device ID</dt><dd>${deviceId}</dd></div>
-        <div><dt>Frequency Range</dt><dd>${frequencyRange}</dd></div>
+        <div><dt>Firmware Version</dt><dd>${escapeHtml(basic.firmwareVersion || "Not stored in codeplug")}</dd></div>
+        <div><dt>CPS Version</dt><dd>${escapeHtml(basic.cpsVersion || "Unknown")}</dd></div>
+        <div><dt>MCU Version</dt><dd>${escapeHtml(basic.mcuVersion || "Not stored in codeplug")}</dd></div>
+        <div><dt>Unique Device ID</dt><dd>${escapeHtml(basic.uniqueDeviceId || "Not stored in codeplug")}</dd></div>
+        <div><dt>Frequency Range</dt><dd>${escapeHtml(basic.frequencyRange || "Unknown")}</dd></div>
+        <div><dt>Last Programmed</dt><dd>${escapeHtml(basic.lastProgrammedTime || "Unknown")}</dd></div>
         <div><dt>Variant</dt><dd>${document.variant}</dd></div>
       </dl>
     `;
@@ -254,15 +279,42 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
         <input id="radio-id" type="number" value="${document.settings.radioId}" min="1" step="1" />
       </label>
       <div class="disabled-grid">
-        <label>VOX Sensitivity<input disabled value="Not supported yet" /></label>
-        <label>TX Preamble Duration<input disabled value="Not supported yet" /></label>
-        <label>RX Low Battery Alarm Interval<input disabled value="Not supported yet" /></label>
-        <label>Backlight Timeout<input disabled value="Not supported yet" /></label>
-        <label>Keypad Auto Lock<input disabled value="Not supported yet" /></label>
-        <label>Boot Up Message Line 1<input disabled value="Not supported yet" /></label>
-        <label>Boot Up Message Line 2<input disabled value="Not supported yet" /></label>
-        <label>Alert Tones<input disabled value="Not supported yet" /></label>
-        <label>Time Zone<input disabled value="Not supported yet" /></label>
+        <label>VOX Sensitivity<input id="vox-sensitivity" type="number" min="1" max="10" step="1" value="${document.settings.voxSensitivity}" /></label>
+        <label>TX Preamble Duration (ms)<input id="tx-preamble-duration" type="number" min="0" max="8640" step="60" value="${document.settings.txPreambleDurationMs}" /></label>
+        <label>RX Low Battery Alarm Interval (s)<input id="rx-low-battery-interval" type="number" min="0" max="635" step="5" value="${document.settings.rxLowBatteryIntervalSec}" /></label>
+        <label>
+          Backlight Timeout
+          <select id="backlight-timeout">
+            <option value="Always" ${document.settings.backlightTimeoutSec === "Always" ? "selected" : ""}>Always</option>
+            <option value="5" ${document.settings.backlightTimeoutSec === "5" ? "selected" : ""}>5</option>
+            <option value="10" ${document.settings.backlightTimeoutSec === "10" ? "selected" : ""}>10</option>
+            <option value="15" ${document.settings.backlightTimeoutSec === "15" ? "selected" : ""}>15</option>
+          </select>
+        </label>
+        <label>
+          Keypad Auto Lock
+          <select id="keypad-auto-lock">
+            <option value="Manual" ${document.settings.keypadAutoLockSec === "Manual" ? "selected" : ""}>Manual</option>
+            <option value="5" ${document.settings.keypadAutoLockSec === "5" ? "selected" : ""}>5</option>
+            <option value="10" ${document.settings.keypadAutoLockSec === "10" ? "selected" : ""}>10</option>
+            <option value="15" ${document.settings.keypadAutoLockSec === "15" ? "selected" : ""}>15</option>
+          </select>
+        </label>
+        <label>Boot Up Message Line 1<input id="boot-line-1" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine1)}" /></label>
+        <label>Boot Up Message Line 2<input id="boot-line-2" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine2)}" /></label>
+        <label>
+          Alert Tones
+          <select id="alert-tones">
+            <option value="On" ${document.settings.alertTones === "On" ? "selected" : ""}>On</option>
+            <option value="Off" ${document.settings.alertTones === "Off" ? "selected" : ""}>Off</option>
+          </select>
+        </label>
+        <label>
+          Time Zone
+          <select id="time-zone">
+            ${TIME_ZONE_OPTIONS.map((zone) => `<option value="${zone}" ${document.settings.timeZone === zone ? "selected" : ""}>${zone}</option>`).join("")}
+          </select>
+        </label>
       </div>
     `;
   }
@@ -601,17 +653,76 @@ function bindActiveTab(
     const panel = target.querySelector<HTMLElement>("#active-tab-panel");
     const radioNameInput = panel?.querySelector<HTMLInputElement>("#radio-name");
     const radioIdInput = panel?.querySelector<HTMLInputElement>("#radio-id");
+    const voxSensitivityInput = panel?.querySelector<HTMLInputElement>("#vox-sensitivity");
+    const txPreambleDurationInput = panel?.querySelector<HTMLInputElement>("#tx-preamble-duration");
+    const rxLowBatteryIntervalInput = panel?.querySelector<HTMLInputElement>("#rx-low-battery-interval");
+    const backlightTimeoutSelect = panel?.querySelector<HTMLSelectElement>("#backlight-timeout");
+    const keypadAutoLockSelect = panel?.querySelector<HTMLSelectElement>("#keypad-auto-lock");
+    const bootLine1Input = panel?.querySelector<HTMLInputElement>("#boot-line-1");
+    const bootLine2Input = panel?.querySelector<HTMLInputElement>("#boot-line-2");
+    const alertTonesSelect = panel?.querySelector<HTMLSelectElement>("#alert-tones");
+    const timeZoneSelect = panel?.querySelector<HTMLSelectElement>("#time-zone");
+
     const commit = (): void => {
-      if (!radioNameInput || !radioIdInput) {
+      if (
+        !radioNameInput ||
+        !radioIdInput ||
+        !voxSensitivityInput ||
+        !txPreambleDurationInput ||
+        !rxLowBatteryIntervalInput ||
+        !backlightTimeoutSelect ||
+        !keypadAutoLockSelect ||
+        !bootLine1Input ||
+        !bootLine2Input ||
+        !alertTonesSelect ||
+        !timeZoneSelect
+      ) {
         return;
       }
       const parsedId = Number.parseInt(radioIdInput.value, 10);
-      if (!Number.isNaN(parsedId)) {
-        store.updateSettings(radioNameInput.value, parsedId);
+      const parsedVox = Number.parseInt(voxSensitivityInput.value, 10);
+      const parsedPreamble = Number.parseInt(txPreambleDurationInput.value, 10);
+      const parsedLowBattery = Number.parseInt(rxLowBatteryIntervalInput.value, 10);
+      if (Number.isNaN(parsedId) || Number.isNaN(parsedVox) || Number.isNaN(parsedPreamble) || Number.isNaN(parsedLowBattery)) {
+        return;
       }
+
+      store.updateSettings({
+        radioName: radioNameInput.value,
+        radioId: parsedId,
+        voxSensitivity: parsedVox,
+        txPreambleDurationMs: parsedPreamble,
+        rxLowBatteryIntervalSec: parsedLowBattery,
+        backlightTimeoutSec:
+          backlightTimeoutSelect.value === "5" ||
+          backlightTimeoutSelect.value === "10" ||
+          backlightTimeoutSelect.value === "15"
+            ? backlightTimeoutSelect.value
+            : "Always",
+        keypadAutoLockSec:
+          keypadAutoLockSelect.value === "5" ||
+          keypadAutoLockSelect.value === "10" ||
+          keypadAutoLockSelect.value === "15"
+            ? keypadAutoLockSelect.value
+            : "Manual",
+        bootUpMessageLine1: bootLine1Input.value,
+        bootUpMessageLine2: bootLine2Input.value,
+        alertTones: alertTonesSelect.value === "Off" ? "Off" : "On",
+        timeZone: timeZoneSelect.value,
+      });
     };
+
     radioNameInput?.addEventListener("change", commit);
     radioIdInput?.addEventListener("change", commit);
+    voxSensitivityInput?.addEventListener("change", commit);
+    txPreambleDurationInput?.addEventListener("change", commit);
+    rxLowBatteryIntervalInput?.addEventListener("change", commit);
+    backlightTimeoutSelect?.addEventListener("change", commit);
+    keypadAutoLockSelect?.addEventListener("change", commit);
+    bootLine1Input?.addEventListener("change", commit);
+    bootLine2Input?.addEventListener("change", commit);
+    alertTonesSelect?.addEventListener("change", commit);
+    timeZoneSelect?.addEventListener("change", commit);
     return;
   }
 

@@ -43,6 +43,24 @@ export interface ScanList {
 export interface RadioSettings {
   radioId: number;
   radioName: string;
+  voxSensitivity: number;
+  txPreambleDurationMs: number;
+  rxLowBatteryIntervalSec: number;
+  backlightTimeoutSec: "Always" | "5" | "10" | "15";
+  keypadAutoLockSec: "Manual" | "5" | "10" | "15";
+  bootUpMessageLine1: string;
+  bootUpMessageLine2: string;
+  alertTones: "On" | "Off";
+  timeZone: string;
+}
+
+export interface BasicRadioInfo {
+  firmwareVersion: string;
+  cpsVersion: string;
+  mcuVersion: string;
+  uniqueDeviceId: string;
+  frequencyRange: string;
+  lastProgrammedTime: string;
 }
 
 export interface CodeplugDocument {
@@ -54,6 +72,7 @@ export interface CodeplugDocument {
   payloadOffset: number;
   payloadLength: number;
   model: string;
+  basicInfo: BasicRadioInfo;
   channels: Channel[];
   zones: Zone[];
   contacts: Contact[];

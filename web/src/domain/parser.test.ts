@@ -9,6 +9,15 @@ const RDT_SIZE = 262709;
 const GENERAL_SETTINGS_OFFSET = 8256;
 const RADIO_ID_OFFSET = 68;
 const RADIO_NAME_OFFSET = 112;
+const INTRO_LINE1_OFFSET = 0;
+const INTRO_LINE2_OFFSET = 20;
+const DISABLE_ALL_TONES_BIT_OFFSET = 525;
+const TX_PREAMBLE_DURATION_BIT_OFFSET = 576;
+const VOX_SENSITIVITY_BIT_OFFSET = 600;
+const RX_LOW_BATTERY_INTERVAL_BIT_OFFSET = 624;
+const BACKLIGHT_TIMEOUT_BIT_OFFSET = 686;
+const KEYPAD_AUTO_LOCK_BIT_OFFSET = 688;
+const TIME_ZONE_BIT_OFFSET = 856;
 
 const CONTACTS_OFFSET = 24448;
 const CONTACT_RECORD_SIZE = 36;
@@ -33,6 +42,9 @@ const ZONE_NAME_OFFSET = 0;
 const ZONE_CHANNELS_OFFSET = 32;
 
 const MODEL_NAME_OFFSET = 293;
+const FREQUENCY_RANGE_BIT_OFFSET = 2480;
+const LAST_PROGRAMMED_TIME_OFFSET = 8742;
+const CPS_VERSION_OFFSET = 8749;
 
 function writeLittleInt(bytes: Uint8Array, offset: number, size: number, value: number): void {
   for (let index = 0; index < size; index += 1) {
@@ -48,6 +60,21 @@ function writeUcs2(bytes: Uint8Array, offset: number, length: number, value: str
     const code = safe.charCodeAt(index);
     bytes[offset + index * 2] = code & 0xff;
     bytes[offset + index * 2 + 1] = (code >> 8) & 0xff;
+  }
+}
+
+function writeDecimalNibbles(bytes: Uint8Array, offset: number, value: string): void {
+  for (let index = 0; index < value.length; index += 1) {
+    const digit = Number.parseInt(value[index], 10);
+    bytes[offset + index] = Number.isNaN(digit) ? 0 : digit;
+  }
+}
+
+function writeBcdTimestamp(bytes: Uint8Array, offset: number, digits14: string): void {
+  for (let index = 0; index < digits14.length / 2; index += 1) {
+    const high = Number.parseInt(digits14[index * 2], 10) & 0x0f;
+    const low = Number.parseInt(digits14[index * 2 + 1], 10) & 0x0f;
+    bytes[offset + index] = (high << 4) | low;
   }
 }
 
@@ -86,6 +113,19 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
 
   writeLittleInt(payload, GENERAL_SETTINGS_OFFSET + RADIO_ID_OFFSET, 3, 1234567);
   writeUcs2(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, 32, "TEST-RADIO");
+  writeUcs2(payload, GENERAL_SETTINGS_OFFSET + INTRO_LINE1_OFFSET, 20, "HELLO");
+  writeUcs2(payload, GENERAL_SETTINGS_OFFSET + INTRO_LINE2_OFFSET, 20, "WORLD");
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + DISABLE_ALL_TONES_BIT_OFFSET, 1, 1);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + TX_PREAMBLE_DURATION_BIT_OFFSET, 8, 10);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + VOX_SENSITIVITY_BIT_OFFSET, 8, 7);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + RX_LOW_BATTERY_INTERVAL_BIT_OFFSET, 8, 6);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + BACKLIGHT_TIMEOUT_BIT_OFFSET, 2, 2);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + KEYPAD_AUTO_LOCK_BIT_OFFSET, 8, 10);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + TIME_ZONE_BIT_OFFSET, 5, 20);
+
+  writeBitField(payload, FREQUENCY_RANGE_BIT_OFFSET, 8, 2);
+  writeBcdTimestamp(payload, LAST_PROGRAMMED_TIME_OFFSET, "20240609123045");
+  writeDecimalNibbles(payload, CPS_VERSION_OFFSET, "1012");
 
   const contactBase = CONTACTS_OFFSET;
   writeLittleInt(payload, contactBase + CONTACT_CALL_ID_OFFSET, 3, 9);
@@ -128,6 +168,19 @@ describe("parseCodeplug", () => {
     expect(doc.model).toBe("MD380");
     expect(doc.settings.radioName).toBe("TEST-RADIO");
     expect(doc.settings.radioId).toBe(1234567);
+    expect(doc.basicInfo.cpsVersion).toBe("1012");
+    expect(doc.basicInfo.frequencyRange).toBe("400-480");
+    expect(doc.basicInfo.lastProgrammedTime).toBe("2024-06-09 12:30:45");
+
+    expect(doc.settings.voxSensitivity).toBe(7);
+    expect(doc.settings.txPreambleDurationMs).toBe(600);
+    expect(doc.settings.rxLowBatteryIntervalSec).toBe(30);
+    expect(doc.settings.backlightTimeoutSec).toBe("10");
+    expect(doc.settings.keypadAutoLockSec).toBe("10");
+    expect(doc.settings.bootUpMessageLine1).toBe("HELLO");
+    expect(doc.settings.bootUpMessageLine2).toBe("WORLD");
+    expect(doc.settings.alertTones).toBe("On");
+    expect(doc.settings.timeZone).toBe("UTC+8:00");
 
     expect(doc.contacts).toHaveLength(1);
     expect(doc.contacts[0].name).toBe("TG9 Local");
@@ -210,6 +263,16 @@ describe("serializeCodeplug", () => {
 
     doc.settings.radioName = "NEW-NAME";
     doc.settings.radioId = 7654321;
+    doc.settings.voxSensitivity = 9;
+    doc.settings.txPreambleDurationMs = 1200;
+    doc.settings.rxLowBatteryIntervalSec = 40;
+    doc.settings.backlightTimeoutSec = "15";
+    doc.settings.keypadAutoLockSec = "Manual";
+    doc.settings.bootUpMessageLine1 = "LINE-ONE";
+    doc.settings.bootUpMessageLine2 = "LINE-TWO";
+    doc.settings.alertTones = "Off";
+    doc.settings.timeZone = "UTC+3:00";
+    doc.basicInfo.cpsVersion = "2025";
     doc.channels[0].rxFrequencyMHz = 439.01234;
     doc.channels[0].txFrequencyMHz = 431.01234;
     doc.channels[0].channelMode = "Analog";
@@ -223,6 +286,16 @@ describe("serializeCodeplug", () => {
 
     expect(reparsed.settings.radioName).toBe("NEW-NAME");
     expect(reparsed.settings.radioId).toBe(7654321);
+    expect(reparsed.settings.voxSensitivity).toBe(9);
+    expect(reparsed.settings.txPreambleDurationMs).toBe(1200);
+    expect(reparsed.settings.rxLowBatteryIntervalSec).toBe(40);
+    expect(reparsed.settings.backlightTimeoutSec).toBe("15");
+    expect(reparsed.settings.keypadAutoLockSec).toBe("Manual");
+    expect(reparsed.settings.bootUpMessageLine1).toBe("LINE-ONE");
+    expect(reparsed.settings.bootUpMessageLine2).toBe("LINE-TWO");
+    expect(reparsed.settings.alertTones).toBe("Off");
+    expect(reparsed.settings.timeZone).toBe("UTC+3:00");
+    expect(reparsed.basicInfo.cpsVersion).toBe("2025");
     expect(reparsed.channels[0].rxFrequencyMHz).toBeCloseTo(439.01234, 5);
     expect(reparsed.channels[0].txFrequencyMHz).toBeCloseTo(431.01234, 5);
     expect(reparsed.channels[0].channelMode).toBe("Analog");

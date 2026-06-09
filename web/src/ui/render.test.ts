@@ -28,7 +28,27 @@ function makeDocument(): CodeplugDocument {
     payloadOffset: 549,
     payloadLength: 262144,
     model: "MD380",
-    settings: { radioId: 1234567, radioName: "TESTUSER" },
+    basicInfo: {
+      firmwareVersion: "Not stored in codeplug",
+      cpsVersion: "1012",
+      mcuVersion: "Not stored in codeplug",
+      uniqueDeviceId: "Not stored in codeplug",
+      frequencyRange: "400-480",
+      lastProgrammedTime: "2024-06-09 12:30:45",
+    },
+    settings: {
+      radioId: 1234567,
+      radioName: "TESTUSER",
+      voxSensitivity: 5,
+      txPreambleDurationMs: 600,
+      rxLowBatteryIntervalSec: 30,
+      backlightTimeoutSec: "Always",
+      keypadAutoLockSec: "Manual",
+      bootUpMessageLine1: "HELLO",
+      bootUpMessageLine2: "WORLD",
+      alertTones: "On",
+      timeZone: "UTC+8:00",
+    },
     channels: [
       {
         id: 1,

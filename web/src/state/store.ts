@@ -106,14 +106,16 @@ export class EditorStore {
     this.refreshDirty();
   }
 
-  updateSettings(radioName: string, radioId: number): void {
+  updateSettings(patch: Partial<CodeplugDocument["settings"]>): void {
     if (!this.state.document) {
       return;
     }
 
     this.beginMutation();
-    this.state.document.settings.radioName = radioName;
-    this.state.document.settings.radioId = radioId;
+    this.state.document.settings = {
+      ...this.state.document.settings,
+      ...patch,
+    };
     this.refreshDirty();
   }
 

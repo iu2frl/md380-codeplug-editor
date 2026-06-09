@@ -6,6 +6,16 @@ const RDT_HEADER_SIZE = 549;
 const PAYLOAD_SIZE = 262144;
 
 const GENERAL_SETTINGS_OFFSET = 8256;
+const INTRO_SCREEN_LINE1_OFFSET = 0;
+const INTRO_SCREEN_LINE_SIZE = 20;
+const INTRO_SCREEN_LINE2_OFFSET = INTRO_SCREEN_LINE1_OFFSET + INTRO_SCREEN_LINE_SIZE;
+const DISABLE_ALL_TONES_BIT_OFFSET = 525;
+const TX_PREAMBLE_DURATION_BIT_OFFSET = 576;
+const VOX_SENSITIVITY_BIT_OFFSET = 600;
+const RX_LOW_BATTERY_INTERVAL_BIT_OFFSET = 624;
+const BACKLIGHT_TIMEOUT_BIT_OFFSET = 686;
+const KEYPAD_AUTO_LOCK_BIT_OFFSET = 688;
+const TIME_ZONE_BIT_OFFSET = 856;
 const RADIO_ID_OFFSET = 68;
 const RADIO_ID_SIZE = 3;
 const RADIO_NAME_OFFSET = 112;
@@ -63,6 +73,44 @@ const SCAN_LIST_NAME_SIZE = 32;
 const BASIC_INFO_OFFSET = 0;
 const MODEL_NAME_OFFSET = 293;
 const MODEL_NAME_SIZE = 8;
+const BASIC_FREQUENCY_RANGE_BIT_OFFSET = 2480;
+const BASIC_LOW_FREQUENCY_OFFSET = 313;
+const BASIC_HIGH_FREQUENCY_OFFSET = 315;
+const BASIC_LAST_PROGRAMMED_TIME_OFFSET = 8742;
+const BASIC_LAST_PROGRAMMED_TIME_SIZE = 7;
+const BASIC_CPS_VERSION_OFFSET = 8749;
+const BASIC_CPS_VERSION_SIZE = 4;
+
+const FREQUENCY_RANGE_OPTIONS = ["136-174", "350-400", "400-480", "450-520"] as const;
+const BACKLIGHT_TIMEOUT_OPTIONS = ["Always", "5", "10", "15"] as const;
+const KEYPAD_AUTO_LOCK_VALUES = ["5", "10", "15", "Manual"] as const;
+const TIME_ZONE_OPTIONS = [
+  "UTC-12:00",
+  "UTC-11:00",
+  "UTC-10:00",
+  "UTC-9:00",
+  "UTC-8:00",
+  "UTC-7:00",
+  "UTC-6:00",
+  "UTC-5:00",
+  "UTC-4:00",
+  "UTC-3:00",
+  "UTC-2:00",
+  "UTC-1:00",
+  "UTC+0:00",
+  "UTC+1:00",
+  "UTC+2:00",
+  "UTC+3:00",
+  "UTC+4:00",
+  "UTC+5:00",
+  "UTC+6:00",
+  "UTC+7:00",
+  "UTC+8:00",
+  "UTC+9:00",
+  "UTC+10:00",
+  "UTC+11:00",
+  "UTC+12:00",
+] as const;
 
 const SUPPORTED_D_MODELS = ["MD380", "DR780", "RT3"];
 const SUPPORTED_S_MODELS = ["MD390", "RT8"];
@@ -101,6 +149,90 @@ function detectFormat(fileName: string): "rdt" | "bin" | "dfu" {
     return "dfu";
   }
   return "bin";
+}
+
+function readNibbleDecimalString(bytes: Uint8Array, offset: number, length: number): string {
+  if (offset + length > bytes.byteLength) {
+    return "";
+  }
+  let out = "";
+  for (let index = 0; index < length; index += 1) {
+    const digit = bytes[offset + index];
+    out += digit <= 9 ? `${digit}` : "0";
+  }
+  return out;
+}
+
+function writeNibbleDecimalString(bytes: Uint8Array, offset: number, length: number, value: string): void {
+  for (let index = 0; index < length; index += 1) {
+    const char = value[index] ?? "0";
+    const digit = char >= "0" && char <= "9" ? Number.parseInt(char, 10) : 0;
+    bytes[offset + index] = digit;
+  }
+}
+
+function readBcdDigitString(bytes: Uint8Array, offset: number, length: number): string {
+  if (offset + length > bytes.byteLength) {
+    return "";
+  }
+  let out = "";
+  for (let index = 0; index < length; index += 1) {
+    const value = bytes[offset + index];
+    out += `${(value >> 4) & 0x0f}${value & 0x0f}`;
+  }
+  return out;
+}
+
+function formatLastProgrammedTime(raw: string): string {
+  if (!/^\d{14}$/.test(raw)) {
+    return "";
+  }
+  const year = raw.slice(0, 4);
+  const month = raw.slice(4, 6);
+  const day = raw.slice(6, 8);
+  const hour = raw.slice(8, 10);
+  const minute = raw.slice(10, 12);
+  const second = raw.slice(12, 14);
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+function parseBiFrequencyMHz(bytes: Uint8Array, offset: number): number {
+  if (offset + 2 > bytes.byteLength) {
+    return 0;
+  }
+  return bcdToInt(readLittleInt(bytes, offset, 2)) / 10;
+}
+
+function encodeBacklightTimeout(value: string): number {
+  const index = BACKLIGHT_TIMEOUT_OPTIONS.indexOf(value as (typeof BACKLIGHT_TIMEOUT_OPTIONS)[number]);
+  return index >= 0 ? index : 0;
+}
+
+function decodeBacklightTimeout(raw: number): "Always" | "5" | "10" | "15" {
+  return BACKLIGHT_TIMEOUT_OPTIONS[raw] ?? "Always";
+}
+
+function decodeKeypadAutoLock(raw: number): "Manual" | "5" | "10" | "15" {
+  if (raw === 5 || raw === 10 || raw === 15) {
+    return `${raw}` as "5" | "10" | "15";
+  }
+  return "Manual";
+}
+
+function encodeKeypadAutoLock(value: string): number {
+  if (value === "5" || value === "10" || value === "15") {
+    return Number.parseInt(value, 10);
+  }
+  return 0xff;
+}
+
+function decodeTimeZone(raw: number): string {
+  return TIME_ZONE_OPTIONS[raw] ?? "UTC+0:00";
+}
+
+function encodeTimeZone(value: string): number {
+  const index = TIME_ZONE_OPTIONS.indexOf(value as (typeof TIME_ZONE_OPTIONS)[number]);
+  return index >= 0 ? index : 12;
 }
 
 function readUcs2String(bytes: Uint8Array, offset: number, length: number): string {
@@ -617,6 +749,62 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       ? readUcs2String(payload, settingsBase + RADIO_NAME_OFFSET, RADIO_NAME_SIZE)
       : "";
 
+  const voxSensitivity =
+    settingsBase + 96 <= payload.byteLength
+      ? readBitField(payload, settingsBase * 8 + VOX_SENSITIVITY_BIT_OFFSET, 8)
+      : 1;
+  const txPreambleDurationMs =
+    settingsBase + 96 <= payload.byteLength
+      ? readBitField(payload, settingsBase * 8 + TX_PREAMBLE_DURATION_BIT_OFFSET, 8) * 60
+      : 600;
+  const rxLowBatteryIntervalSec =
+    settingsBase + 96 <= payload.byteLength
+      ? readBitField(payload, settingsBase * 8 + RX_LOW_BATTERY_INTERVAL_BIT_OFFSET, 8) * 5
+      : 15;
+  const backlightTimeoutSec =
+    settingsBase + 96 <= payload.byteLength
+      ? decodeBacklightTimeout(readBitField(payload, settingsBase * 8 + BACKLIGHT_TIMEOUT_BIT_OFFSET, 2))
+      : "Always";
+  const keypadAutoLockSec =
+    settingsBase + 96 <= payload.byteLength
+      ? decodeKeypadAutoLock(readBitField(payload, settingsBase * 8 + KEYPAD_AUTO_LOCK_BIT_OFFSET, 8))
+      : "Manual";
+  const alertTones =
+    settingsBase + 96 <= payload.byteLength
+      ? readBitField(payload, settingsBase * 8 + DISABLE_ALL_TONES_BIT_OFFSET, 1) === 0
+        ? "Off"
+        : "On"
+      : "On";
+  const timeZone =
+    settingsBase + 108 <= payload.byteLength
+      ? decodeTimeZone(readBitField(payload, settingsBase * 8 + TIME_ZONE_BIT_OFFSET, 5))
+      : "UTC+0:00";
+  const bootUpMessageLine1 =
+    settingsBase + INTRO_SCREEN_LINE1_OFFSET + INTRO_SCREEN_LINE_SIZE <= payload.byteLength
+      ? readUcs2String(payload, settingsBase + INTRO_SCREEN_LINE1_OFFSET, INTRO_SCREEN_LINE_SIZE)
+      : "";
+  const bootUpMessageLine2 =
+    settingsBase + INTRO_SCREEN_LINE2_OFFSET + INTRO_SCREEN_LINE_SIZE <= payload.byteLength
+      ? readUcs2String(payload, settingsBase + INTRO_SCREEN_LINE2_OFFSET, INTRO_SCREEN_LINE_SIZE)
+      : "";
+
+  const frequencyRangeIndex =
+    BASIC_INFO_OFFSET + Math.floor(BASIC_FREQUENCY_RANGE_BIT_OFFSET / 8) < payload.byteLength
+      ? readBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8)
+      : -1;
+  const lowFrequencyMHz = parseBiFrequencyMHz(payload, BASIC_LOW_FREQUENCY_OFFSET);
+  const highFrequencyMHz = parseBiFrequencyMHz(payload, BASIC_HIGH_FREQUENCY_OFFSET);
+  const cpsVersion = readNibbleDecimalString(payload, BASIC_CPS_VERSION_OFFSET, BASIC_CPS_VERSION_SIZE);
+  const lastProgrammedTime = formatLastProgrammedTime(
+    readBcdDigitString(payload, BASIC_LAST_PROGRAMMED_TIME_OFFSET, BASIC_LAST_PROGRAMMED_TIME_SIZE),
+  );
+  const frequencyRange =
+    frequencyRangeIndex >= 0 && frequencyRangeIndex < FREQUENCY_RANGE_OPTIONS.length
+      ? FREQUENCY_RANGE_OPTIONS[frequencyRangeIndex]
+      : lowFrequencyMHz > 0 && highFrequencyMHz > 0
+        ? `${lowFrequencyMHz.toFixed(1)}-${highFrequencyMHz.toFixed(1)}`
+        : "Unknown";
+
   const byModel = detectVariantFromModel(model);
   if (model.trim().length > 0 && byModel === "unknown") {
     throw new CodeplugParseError(`Unsupported radio model '${model}'. This build supports MD380/RT3 and MD390/RT8 variants.`);
@@ -631,6 +819,14 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     payloadOffset: layout.payloadOffset,
     payloadLength: layout.payloadLength,
     model,
+    basicInfo: {
+      firmwareVersion: "Not stored in codeplug",
+      cpsVersion,
+      mcuVersion: "Not stored in codeplug",
+      uniqueDeviceId: "Not stored in codeplug",
+      frequencyRange,
+      lastProgrammedTime,
+    },
     channels,
     zones,
     contacts,
@@ -639,6 +835,15 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     settings: {
       radioId,
       radioName,
+      voxSensitivity,
+      txPreambleDurationMs,
+      rxLowBatteryIntervalSec,
+      backlightTimeoutSec,
+      keypadAutoLockSec,
+      bootUpMessageLine1,
+      bootUpMessageLine2,
+      alertTones,
+      timeZone,
     },
   };
 }
@@ -647,11 +852,80 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   const out = new Uint8Array(originalBytes);
   const payload = out.subarray(document.payloadOffset, document.payloadOffset + document.payloadLength);
 
+  const settingsBase = GENERAL_SETTINGS_OFFSET;
+
+  if (settingsBase + INTRO_SCREEN_LINE1_OFFSET + INTRO_SCREEN_LINE_SIZE <= payload.byteLength) {
+    writeUcs2String(
+      payload,
+      settingsBase + INTRO_SCREEN_LINE1_OFFSET,
+      INTRO_SCREEN_LINE_SIZE,
+      document.settings.bootUpMessageLine1,
+    );
+  }
+  if (settingsBase + INTRO_SCREEN_LINE2_OFFSET + INTRO_SCREEN_LINE_SIZE <= payload.byteLength) {
+    writeUcs2String(
+      payload,
+      settingsBase + INTRO_SCREEN_LINE2_OFFSET,
+      INTRO_SCREEN_LINE_SIZE,
+      document.settings.bootUpMessageLine2,
+    );
+  }
+
   if (GENERAL_SETTINGS_OFFSET + RADIO_ID_OFFSET + RADIO_ID_SIZE <= payload.byteLength) {
     writeLittleInt(payload, GENERAL_SETTINGS_OFFSET + RADIO_ID_OFFSET, RADIO_ID_SIZE, document.settings.radioId);
   }
   if (GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET + RADIO_NAME_SIZE <= payload.byteLength) {
     writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, RADIO_NAME_SIZE, document.settings.radioName);
+  }
+
+  if (settingsBase + 108 <= payload.byteLength) {
+    writeBitField(
+      payload,
+      settingsBase * 8 + DISABLE_ALL_TONES_BIT_OFFSET,
+      1,
+      document.settings.alertTones === "On" ? 1 : 0,
+    );
+    writeBitField(
+      payload,
+      settingsBase * 8 + TX_PREAMBLE_DURATION_BIT_OFFSET,
+      8,
+      Math.max(0, Math.min(144, Math.round(document.settings.txPreambleDurationMs / 60))),
+    );
+    writeBitField(
+      payload,
+      settingsBase * 8 + VOX_SENSITIVITY_BIT_OFFSET,
+      8,
+      Math.max(1, Math.min(10, Math.round(document.settings.voxSensitivity))),
+    );
+    writeBitField(
+      payload,
+      settingsBase * 8 + RX_LOW_BATTERY_INTERVAL_BIT_OFFSET,
+      8,
+      Math.max(0, Math.min(127, Math.round(document.settings.rxLowBatteryIntervalSec / 5))),
+    );
+    writeBitField(
+      payload,
+      settingsBase * 8 + BACKLIGHT_TIMEOUT_BIT_OFFSET,
+      2,
+      encodeBacklightTimeout(document.settings.backlightTimeoutSec),
+    );
+    writeBitField(
+      payload,
+      settingsBase * 8 + KEYPAD_AUTO_LOCK_BIT_OFFSET,
+      8,
+      encodeKeypadAutoLock(document.settings.keypadAutoLockSec),
+    );
+    writeBitField(payload, settingsBase * 8 + TIME_ZONE_BIT_OFFSET, 5, encodeTimeZone(document.settings.timeZone));
+  }
+
+  if (BASIC_CPS_VERSION_OFFSET + BASIC_CPS_VERSION_SIZE <= payload.byteLength) {
+    writeNibbleDecimalString(payload, BASIC_CPS_VERSION_OFFSET, BASIC_CPS_VERSION_SIZE, document.basicInfo.cpsVersion);
+  }
+  if (Math.floor(BASIC_FREQUENCY_RANGE_BIT_OFFSET / 8) < payload.byteLength) {
+    const rangeIndex = FREQUENCY_RANGE_OPTIONS.indexOf(document.basicInfo.frequencyRange as (typeof FREQUENCY_RANGE_OPTIONS)[number]);
+    if (rangeIndex >= 0) {
+      writeBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8, rangeIndex);
+    }
   }
 
   const contactSlotById = writeContacts(payload, document);
