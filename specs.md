@@ -36,3 +36,7 @@ Web application hosted on a GitHub Pages website that allows reading and writing
 
 - A GO library to interact with such transceivers is available at `examples/codeplug`
 - A set of tools to interact and upload contacts is available at `examples/md380tools`
+
+## Tests
+
+Refer to [tests](./tests.md)
