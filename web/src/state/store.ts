@@ -39,6 +39,23 @@ export class EditorStore {
     return this.state;
   }
 
+  /** Load a pre-parsed document directly — useful for testing. */
+  loadDocument(document: CodeplugDocument): void {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.baselineDocument = this.cloneDocument(document);
+    this.state = {
+      document,
+      originalBytes: undefined,
+      validationIssues: validateDocument(document),
+      isDirty: false,
+      undoCount: 0,
+      redoCount: 0,
+      importError: undefined,
+    };
+    this.emit();
+  }
+
   load(fileName: string, bytes: Uint8Array): void {
     try {
       const document = parseCodeplug(fileName, bytes);

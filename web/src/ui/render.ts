@@ -70,7 +70,7 @@ function renderState(
   }
 
   const { document } = state;
-  const activeContent = renderActiveTab(document, uiState.activeTab, channelState);
+  const activeContent = renderActiveTab(document, uiState.activeTab, channelState, uiState);
   activeTab.innerHTML = activeContent;
 
   validation.innerHTML = `
@@ -220,7 +220,7 @@ function renderTabButton(id: string, label: string, activeTab: ActiveTab, disabl
   `;
 }
 
-function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab: ActiveTab, channelState: ChannelPanelState): string {
+function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab: ActiveTab, channelState: ChannelPanelState, uiState: UiState): string {
   if (activeTab === "basic") {
     const firmware = "Not available in Phase 1";
     const cps = "Not available in Phase 1";
