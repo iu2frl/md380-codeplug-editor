@@ -146,6 +146,21 @@ select {
   gap: 0.5rem;
 }
 
+.toolbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.bulkbar {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+}
+
 .row {
   display: grid;
   gap: 0.45rem;
@@ -164,6 +179,11 @@ select {
   .row,
   .channel-row,
   .zone-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar,
+  .bulkbar {
     grid-template-columns: 1fr;
   }
 }

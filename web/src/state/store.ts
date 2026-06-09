@@ -173,6 +173,45 @@ export class EditorStore {
     this.refreshDirty();
   }
 
+  bulkUpdateChannels(
+    channelIds: number[],
+    patch: {
+      channelMode?: "Analog" | "Digital";
+      power?: "Low" | "High";
+      colorCode?: number;
+      repeaterSlot?: 1 | 2;
+      bandwidthKhz?: "12.5" | "20" | "25";
+    },
+  ): void {
+    if (!this.state.document || channelIds.length === 0) {
+      return;
+    }
+
+    const idSet = new Set(channelIds);
+    for (const channel of this.state.document.channels) {
+      if (!idSet.has(channel.id)) {
+        continue;
+      }
+      if (patch.channelMode !== undefined) {
+        channel.channelMode = patch.channelMode;
+      }
+      if (patch.power !== undefined) {
+        channel.power = patch.power;
+      }
+      if (patch.colorCode !== undefined) {
+        channel.colorCode = patch.colorCode;
+      }
+      if (patch.repeaterSlot !== undefined) {
+        channel.repeaterSlot = patch.repeaterSlot;
+      }
+      if (patch.bandwidthKhz !== undefined) {
+        channel.bandwidthKhz = patch.bandwidthKhz;
+      }
+    }
+
+    this.refreshDirty();
+  }
+
   removeChannel(id: number): void {
     if (!this.state.document) {
       return;

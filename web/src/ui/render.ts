@@ -1,5 +1,12 @@
 import type { AppState, EditorStore } from "../state/store";
 
+interface ChannelPanelState {
+  query: string;
+  modeFilter: "all" | "Analog" | "Digital";
+  bulkMode: "" | "Analog" | "Digital";
+  bulkPower: "" | "Low" | "High";
+}
+
 function downloadBytes(fileName: string, bytes: Uint8Array): void {
   const blob = new Blob([bytes], { type: "application/octet-stream" });
   const url = URL.createObjectURL(blob);
@@ -11,6 +18,13 @@ function downloadBytes(fileName: string, bytes: Uint8Array): void {
 }
 
 export function renderApp(target: HTMLElement, store: EditorStore): void {
+  const channelState: ChannelPanelState = {
+    query: "",
+    modeFilter: "all",
+    bulkMode: "",
+    bulkPower: "",
+  };
+
   target.innerHTML = `
     <main class="layout">
       <section class="hero card">
@@ -66,10 +80,10 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
     downloadBytes(snapshot.document.outputFileName, bytes);
   });
 
-  store.subscribe((state) => renderState(target, store, state));
+  store.subscribe((state) => renderState(target, store, state, channelState));
 }
 
-function renderState(target: HTMLElement, store: EditorStore, state: AppState): void {
+function renderState(target: HTMLElement, store: EditorStore, state: AppState, channelState: ChannelPanelState): void {
   const summary = target.querySelector<HTMLElement>("#summary");
   const settings = target.querySelector<HTMLElement>("#settings");
   const contacts = target.querySelector<HTMLElement>("#contacts");
@@ -190,11 +204,39 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
     });
   }
 
+  const filteredChannels = document.channels.filter((channel) => {
+    const nameHit = channel.name.toLowerCase().includes(channelState.query.toLowerCase());
+    const modeHit = channelState.modeFilter === "all" || channel.channelMode === channelState.modeFilter;
+    return nameHit && modeHit;
+  });
+
   channels.innerHTML = `
     <h2>Channels</h2>
-    <button class="button tiny" id="add-channel">Add Channel</button>
+    <div class="toolbar">
+      <button class="button tiny" id="add-channel">Add Channel</button>
+      <input id="channel-search" placeholder="Search channel name" value="${escapeHtml(channelState.query)}" />
+      <select id="channel-mode-filter">
+        <option value="all" ${channelState.modeFilter === "all" ? "selected" : ""}>All Modes</option>
+        <option value="Analog" ${channelState.modeFilter === "Analog" ? "selected" : ""}>Analog</option>
+        <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
+      </select>
+    </div>
+    <div class="bulkbar">
+      <strong>Bulk Update (${filteredChannels.length})</strong>
+      <select id="bulk-mode">
+        <option value="" ${channelState.bulkMode === "" ? "selected" : ""}>Mode (unchanged)</option>
+        <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
+        <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
+      </select>
+      <select id="bulk-power">
+        <option value="" ${channelState.bulkPower === "" ? "selected" : ""}>Power (unchanged)</option>
+        <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
+        <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
+      </select>
+      <button class="button tiny" id="apply-bulk">Apply To Filtered</button>
+    </div>
     <div class="rows">
-      ${document.channels
+      ${filteredChannels
         .map(
           (channel) => `
             <div class="row channel-row">
@@ -238,6 +280,47 @@ function renderState(target: HTMLElement, store: EditorStore, state: AppState): 
 
   channels.querySelector<HTMLButtonElement>("#add-channel")?.addEventListener("click", () => {
     store.addChannel();
+  });
+
+  channels.querySelector<HTMLInputElement>("#channel-search")?.addEventListener("input", (event) => {
+    channelState.query = (event.currentTarget as HTMLInputElement).value;
+    renderState(target, store, store.getState(), channelState);
+  });
+
+  channels.querySelector<HTMLSelectElement>("#channel-mode-filter")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.modeFilter = value === "Analog" || value === "Digital" ? value : "all";
+    renderState(target, store, store.getState(), channelState);
+  });
+
+  channels.querySelector<HTMLSelectElement>("#bulk-mode")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.bulkMode = value === "Analog" || value === "Digital" ? value : "";
+  });
+
+  channels.querySelector<HTMLSelectElement>("#bulk-power")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.bulkPower = value === "Low" || value === "High" ? value : "";
+  });
+
+  channels.querySelector<HTMLButtonElement>("#apply-bulk")?.addEventListener("click", () => {
+    const patch: {
+      channelMode?: "Analog" | "Digital";
+      power?: "Low" | "High";
+    } = {};
+    if (channelState.bulkMode) {
+      patch.channelMode = channelState.bulkMode;
+    }
+    if (channelState.bulkPower) {
+      patch.power = channelState.bulkPower;
+    }
+    if (Object.keys(patch).length === 0) {
+      return;
+    }
+    store.bulkUpdateChannels(
+      filteredChannels.map((channel) => channel.id),
+      patch,
+    );
   });
 
   for (const nameInput of channels.querySelectorAll<HTMLInputElement>("[data-channel-name]")) {
