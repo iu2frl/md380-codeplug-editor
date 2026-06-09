@@ -1,12 +1,12 @@
 # MD380 Codeplug Editor UI Requirements
 
 ## Purpose
-Define product and interface requirements for the Phase 1 web UI so implementation and testing are aligned.
+Define product and interface requirements for the web UI so implementation and testing are aligned.
 
 ## Scope
 - In scope: browser UI for codeplug import, editing, validation feedback, and export.
 - In scope: desktop and mobile web layouts for the same workflow.
-- In scope: Phase 3 preparation UI (capability detection and compatibility messaging only).
+- In scope: radio transfer capability detection and compatibility messaging.
 - Out of scope: browser-native radio transfer execution and callsign DB workflows.
 
 ## Target Users
@@ -34,7 +34,7 @@ Define product and interface requirements for the Phase 1 web UI so implementati
 ### 1) File Workflow
 - User can open `.rdt` and `.bin` files from local disk.
 - UI displays import success/failure state immediately.
-- On unsupported or invalid input, UI shows specific reason and recommended next step.
+- On unsupported or invalid input, UI shows specific reason and recommended action.
 - User can export edited data back to file without server calls.
 
 Acceptance criteria:
@@ -92,45 +92,24 @@ Acceptance criteria:
 
 ## Non-Functional UI Requirements
 
-### User workflow
+### User Flow
 
-1. Homepage has two tiles:
-   - Create new codeplug (not available in phase 1)
-   - Open existing codeplug
-     - This should instruct the user on how to get and use the Python script
-     - The output of the Python script shall be uploaded to the page to enable the web app
-2. After a file is loaded/created the user is prompt with a set of tabs:
-   - Basic: basic information on the transceiver
-     - Model
-     - Maker
-     - Firmware version
-     - CPS version
-     - MCU version
-     - Unique device ID
-     - Frequency range
-   - General: general transceiver settings
-     - Radio name
-     - DMR ID
-     - VOX sensitivity
-     - TX preamble duration
-     - RX low battery alarm interval
-     - backlight timeout
-     - keypad auto lock
-     - boot up message (two lines)
-     - alert tones
-     - time zone
-   - Menus: which menu options are enabled
-   - Buttons: physical keys mapping
-   - Digital text message: preconfigured SMSs
-   - Digital voice encryption with basic and anhanced encryption keys
-   - Digital contacts: list of private calls and talkgoups
-   - Zones: list of zones configured in the transceiver. Maximum 16 channels per zone using checkboxes
-   - Scan lists
-   - Channels: main core of the app
-     - List of current channels with all their features
-     - Can move up and down single channels or multiple channels
-     - Can duplicate channels
-     - Can delete channels
+- Homepage has two tiles:
+  - Create new codeplug (currently unavailable)
+  - Open existing codeplug
+    - Instruct how to use the local Python helper
+    - Upload helper output (`.rdt`/`.bin`) to enable editing
+- After a file is loaded/created, the app shows tabs:
+  - Basic: model, maker, firmware, CPS version, MCU version, unique device ID, frequency range
+  - General: radio name, DMR ID, VOX sensitivity, TX preamble duration, RX low battery interval, backlight timeout, keypad auto lock, boot message, alert tones, time zone
+  - Menus: enabled/disabled menu options
+  - Buttons: physical key mappings
+  - Digital text message: preconfigured messages
+  - Encryption: basic and enhanced keys
+  - Digital contacts: private calls and talkgroups
+  - Zones: zone list and up to 16 channel assignments
+  - Scan lists
+  - Channels: list/edit/reorder/duplicate/delete operations
 
 ### Responsive Behavior
 - Desktop: multi-panel layout with efficient scan/edit flow.
@@ -151,12 +130,12 @@ Acceptance criteria:
 - UI copy must reinforce backup-before-write expectations for radio operations.
 
 ## Definition of Done for UI Requirements Coverage
-- Phase 1 M3 requirements are represented in UI behavior and tests.
+- Core editor requirements are represented in UI behavior and tests.
 - Validation/error patterns are documented and tested.
 - Mobile and desktop layouts are manually verified.
 - User-facing docs reference this file as the UI contract baseline.
 
 ## Traceability to Roadmap
-- Phase 1 M2: file open/parse/export and import error handling.
-- Phase 1 M3: channels/zones/contacts/settings editors and validation.
-- Phase 1 M4 (partial prep): stronger validation UX, dirty-state/undo readiness.
+- File open/parse/export and import error handling.
+- Channels/zones/contacts/settings editors and validation.
+- Strong validation UX, dirty-state, and undo/redo readiness.

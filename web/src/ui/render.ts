@@ -144,7 +144,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean): 
     <main class="layout">
       <section class="hero card">
         <h1>MD380 Codeplug Editor</h1>
-        <p>Phase 1 workflow: read with the Python helper, edit in browser, then write back safely.</p>
+        <p>Read with the Python helper, edit in browser, then write back safely.</p>
       </section>
 
       <section class="card risk-card">
@@ -162,7 +162,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean): 
       <section class="tiles">
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
-          <p>Create-new workflow is not available in Phase 1 yet.</p>
+          <p>Create-new capability is not available yet.</p>
           <button id="create-new-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create New</button>
         </article>
 
@@ -205,7 +205,7 @@ function bindLandingActions(
     if (!uiState.riskAccepted) {
       return;
     }
-    window.alert("Create new codeplug is planned for a later phase and is not available yet.");
+    window.alert("Create new codeplug is not available yet.");
   });
 }
 
@@ -544,7 +544,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     const readEnabled = isConnected && !uiState.radioBusy;
     const writeEnabled = isConnected && !uiState.radioBusy;
     return `
-      <h2>Radio Transfer (Phase 3 Preview)</h2>
+      <h2>Radio Transfer</h2>
       <p class="muted-text">Browser-native radio read/write preparation using WebUSB.</p>
 
       <div class="radio-transfer-grid">
@@ -686,7 +686,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
   if (activeTab === "scan-lists") {
     return `
       <h2>Scan Lists</h2>
-      <p class="muted-text">Read-only in current phase. Editing scan lists is planned for a later milestone.</p>
+      <p class="muted-text">Read-only right now. Editing support for scan lists is planned.</p>
       <div class="rows">
         ${document.scanLists.length === 0
           ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
@@ -708,7 +708,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
   if (activeTab === "group-lists") {
     return `
       <h2>Group Lists</h2>
-      <p class="muted-text">Read-only in current phase. Editing group lists is planned for a later milestone.</p>
+      <p class="muted-text">Read-only right now. Editing support for group lists is planned.</p>
       <div class="rows">
         ${document.groupLists.length === 0
           ? `<p class="muted-text">No group lists found in this codeplug.</p>`
@@ -1194,8 +1194,8 @@ function bindActiveTab(
       setFieldError(radioNameInput, radioNameError, radioName.length === 0 ? "Radio name is required." : "");
       setFieldError(radioIdInput, radioIdError, Number.isNaN(radioId) || radioId < 1 || radioId > 16777215 ? "DMR ID must be between 1 and 16,777,215." : "");
       setFieldError(voxSensitivityInput, voxError, Number.isNaN(vox) || vox < 1 || vox > 10 ? "VOX sensitivity must be between 1 and 10." : "");
-      setFieldError(txPreambleDurationInput, preambleError, Number.isNaN(preamble) || preamble < 0 || preamble > 8640 || preamble % 60 !== 0 ? "Preamble must be 0-8640 ms in 60 ms steps." : "");
-      setFieldError(rxLowBatteryIntervalInput, lowBatteryError, Number.isNaN(lowBattery) || lowBattery < 0 || lowBattery > 635 || lowBattery % 5 !== 0 ? "Low battery interval must be 0-635 s in 5 s steps." : "");
+      setFieldError(txPreambleDurationInput, preambleError, Number.isNaN(preamble) || preamble < 0 || preamble > 8640 || preamble % 60 !== 0 ? "Preamble must be 0-8640 ms in 60 ms increments." : "");
+      setFieldError(rxLowBatteryIntervalInput, lowBatteryError, Number.isNaN(lowBattery) || lowBattery < 0 || lowBattery > 635 || lowBattery % 5 !== 0 ? "Low battery interval must be 0-635 s in 5 s increments." : "");
       setFieldError(bootLine1Input, bootLine1Error, bootLine1Input.value.length > 10 ? "Line 1 must be 10 chars or fewer." : "");
       setFieldError(bootLine2Input, bootLine2Error, bootLine2Input.value.length > 10 ? "Line 2 must be 10 chars or fewer." : "");
 

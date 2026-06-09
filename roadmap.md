@@ -1,12 +1,12 @@
 # MD380 Codeplug Editor Roadmap
 
 ## Scope
-Build a static web application (GitHub Pages) in three phases:
-- Phase 1: Online editor for codeplug files.
-- Phase 2: Callsign database sync workflow (web download + local helper flash).
-- Phase 3: Browser-based upload/download to physical radios.
+Build a static web application (GitHub Pages) across three capability areas:
+- Online editor for codeplug files.
+- Callsign database sync/build workflow (web download + local helper flash).
+- Browser-based upload/download to physical radios.
 
-The first iteration of Phase 1 includes a local Python helper that the user runs manually to read/write the radio.
+The first iteration includes a local Python helper that the user runs manually to read/write the radio.
 
 ## Principles
 - Keep the website static and client-side only.
@@ -15,14 +15,14 @@ The first iteration of Phase 1 includes a local Python helper that the user runs
 - Ship value early with a manual helper before full browser USB support.
 - Preserve compatibility with D (no GPS) and S (GPS) radio variants.
 
-## Phase 1: Online Editor + Manual Python Helper
+## Codeplug Editor + Manual Python Helper
 
 ### Goal
 Users can load a codeplug file, edit channels/zones/contacts/settings in-browser, and export the modified file. For physical radio I/O, users run a local Python helper manually.
 
-### Milestones
+### Capabilities and Acceptance Criteria
 
-#### M1. Project foundation
+#### Project foundation
 - Choose frontend stack (recommended: TypeScript + Vite).
 - Define data model adapter strategy:
   - Option A: Compile Go parser/editor to WASM.
@@ -33,7 +33,7 @@ Exit criteria:
 - App builds and deploys to a public GitHub Pages URL.
 - Basic shell UI loads on desktop and mobile browsers.
 
-#### M2. File import/export pipeline
+#### File import/export pipeline
 - Implement local file open (`.rdt`, `.bin`) in browser.
 - Parse into internal model and validate supported radio type/range.
 - Implement save/export back to file preserving binary correctness.
@@ -43,7 +43,7 @@ Exit criteria:
 - Round-trip test: import -> edit nothing -> export, with byte-level consistency expectations where applicable.
 - User can download edited file without server calls.
 
-#### M3. Editor modules (core requirements)
+#### Editor modules (core requirements)
 - Channels editor:
   - list/search/filter, create/edit/delete, bulk update basics.
 - Zones editor:
@@ -57,7 +57,7 @@ Exit criteria:
 - User can complete a full basic programming workflow entirely in browser.
 - Data validation prevents invalid values and broken references.
 
-#### M4. Data integrity and UX hardening
+#### Data integrity and UX hardening
 - Add cross-record validation:
   - zone references to channels,
   - contact references in channels/group lists,
@@ -69,7 +69,7 @@ Exit criteria:
 - Validation errors are actionable and mapped to specific records/fields.
 - No data-loss in common edit scenarios.
 
-#### M5. Python helper (manual local bridge) - First iteration completion
+#### Python helper (manual local bridge)
 - Create helper CLI users run locally to access the radio via USB/DFU.
 - Provide two commands:
   - `read-radio` -> dumps codeplug to file.
@@ -87,19 +87,19 @@ Exit criteria:
 - End-to-end manual workflow documented and tested on at least one D model and one S model.
 - Helper provides clear progress and error messages.
 
-### Phase 1 Deliverables
+### Deliverables
 - Static web app hosted on GitHub Pages.
 - Editors for Channels, Zones, Contacts, and key transceiver settings.
 - Local manual Python helper with read/write commands.
 - User documentation and troubleshooting guide.
 
-### Phase 1 Risks
+### Risks
 - Binary layout edge cases across firmware/radio variants.
 - Validation complexity for inter-record references.
 - Platform-specific USB permission issues in helper usage.
 
 
-## Phase 2: Callsign Database Sync (Web + Local Helper)
+## Callsign Database Sync (Web + Local Helper)
 
 ### Goal
 Allow users to fetch the latest callsign database from web sources, optionally optimize/pack it, and flash it to radio SPI flash through a local helper workflow.
@@ -112,9 +112,9 @@ Allow users to fetch the latest callsign database from web sources, optionally o
 - Flash target is SPI flash at `0x100000` through `md380-tool spiflashwrite`: [examples/md380tools/Makefile](examples/md380tools/Makefile#L101).
 - This is separate from codeplug read/write handled by `md380-dfu` codeplug commands: [examples/md380tools/md380_dfu.py](examples/md380tools/md380_dfu.py#L64).
 
-### Milestones
+### Capabilities and Acceptance Criteria
 
-#### M1. Callsign source integration and normalization
+#### Callsign source integration and normalization
 - Add UI flow to fetch/import callsign CSV data from supported sources.
 - Normalize encoding, remove/convert unsupported characters, and validate required columns.
 - Provide filters (global/EU privacy-safe profile).
@@ -123,7 +123,7 @@ Exit criteria:
 - User can generate a normalized local callsign dataset from web sources.
 - Pipeline outputs deterministic CSV for the same input.
 
-#### M2. Database packing formats
+#### Database packing formats
 - Implement linear format output (size + CSV payload) compatible with existing helper expectations.
 - Implement indexed format output compatible with current indexed database structure.
 - Add format selector: `linear` vs `indexed` with size estimate.
@@ -132,7 +132,7 @@ Exit criteria:
 - Generated files can be consumed by helper flash commands.
 - Indexed output demonstrates meaningful size reduction.
 
-#### M3. Local helper flash workflow (manual)
+#### Local helper flash workflow (manual)
 - Extend helper with commands:
   - `callsign-build --source <csv/url> --format linear|indexed --out <file>`
   - `callsign-flash --file <file> --address 0x100000`
@@ -143,7 +143,7 @@ Exit criteria:
 - User can update callsign DB end-to-end with explicit safety checks.
 - Workflow tested on a known supported radio with 16MB SPI flash.
 
-#### M3.1 Helper split and file management boundaries
+#### Helper split and file management boundaries
 - Define a dedicated callsign helper module/script (example name: `radio_callsign_helper.py`) separate from codeplug helper commands.
 - Use dedicated artifact folders:
   - `artifacts/callsign/raw/` for source CSV snapshots,
@@ -160,7 +160,7 @@ Exit criteria:
 - Callsign artifacts are reproducible and traceable from source to flashed binary.
 - No mixing between codeplug binaries and callsign SPI binaries.
 
-#### M4. UX, safety, and diagnostics
+#### UX, safety, and diagnostics
 - Provide progress + post-flash verification checksum/readback.
 - Add troubleshooting page for permissions, drivers, and unsupported flash chips.
 - Add clear distinction in UI/docs between "codeplug" and "callsign database".
@@ -168,25 +168,25 @@ Exit criteria:
 Exit criteria:
 - Common failure modes (permissions, wrong flash type, interrupted write) are documented and recoverable.
 
-### Phase 2 Deliverables
+### Deliverables
 - Callsign DB fetch/build/export features in web app.
 - Local helper commands for callsign DB flashing and backup/restore.
 - Documentation that separates codeplug vs SPI callsign DB workflows.
 
-### Phase 2 Risks
+### Risks
 - Source schema changes from upstream callsign providers.
 - Flash-size/firmware compatibility differences across radios.
 - Data privacy/regional constraints for user records.
 
 
-## Phase 3: Native Browser Upload/Download (No Helper)
+## Native Browser Upload/Download (No Helper)
 
 ### Goal
 Users can read/write codeplugs directly from browser to radio using WebUSB (or equivalent), while staying on a static GitHub Pages deployment.
 
-### Milestones
+### Capabilities and Acceptance Criteria
 
-#### M1. Browser transport feasibility and protocol mapping
+#### Browser transport feasibility and protocol mapping
 - Map current DFU operations to WebUSB transfers.
 - Verify browser/device compatibility matrix (Chromium family, USB permissions, OS differences).
 - Define fallback behavior when WebUSB is unavailable.
@@ -195,7 +195,7 @@ Exit criteria:
 - Technical design doc for WebUSB DFU transport.
 - Prototype can enumerate and connect to target device in supported browser.
 
-#### M2. Implement browser DFU transport layer
+#### Browser DFU transport layer
 - Build WebUSB adapter for DFU requests and state machine.
 - Implement read-codeplug and write-codeplug operations.
 - Add progress reporting and cancellation.
@@ -204,7 +204,7 @@ Exit criteria:
 - Browser can read/write codeplug bytes reliably on supported environments.
 - Transfer integrity checks pass on repeated runs.
 
-#### M3. Integrate transport into web UI
+#### Transport integration in web UI
 - Add Connect/Read/Write actions to app.
 - Add device status, permissions guidance, and recoverable error handling.
 - Protect against unsafe writes (confirmation, model checks, file/model compatibility checks).
@@ -213,7 +213,7 @@ Exit criteria:
 - User can complete radio read/edit/write fully in browser.
 - UX clearly communicates unsupported browsers/devices.
 
-#### M3.1 Transitional local helper for transceiver upload/download
+#### Transitional local helper for transceiver upload/download
 - Keep a separate transceiver helper script (example name: `radio_codeplug_helper.py`) while browser transport is stabilizing.
 - Define command surface for codeplug only:
   - `radio-read --out <codeplug.bin|rdt>`
@@ -231,7 +231,7 @@ Exit criteria:
 - Codeplug transfer helper is isolated from callsign DB flashing logic.
 - Users can safely run a backup-read-edit-write workflow with clear artifacts.
 
-#### M4. Reliability, recovery, and safety
+#### Reliability, recovery, and safety
 - Add preflight checks before write.
 - Add retry/reconnect flows for transient USB failures.
 - Add optional backup prompt before writing.
@@ -241,12 +241,12 @@ Exit criteria:
 - Common failure modes are recoverable without app restart.
 - Support diagnostics are sufficient to troubleshoot field issues.
 
-### Phase 3 Deliverables
+### Deliverables
 - Browser-native radio read/write support (no external helper needed).
 - Compatibility matrix and support policy.
 - Safety guardrails and recovery UX.
 
-### Phase 3 Risks
+### Risks
 - Browser API limitations and changing WebUSB behavior.
 - DFU implementation quirks for specific firmware/radio revisions.
 - User environment variability (USB drivers, permissions, enterprise browser policies).
@@ -261,7 +261,7 @@ Exit criteria:
   - quick start,
   - supported models,
   - known limitations,
-  - recovery steps.
+  - recovery guidance.
 - Release process:
   - semantic versioning,
   - changelog,
@@ -271,9 +271,9 @@ Exit criteria:
   - separate CLI entrypoints for `callsign` and `codeplug`,
   - common logging and checksum/report output format.
 
-## Suggested Sequence
-1. Complete Phase 1 M1-M3 quickly for a useful online editor.
-2. Add M4 validation hardening before broad usage.
-3. Deliver M5 Python helper and docs to unlock real-device workflow.
-4. Implement Phase 2 callsign DB sync and helper flashing with safeguards.
-5. Start Phase 3 browser transport with a strict compatibility target and a small pilot group.
+## Delivery Priorities
+- Deliver core browser editing first.
+- Add strong validation and integrity hardening.
+- Keep helper-based transfer stable as fallback.
+- Expand callsign sync/build/flash capabilities with safeguards.
+- Promote browser-native transport after compatibility and safety targets are met.

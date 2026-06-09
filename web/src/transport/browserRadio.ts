@@ -224,11 +224,11 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
   }
 
   async readCodeplug(): Promise<Uint8Array> {
-    throw new Error("Phase 3 transport read is not implemented yet.");
+    throw new Error("Browser transport read is not implemented yet.");
   }
 
   async writeCodeplug(_data: Uint8Array): Promise<void> {
-    throw new Error("Phase 3 transport write is not implemented yet.");
+    throw new Error("Browser transport write is not implemented yet.");
   }
 }
 

@@ -11,7 +11,7 @@ To check if the parser is working as expected, we should validate against known 
 - Codeplug: [MD380-90_All_AU_DMR+analog+CB_v15.rdt](https://github.com/vk2kvp/md380-codeplug/blob/master/MD380-90_All_AU_DMR%2Banalog%2BCB_v15.rdt)
 - Content: [MD380-90_All_AU_DMR+analog+CB_CVS_v15.zip](https://github.com/vk2kvp/md380-codeplug/blob/master/MD380-90_All_AU_DMR%2Banalog%2BCB_CVS_v15.zip)
 
-### Steps
+### Procedure
 
 1. Run the known test:
    - `cd web`
@@ -46,7 +46,7 @@ To check if the parser is working as expected, we should validate against known 
 
 ## Custom tests
 
-### Additional Phase 1 checks (current implementation)
+### Additional editor checks (current implementation)
 
 1. Perform no-op round-trip:
    - Import `.rdt`
