@@ -28,6 +28,18 @@ export interface Contact {
   slot?: number;
 }
 
+export interface GroupList {
+  id: number;
+  name: string;
+  slot?: number;
+}
+
+export interface ScanList {
+  id: number;
+  name: string;
+  slot?: number;
+}
+
 export interface RadioSettings {
   radioId: number;
   radioName: string;
@@ -45,6 +57,8 @@ export interface CodeplugDocument {
   channels: Channel[];
   zones: Zone[];
   contacts: Contact[];
+  groupLists: GroupList[];
+  scanLists: ScanList[];
   settings: RadioSettings;
 }
 

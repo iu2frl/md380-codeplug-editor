@@ -8,26 +8,37 @@ To check if the parser is working as expected, we should validate against known 
 
 ### Sources
 
-- Codeplug: [MD380-90_All_AU_DMR+analog+CB_v15.rdt](https://github.com/d76f8670-bbb5-4ed4-96cd-388c75220b01)
-- Content: [MD380-90_All_AU_DMR+analog+CB_CVS_v15.zip](https://github.com/fae33ff0-008e-4791-8ba4-df1fd16ec04a)
+- Codeplug: [MD380-90_All_AU_DMR+analog+CB_v15.rdt](https://github.com/vk2kvp/md380-codeplug/blob/master/MD380-90_All_AU_DMR%2Banalog%2BCB_v15.rdt)
+- Content: [MD380-90_All_AU_DMR+analog+CB_CVS_v15.zip](https://github.com/vk2kvp/md380-codeplug/blob/master/MD380-90_All_AU_DMR%2Banalog%2BCB_CVS_v15.zip)
 
 ### Steps
 
-1. Download the RDT codeplug
-2. Download the ZIP files
-3. Extract the content of the ZIP files
-4. Parse the RDT and extract:
-   - Channels
-   - Contacts
-   - Groups
-   - ScanLists
-   - Zones
-5. Ensure the extracted results matches:
-   - Channels.csv
-   - Contacts.csv
-   - Groups.csv
-   - ScanLists.csv
-   - Zones.csv
+1. Run the known test:
+   - `cd web`
+   - `npm run test:known`
+2. If fixtures are missing, the test automatically:
+   - downloads RDT to `web/testdata/known/codeplug.rdt`
+   - downloads ZIP to `web/testdata/known/downloads/known-reference.zip`
+   - extracts CSV files into `web/testdata/known/reference/`
+3. The test parses the RDT and compares against reference CSV exports.
+4. Generated parser output is written to:
+   - `web/test-results/known/parsed/channels.generated.csv`
+   - `web/test-results/known/parsed/contacts.generated.csv`
+   - `web/test-results/known/parsed/zones.generated.csv`
+   - `web/test-results/known/parsed/groups.generated.csv`
+   - `web/test-results/known/parsed/scanlists.generated.csv`
+
+### Current automated scope
+
+- Channels
+- Contacts
+- Zones
+- Groups
+- ScanLists
+
+### Optional URL overrides
+
+- `KNOWN_CODEPLUG_RDT_URL=<direct-rdt-url> KNOWN_CODEPLUG_ZIP_URL=<direct-zip-url> npm run test:known`
 
 ## Custom tests
 

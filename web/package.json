@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:known": "KNOWN_CODEPLUG_STRICT=1 vitest run src/domain/known-codeplug.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",

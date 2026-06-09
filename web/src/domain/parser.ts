@@ -5,13 +5,13 @@ const KNOWN_RAW_SIZE = 262144;
 const RDT_HEADER_SIZE = 549;
 const PAYLOAD_SIZE = 262144;
 
-const GENERAL_SETTINGS_OFFSET = 8805;
+const GENERAL_SETTINGS_OFFSET = 8256;
 const RADIO_ID_OFFSET = 68;
 const RADIO_ID_SIZE = 3;
 const RADIO_NAME_OFFSET = 112;
 const RADIO_NAME_SIZE = 32;
 
-const CONTACTS_OFFSET = 24997;
+const CONTACTS_OFFSET = 24448;
 const CONTACTS_MAX = 1000;
 const CONTACTS_RECORD_SIZE = 36;
 const CONTACTS_DELETED_OFFSET = 3;
@@ -21,7 +21,7 @@ const CONTACT_CALL_ID_SIZE = 3;
 const CONTACT_NAME_OFFSET = 4;
 const CONTACT_NAME_SIZE = 32;
 
-const CHANNELS_OFFSET = 127013;
+const CHANNELS_OFFSET = 126464;
 const CHANNELS_MAX = 1000;
 const CHANNELS_RECORD_SIZE = 64;
 const CHANNELS_DELETED_OFFSET = 16;
@@ -37,7 +37,7 @@ const CHANNEL_POWER_BIT_OFFSET = 34;
 const CHANNEL_RX_FREQ_OFFSET = 16;
 const CHANNEL_TX_FREQ_OFFSET = 20;
 
-const ZONES_OFFSET = 84997;
+const ZONES_OFFSET = 84448;
 const ZONES_MAX = 250;
 const ZONES_RECORD_SIZE = 64;
 const ZONES_DELETED_OFFSET = 0;
@@ -45,6 +45,20 @@ const ZONE_NAME_OFFSET = 0;
 const ZONE_NAME_SIZE = 32;
 const ZONE_CHANNELS_OFFSET = 32;
 const ZONE_CHANNELS_MAX = 16;
+
+const GROUP_LISTS_OFFSET = 60448;
+const GROUP_LISTS_MAX = 250;
+const GROUP_LISTS_RECORD_SIZE = 96;
+const GROUP_LISTS_DELETED_OFFSET = 0;
+const GROUP_LIST_NAME_OFFSET = 0;
+const GROUP_LIST_NAME_SIZE = 32;
+
+const SCAN_LISTS_OFFSET = 100448;
+const SCAN_LISTS_MAX = 250;
+const SCAN_LISTS_RECORD_SIZE = 104;
+const SCAN_LISTS_DELETED_OFFSET = 0;
+const SCAN_LIST_NAME_OFFSET = 0;
+const SCAN_LIST_NAME_SIZE = 32;
 
 const BASIC_INFO_OFFSET = 0;
 const MODEL_NAME_OFFSET = 293;
@@ -414,6 +428,8 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
   const channelSlotToLogicalId = new Map<number, number>();
   const channels = [];
   const zones = [];
+  const groupLists = [];
+  const scanLists = [];
 
   for (let index = 0; index < CONTACTS_MAX; index += 1) {
     const base = CONTACTS_OFFSET + index * CONTACTS_RECORD_SIZE;
@@ -500,6 +516,44 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     });
   }
 
+  for (let index = 0; index < GROUP_LISTS_MAX; index += 1) {
+    const base = GROUP_LISTS_OFFSET + index * GROUP_LISTS_RECORD_SIZE;
+    if (base + GROUP_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base + GROUP_LISTS_DELETED_OFFSET] === 0) {
+      continue;
+    }
+    const name = readUcs2String(payload, base + GROUP_LIST_NAME_OFFSET, GROUP_LIST_NAME_SIZE);
+    if (!name) {
+      continue;
+    }
+    groupLists.push({
+      id: groupLists.length + 1,
+      name,
+      slot: index + 1,
+    });
+  }
+
+  for (let index = 0; index < SCAN_LISTS_MAX; index += 1) {
+    const base = SCAN_LISTS_OFFSET + index * SCAN_LISTS_RECORD_SIZE;
+    if (base + SCAN_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base + SCAN_LISTS_DELETED_OFFSET] === 0) {
+      continue;
+    }
+    const name = readUcs2String(payload, base + SCAN_LIST_NAME_OFFSET, SCAN_LIST_NAME_SIZE);
+    if (!name) {
+      continue;
+    }
+    scanLists.push({
+      id: scanLists.length + 1,
+      name,
+      slot: index + 1,
+    });
+  }
+
   const settingsBase = GENERAL_SETTINGS_OFFSET;
   const radioId =
     settingsBase + RADIO_ID_OFFSET + RADIO_ID_SIZE <= payload.byteLength
@@ -524,6 +578,8 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     channels,
     zones,
     contacts,
+    groupLists,
+    scanLists,
     settings: {
       radioId,
       radioName,
