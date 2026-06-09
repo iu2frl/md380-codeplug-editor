@@ -40,6 +40,10 @@ To check if the parser is working as expected, we should validate against known 
 
 - `KNOWN_CODEPLUG_RDT_URL=<direct-rdt-url> KNOWN_CODEPLUG_ZIP_URL=<direct-zip-url> npm run test:known`
 
+### TODO
+
+- Tighten the known test further to compare selected field values (not just names), for example channel mode/color code/timeslot against CSV columns.
+
 ## Custom tests
 
 ### Additional Phase 1 checks (current implementation)
