@@ -1,4 +1,5 @@
 #!/bin/bash
+mkdir -p ./examples
 cd ./examples/
 git clone git@github.com:dalefarnsworth-dmr/codeplug.git
 rm -rf codeplug/.git
