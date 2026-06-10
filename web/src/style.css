@@ -309,10 +309,27 @@ select {
 }
 
 .toolbar {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
+}
+
+.toolbar > .button {
+  flex: 0 0 auto;
+}
+
+.toolbar > input,
+.toolbar > select {
+  min-width: 0;
+}
+
+#channel-search {
+  flex: 1 1 9rem;
+}
+
+#channel-mode-filter {
+  flex: 0 1 10.5rem;
 }
 
 .bulkbar {
