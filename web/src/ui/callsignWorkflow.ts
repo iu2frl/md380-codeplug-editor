@@ -251,7 +251,7 @@ export function bindCallsignWorkflowActions(
 
     const rebootRadio = async (transport: BrowserRadioTransport): Promise<void> => {
       if (typeof transport.rebootRadio === "function") {
-        //await transport.rebootRadio();
+        await transport.rebootRadio();
       }
     };
 
