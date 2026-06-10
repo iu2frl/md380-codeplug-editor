@@ -146,7 +146,7 @@ body {
 .tiles {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
 }
 
 .risk-card {
@@ -174,7 +174,8 @@ body {
 }
 
 .tile {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.7rem;
 }
 
@@ -182,6 +183,12 @@ body {
   margin: 0;
   padding-left: 1.2rem;
   color: var(--ink-soft);
+}
+
+.tile > .button {
+  align-self: flex-start;
+  min-width: 180px;
+  text-align: center;
 }
 
 .muted {
@@ -734,7 +741,9 @@ select {
 }
 
 @media (max-width: 820px) {
-  .grid,
+  .grid {
+    grid-template-columns: 1fr;
+  }
   .tiles {
     grid-template-columns: 1fr;
   }
