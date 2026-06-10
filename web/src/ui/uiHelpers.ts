@@ -29,6 +29,15 @@ export const TIME_ZONE_OPTIONS = [
   "UTC+12:00",
 ];
 
+export function formatCallsignDate(isoDate: string): string {
+  try {
+    const date = new Date(isoDate);
+    return date.toISOString().split('T')[0]; // Return only the date part in YYYY-MM-DD format
+  } catch {
+    return isoDate;
+  }
+}
+
 export function downloadBytes(fileName: string, bytes: Uint8Array): void {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);

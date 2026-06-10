@@ -13,20 +13,12 @@ import {
   setCallsignProgress,
   syncRadioProgressUi,
   utcStamp,
+  formatCallsignDate,
 } from "./uiHelpers";
 import { showToast, showConfirm } from "./dialog";
 
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
-
-function formatCallsignDate(isoDate: string): string {
-  try {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-  } catch {
-    return isoDate;
-  }
-}
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -113,19 +105,6 @@ export function bindCallsignWorkflowActions(
     renderState(target, store, store.getState(), channelState, uiState);
   });
 
-  // Fetch callsign metadata on load if not already fetched
-  if (!uiState.callsignLastUpdated) {
-    fetch(`${import.meta.env.BASE_URL}callsign-meta.json`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((meta) => {
-        if (meta?.updatedAt) {
-          uiState.callsignLastUpdated = meta.updatedAt;
-          renderState(target, store, store.getState(), channelState, uiState);
-        }
-      })
-      .catch(() => {});
-  }
-
   target.querySelector<HTMLSelectElement>("#callsign-workflow-format")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
     uiState.callsignFormat = value === "linear" ? "linear" : "indexed";
@@ -162,7 +141,14 @@ export function bindCallsignWorkflowActions(
       return;
     }
 
-    const source = `${import.meta.env.BASE_URL}user.csv`;
+    var baseUrl = "";
+    if (import.meta.env.BASE_URL == "/") {
+      console.warn("BASE_URL is '/', using fallback URL for callsign CSV source. This may indicate a misconfiguration in the build or you might be running in a dev environment.");
+      baseUrl = "https://iu2frl.github.io/md380-codeplug-editor/";
+    } else {
+      baseUrl = import.meta.env.BASE_URL;
+    }
+    const source = `${baseUrl}user.csv`;
 
     uiState.callsignBusy = true;
     uiState.callsignProgressVisible = true;

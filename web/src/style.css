@@ -199,6 +199,7 @@ body {
 .callsign-action-btn {
   min-width: 280px;
   text-align: center;
+  width: 100%;
 }
 
 .muted {

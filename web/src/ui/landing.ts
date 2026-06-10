@@ -9,6 +9,7 @@ import {
   escapeHtml,
   setRadioProgress,
   syncRadioProgressUi,
+  formatCallsignDate,
 } from "./uiHelpers";
 import { showToast } from "./dialog";
 
@@ -86,14 +87,15 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Callsign Database</h2>
           <p>Download the latest callsign database and write it to the transceiver.</p>
-          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open Callsign Workflow</button>
+          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Update Callsigns Database</button>
         </article>
       </section>
 
       <section class="card tile landing-footer">
         <h2>Credits</h2>
-        <p>Developed by IU2FRL on GitHub Pages and released under the GNU General Public License v3.<br>
-        This project is open source on <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener noreferrer">GitHub</a>.<br>
+        <p>Developed by <a href="https://github.com/iu2frl" target="_blank" rel="noopener noreferrer">IU2FRL</a> on GitHub Pages and released under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU General Public License v3</a>.<br>
+        ${uiState.callsignLastUpdated ? `Last update: ${escapeHtml(formatCallsignDate(uiState.callsignLastUpdated))}` : ""}.</p>
+        <p>This project is open source on <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener noreferrer">GitHub</a>.<br>
         Please report any issues on <a href="https://github.com/iu2frl/md380-codeplug-editor/issues" target="_blank" rel="noopener noreferrer">md380-codeplug-editor/issues</a> and consider contributing if you can!
         </p>
         <p>Special thanks to <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener noreferrer">MD380-Tools</a> and <a href="https://github.com/DaleFarnsworth/codeplug" target="_blank" rel="noopener noreferrer">GO Codeplug</a> as sources of inspiration.</p>
@@ -282,6 +284,26 @@ export function bindLandingActions(
     setRadioProgress(uiState, progress);
     syncRadioProgressUi(target, uiState);
   };
+
+  // Fetch callsign metadata on load if not already fetched
+  if (!uiState.callsignLastUpdated) {
+    var baseUrl = "";
+    if (import.meta.env.BASE_URL == "/") {
+      console.warn("BASE_URL is '/', using fallback URL for callsign metadata. This may indicate a misconfiguration in the build or you might be running in a dev environment.");
+      baseUrl = "https://iu2frl.github.io/md380-codeplug-editor/";
+    } else {
+      baseUrl = import.meta.env.BASE_URL;
+    }
+    fetch(`${baseUrl}callsign-meta.json`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((meta) => {
+        if (meta?.updatedAt) {
+          uiState.callsignLastUpdated = meta.updatedAt;
+          renderState(target, store, store.getState(), channelState, uiState);
+        }
+      })
+      .catch(() => {});
+  }
 
   target.querySelector<HTMLInputElement>("#risk-ack")?.addEventListener("change", (event) => {
     uiState.riskAccepted = (event.currentTarget as HTMLInputElement).checked;
