@@ -70,6 +70,12 @@ body {
   justify-content: center;
   min-height: 2.45rem;
   margin-bottom: 0;
+  min-width: 192px;
+}
+
+#create-new-md380-btn, 
+#create-new-md390-btn {
+  width: 100%; /* Forces each button to take a full line */
 }
 
 .status-line {
@@ -186,7 +192,6 @@ body {
 }
 
 .tile > .button {
-  align-self: flex-start;
   min-width: 360px;
   text-align: center;
 }
