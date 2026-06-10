@@ -1836,7 +1836,7 @@ function bindActiveTab(
     };
 
     if (nameInput) {
-      nameInput.addEventListener("input", () => {
+      nameInput.addEventListener("change", () => {
         if (uiState.selectedZoneId) {
           const existingIds = selectedZone?.channelIds ?? [];
           store.updateZone(uiState.selectedZoneId, nameInput.value, existingIds);
