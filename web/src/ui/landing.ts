@@ -89,6 +89,15 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open Callsign Workflow</button>
         </article>
       </section>
+
+      <section class="card tile landing-footer">
+        <h2>Credits</h2>
+        <p>Developed by IU2FRL on GitHub Pages and released under the GNU General Public License v3.<br>
+        This project is open source on <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener noreferrer">GitHub</a>.<br>
+        Please report any issues on <a href="https://github.com/iu2frl/md380-codeplug-editor/issues" target="_blank" rel="noopener noreferrer">md380-codeplug-editor/issues</a> and consider contributing if you can!
+        </p>
+        <p>Special thanks to <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener noreferrer">MD380-Tools</a> and <a href="https://github.com/DaleFarnsworth/codeplug" target="_blank" rel="noopener noreferrer">GO Codeplug</a> as sources of inspiration.</p>
+      </section>
     </main>
   `;
 }
