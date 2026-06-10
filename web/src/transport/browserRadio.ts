@@ -700,6 +700,11 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     }
     throw new Error("Timed out entering DFU idle state.");
   }
+
+  private async rebootRadio(): Promise<void> {
+    const device = this.requireConnectedDevice();
+    this.md380Custom(device, 0x91, 0x05);
+  }
 }
 
 function pickInterface(configuration: UsbConfigurationLike): UsbInterfaceLike | undefined {
