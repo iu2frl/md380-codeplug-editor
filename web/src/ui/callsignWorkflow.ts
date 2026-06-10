@@ -262,6 +262,7 @@ export function bindCallsignWorkflowActions(
       uiState.callsignStatusMessage = `Flash complete: ${uiState.callsignPayload.byteLength} bytes written at 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}.`;
       uiState.callsignProgressPercent = 100;
       uiState.callsignProgressLabel = "Flash complete.";
+      await transport.rebootRadio();
       showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";

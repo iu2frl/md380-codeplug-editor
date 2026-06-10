@@ -36,6 +36,7 @@ export interface BrowserRadioTransport {
   getSpiFlashSize(): Promise<number>;
   readSpiFlashRegion(address: number, size: number, onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
   writeSpiFlashRegion(address: number, data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
+  rebootRadio(): Promise<void>;
 }
 
 interface UsbRequestFilter {
@@ -701,7 +702,7 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     throw new Error("Timed out entering DFU idle state.");
   }
 
-  private async rebootRadio(): Promise<void> {
+  async rebootRadio(): Promise<void> {
     const device = this.requireConnectedDevice();
     this.md380Custom(device, 0x91, 0x05);
   }
