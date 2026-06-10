@@ -349,7 +349,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
 
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Callsign Database</h2>
-          <p>Manage callsign download/build/flash in a dedicated guided workflow, independent from codeplug editing.</p>
+          <p>Download the latest callsign database and write it to the transceiver.</p>
           <button id="open-callsign-workflow-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open Callsign Workflow</button>
         </article>
       </section>
