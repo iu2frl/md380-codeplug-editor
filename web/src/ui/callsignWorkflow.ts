@@ -77,7 +77,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
         <button id="callsign-workflow-build-btn" class="button callsign-action-btn" ${canBuild ? "" : "disabled"}>Download + Build DB</button>
         ${
           uiState.callsignPayload
-            ? `<br><p class="muted-text">Payload ready: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
+            ? `<p class="muted-text"><br>Payload ready: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
             : ""
         }
       </section>
@@ -177,6 +177,18 @@ export function bindCallsignWorkflowActions(
         throw new Error(`Download failed with HTTP ${response.status}.`);
       }
       const rawCsv = await response.text();
+
+      if (!rawCsv || rawCsv.trim() === "" || rawCsv.trim().length < 10) {
+        console.error("Downloaded CSV is empty or too short. Content:", rawCsv);
+        throw new Error("Downloaded CSV is empty.");
+      }
+
+      const firstLine = rawCsv.split("\n", 1)[0].trim();
+      if (firstLine != "RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY")
+      {
+        console.error("Unexpected CSV format. First line:", firstLine);
+        throw new Error("CSV format is invalid or unexpected.");
+      }
 
       uiState.callsignProgressPercent = 30;
       uiState.callsignProgressLabel = "Building database...";
