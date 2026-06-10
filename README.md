@@ -108,6 +108,13 @@ The web app supports optional SEO/runtime metadata configuration using Vite env 
 - Security reporting policy: [SECURITY.md](SECURITY.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
+## Acknowledgements
+
+This work was made possible thanks to two repos:
+
+- [MD380 Tools by travisgospeed](https://github.com/travisgoodspeed/md380tools)
+- [GO Codeplug by DaleFransworth](https://github.com/DaleFarnsworth/codeplug)
+
 ## License
 
 This project is released under the GNU GPL v3 license. See [LICENSE](LICENSE).
