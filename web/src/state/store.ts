@@ -86,9 +86,10 @@ export class EditorStore {
     this.emit();
   }
 
-  createBlank(format: "bin" | "rdt" = "bin"): void {
-    const fileName = format === "rdt" ? "blank-md380.rdt" : "blank-md380.bin";
-    this.load(fileName, createBlankCodeplugBytes(format, "MD380"));
+  createBlank(model: "MD380" | "MD390" = "MD380", format: "bin" | "rdt" = "bin"): void {
+    const lowerModel = model.toLowerCase();
+    const fileName = format === "rdt" ? `blank-${lowerModel}.rdt` : `blank-${lowerModel}.bin`;
+    this.load(fileName, createBlankCodeplugBytes(format, model));
   }
 
   undo(): void {

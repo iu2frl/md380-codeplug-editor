@@ -518,4 +518,13 @@ describe("createBlankCodeplugBytes", () => {
     expect(parsed.payloadLength).toBe(PAYLOAD_SIZE);
     expect(parsed.settings.radioName).toBe("NEW-RADIO");
   });
+
+  it("creates an MD390 blank profile when requested", () => {
+    const bytes = createBlankCodeplugBytes("bin", "MD390");
+    const parsed = parseCodeplug("blank-md390.bin", bytes);
+
+    expect(parsed.model).toBe("MD390");
+    expect(parsed.variant).toBe("S");
+    expect(parsed.settings.radioId).toBeGreaterThan(0);
+  });
 });

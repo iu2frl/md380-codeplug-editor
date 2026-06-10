@@ -416,7 +416,8 @@ describe("landing entrypoints", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    expect(container.querySelector("#create-new-btn")).not.toBeNull();
+    expect(container.querySelector("#create-new-md380-btn")).not.toBeNull();
+    expect(container.querySelector("#create-new-md390-btn")).not.toBeNull();
     expect(container.querySelector("#open-existing-btn")).not.toBeNull();
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
     expect(container.querySelector("#landing-radio-progress")).toBeNull();
@@ -426,12 +427,14 @@ describe("landing entrypoints", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    const createButton = container.querySelector<HTMLButtonElement>("#create-new-btn");
+    const createMd380Button = container.querySelector<HTMLButtonElement>("#create-new-md380-btn");
+    const createMd390Button = container.querySelector<HTMLButtonElement>("#create-new-md390-btn");
     const openButton = container.querySelector<HTMLButtonElement>("#open-existing-btn");
     const readButton = container.querySelector<HTMLButtonElement>("#landing-read-radio-btn");
     const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
 
-    expect(createButton?.disabled).toBe(true);
+    expect(createMd380Button?.disabled).toBe(true);
+    expect(createMd390Button?.disabled).toBe(true);
     expect(openButton?.disabled).toBe(true);
     expect(readButton?.disabled).toBe(true);
 
@@ -439,12 +442,13 @@ describe("landing entrypoints", () => {
     riskAck.checked = true;
     riskAck.dispatchEvent(new Event("change", { bubbles: true }));
 
-    expect(container.querySelector<HTMLButtonElement>("#create-new-btn")?.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>("#create-new-md380-btn")?.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>("#create-new-md390-btn")?.disabled).toBe(false);
     expect(container.querySelector<HTMLButtonElement>("#open-existing-btn")?.disabled).toBe(false);
     expect(container.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.disabled).toBe(false);
   });
 
-  it("creates and loads a blank codeplug from the landing action", () => {
+  it("creates and loads a blank MD380 codeplug from the landing action", () => {
     document.body.innerHTML = "";
     const { container, store } = mountApp();
 
@@ -453,11 +457,33 @@ describe("landing entrypoints", () => {
     riskAck.checked = true;
     riskAck.dispatchEvent(new Event("change", { bubbles: true }));
 
-    click(container, "#create-new-btn");
+    click(container, "#create-new-md380-btn");
 
     const snapshot = store.getState();
     expect(snapshot.document?.fileName).toBe("blank-md380.bin");
     expect(snapshot.document?.settings.radioName).toBe("NEW-RADIO");
+    expect(snapshot.document?.model).toBe("MD380");
+    expect(snapshot.document?.variant).toBe("D");
+    expect(snapshot.document?.channels).toHaveLength(0);
+    expect(container.querySelector("#export-btn")).not.toBeNull();
+  });
+
+  it("creates and loads a blank MD390 codeplug from the landing action", () => {
+    document.body.innerHTML = "";
+    const { container, store } = mountApp();
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#create-new-md390-btn");
+
+    const snapshot = store.getState();
+    expect(snapshot.document?.fileName).toBe("blank-md390.bin");
+    expect(snapshot.document?.settings.radioName).toBe("NEW-RADIO");
+    expect(snapshot.document?.model).toBe("MD390");
+    expect(snapshot.document?.variant).toBe("S");
     expect(snapshot.document?.channels).toHaveLength(0);
     expect(container.querySelector("#export-btn")).not.toBeNull();
   });

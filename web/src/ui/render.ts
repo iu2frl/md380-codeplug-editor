@@ -228,11 +228,14 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
       <section class="tiles">
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
-          <p>Start from a blank MD380 profile and build your codeplug from scratch.</p>
+          <p>Start from a blank profile and build your codeplug from scratch.</p>
           <p class="risk-text">
           This feature is in the alpha testing stage and might need further refinements to ensure the generated codeplugs are fully compatible with all radio models and firmware versions.
           </p>
-          <button id="create-new-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create New</button>
+          <div class="actions">
+            <button id="create-new-md380-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create MD380 codeplug</button>
+            <button id="create-new-md390-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create MD390 codeplug</button>
+          </div>
         </article>
 
         <article class="card tile ${riskAccepted ? "" : "muted"}">
@@ -285,11 +288,18 @@ function bindLandingActions(
     target.querySelector<HTMLInputElement>("#file-input")?.click();
   });
 
-  target.querySelector<HTMLButtonElement>("#create-new-btn")?.addEventListener("click", () => {
+  target.querySelector<HTMLButtonElement>("#create-new-md380-btn")?.addEventListener("click", () => {
     if (!uiState.riskAccepted) {
       return;
     }
-    store.createBlank("bin");
+    store.createBlank("MD380", "bin");
+  });
+
+  target.querySelector<HTMLButtonElement>("#create-new-md390-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    store.createBlank("MD390", "bin");
   });
 
   target.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.addEventListener("click", async () => {
