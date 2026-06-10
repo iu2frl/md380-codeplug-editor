@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCodeplug, serializeCodeplug } from "./parser";
+import { createBlankCodeplugBytes, parseCodeplug, serializeCodeplug } from "./parser";
 
 const PAYLOAD_SIZE = 262144;
 const RDT_HEADER_SIZE = 549;
@@ -485,5 +485,37 @@ describe("serializeCodeplug", () => {
     expect(reparsed.channels[0].channelMode).toBe("Digital");
     expect(reparsed.channels[0].colorCode).toBe(9);
     expect(reparsed.channels[0].repeaterSlot).toBe(2);
+  });
+});
+
+describe("createBlankCodeplugBytes", () => {
+  it("creates a parseable blank .bin codeplug with sensible defaults", () => {
+    const bytes = createBlankCodeplugBytes("bin");
+    expect(bytes).toHaveLength(PAYLOAD_SIZE);
+
+    const parsed = parseCodeplug("blank.bin", bytes);
+    expect(parsed.model).toBe("MD380");
+    expect(parsed.variant).toBe("D");
+    expect(parsed.settings.radioId).toBeGreaterThan(0);
+    expect(parsed.settings.radioName).toBe("NEW-RADIO");
+    expect(parsed.channels).toHaveLength(0);
+    expect(parsed.contacts).toHaveLength(0);
+    expect(parsed.zones).toHaveLength(0);
+
+    const out = serializeCodeplug(parsed, bytes);
+    const reparsed = parseCodeplug("blank.bin", out);
+    expect(reparsed.settings.radioId).toBe(parsed.settings.radioId);
+    expect(reparsed.settings.radioName).toBe(parsed.settings.radioName);
+  });
+
+  it("creates a parseable blank .rdt wrapper", () => {
+    const bytes = createBlankCodeplugBytes("rdt");
+    expect(bytes).toHaveLength(RDT_SIZE);
+    expect(String.fromCharCode(...bytes.slice(0, 5))).toBe("DfuSe");
+
+    const parsed = parseCodeplug("blank.rdt", bytes);
+    expect(parsed.payloadOffset).toBe(RDT_HEADER_SIZE);
+    expect(parsed.payloadLength).toBe(PAYLOAD_SIZE);
+    expect(parsed.settings.radioName).toBe("NEW-RADIO");
   });
 });

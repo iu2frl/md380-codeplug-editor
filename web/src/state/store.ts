@@ -1,4 +1,4 @@
-import { parseCodeplug, serializeCodeplug } from "../domain/parser";
+import { createBlankCodeplugBytes, parseCodeplug, serializeCodeplug } from "../domain/parser";
 import type { CodeplugDocument, ValidationIssue } from "../domain/types";
 import { validateDocument } from "../domain/validation";
 
@@ -84,6 +84,11 @@ export class EditorStore {
       };
     }
     this.emit();
+  }
+
+  createBlank(format: "bin" | "rdt" = "bin"): void {
+    const fileName = format === "rdt" ? "blank-md380.rdt" : "blank-md380.bin";
+    this.load(fileName, createBlankCodeplugBytes(format, "MD380"));
   }
 
   undo(): void {

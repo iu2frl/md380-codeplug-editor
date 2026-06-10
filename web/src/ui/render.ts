@@ -203,7 +203,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
       <section class="card risk-card">
         <h2>Warning</h2>
         <p class="risk-text">
-          This is a beta app.<br>
+          This app is still under development.<br>
           Not all features were tested and using it may create an unusable codeplug that can freeze your transceiver.<br>
           It is very hard to brick these devices thanks to their robust design and bootloader, but no operation can be considered 100% safe.<br>
           By proceeding, you accept all risk and agree that the project maintainer is not responsible for any device damage or malfunctioning.<br>
@@ -228,7 +228,10 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
       <section class="tiles">
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
-          <p>Create-new capability is not available yet.</p>
+          <p>Start from a blank MD380 profile and build your codeplug from scratch.</p>
+          <p class="risk-text">
+          This feature is in the alpha testing stage and might need further refinements to ensure the generated codeplugs are fully compatible with all radio models and firmware versions.
+          </p>
           <button id="create-new-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create New</button>
         </article>
 
@@ -286,7 +289,7 @@ function bindLandingActions(
     if (!uiState.riskAccepted) {
       return;
     }
-    window.alert("Create new codeplug is not available yet.");
+    store.createBlank("bin");
   });
 
   target.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.addEventListener("click", async () => {

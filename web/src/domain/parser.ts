@@ -517,6 +517,14 @@ function readAscii(bytes: Uint8Array, offset: number, length: number): string {
   return String.fromCharCode(...values).trim();
 }
 
+function writeAscii(bytes: Uint8Array, offset: number, length: number, value: string): void {
+  bytes.fill(0, offset, offset + length);
+  const safeValue = value.slice(0, length);
+  for (let index = 0; index < safeValue.length; index += 1) {
+    bytes[offset + index] = safeValue.charCodeAt(index) & 0xff;
+  }
+}
+
 function readLittleInt(bytes: Uint8Array, offset: number, size: number): number {
   let value = 0;
   for (let index = 0; index < size; index += 1) {
@@ -1057,6 +1065,42 @@ function validateInput(fileName: string, bytes: Uint8Array): void {
   }
 
   throw new CodeplugParseError(".dfu import is not supported in-browser yet. Use .rdt or .bin files.");
+}
+
+export function createBlankCodeplugBytes(format: "bin" | "rdt" = "bin", model: "MD380" | "MD390" = "MD380"): Uint8Array {
+  const out = format === "rdt" ? new Uint8Array(KNOWN_RDT_SIZE) : new Uint8Array(KNOWN_RAW_SIZE);
+
+  if (format === "rdt") {
+    out.fill(0x5a, 0, RDT_HEADER_SIZE);
+    out.set(new TextEncoder().encode("DfuSe"), 0);
+    out.fill(0xa5, RDT_HEADER_SIZE + PAYLOAD_SIZE);
+  }
+
+  const payloadOffset = format === "rdt" ? RDT_HEADER_SIZE : 0;
+  const payload = out.subarray(payloadOffset, payloadOffset + PAYLOAD_SIZE);
+
+  writeAscii(payload, MODEL_NAME_OFFSET, MODEL_NAME_SIZE, model);
+  writeLittleInt(payload, GENERAL_SETTINGS_OFFSET + RADIO_ID_OFFSET, RADIO_ID_SIZE, 1000001);
+  writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, RADIO_NAME_SIZE, "NEW-RADIO");
+  writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + INTRO_SCREEN_LINE1_OFFSET, INTRO_SCREEN_LINE_SIZE, "MD380 EDITOR");
+  writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + INTRO_SCREEN_LINE2_OFFSET, INTRO_SCREEN_LINE_SIZE, "BLANK CODEPLUG");
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + DISABLE_ALL_TONES_BIT_OFFSET, 1, 1);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + TX_PREAMBLE_DURATION_BIT_OFFSET, 8, 10);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + VOX_SENSITIVITY_BIT_OFFSET, 8, 5);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + RX_LOW_BATTERY_INTERVAL_BIT_OFFSET, 8, 6);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + BACKLIGHT_TIMEOUT_BIT_OFFSET, 2, 0);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + KEYPAD_AUTO_LOCK_BIT_OFFSET, 8, 0xff);
+  writeBitField(payload, GENERAL_SETTINGS_OFFSET * 8 + TIME_ZONE_BIT_OFFSET, 5, 12);
+  writeBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8, 2);
+  writeNibbleDecimalString(payload, BASIC_CPS_VERSION_OFFSET, BASIC_CPS_VERSION_SIZE, "0001");
+
+  payload[RADIO_BUTTONS_OFFSET] = 14;
+  payload[RADIO_BUTTONS_OFFSET + 1] = 4;
+  payload[RADIO_BUTTONS_OFFSET + 2] = 5;
+  payload[RADIO_BUTTONS_OFFSET + 3] = 23;
+  payload[BUTTON_DEFINITIONS_OFFSET] = 4;
+
+  return out;
 }
 
 export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocument {

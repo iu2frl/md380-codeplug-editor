@@ -443,6 +443,24 @@ describe("landing entrypoints", () => {
     expect(container.querySelector<HTMLButtonElement>("#open-existing-btn")?.disabled).toBe(false);
     expect(container.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.disabled).toBe(false);
   });
+
+  it("creates and loads a blank codeplug from the landing action", () => {
+    document.body.innerHTML = "";
+    const { container, store } = mountApp();
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#create-new-btn");
+
+    const snapshot = store.getState();
+    expect(snapshot.document?.fileName).toBe("blank-md380.bin");
+    expect(snapshot.document?.settings.radioName).toBe("NEW-RADIO");
+    expect(snapshot.document?.channels).toHaveLength(0);
+    expect(container.querySelector("#export-btn")).not.toBeNull();
+  });
 });
 
 describe("radio transfer progress", () => {
