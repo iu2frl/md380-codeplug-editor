@@ -10,8 +10,16 @@ import {
 interface ChannelPanelState {
   query: string;
   modeFilter: "all" | "Analog" | "Digital";
+  bulkTarget: "filtered" | "selected";
+  bulkSelectionIds: number[];
   bulkMode: "" | "Analog" | "Digital";
   bulkPower: "" | "Low" | "High";
+  bulkBandwidth: "" | "12.5" | "20" | "25";
+  bulkRepeaterSlot: "" | "1" | "2";
+  bulkColorCode: string;
+  bulkRxFrequencyMHz: string;
+  bulkTxFrequencyMHz: string;
+  bulkTxOffsetMHz: string;
 }
 
 type ActiveTab =
@@ -125,8 +133,16 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = {
     query: "",
     modeFilter: "all",
+    bulkTarget: "filtered",
+    bulkSelectionIds: [],
     bulkMode: "",
     bulkPower: "",
+    bulkBandwidth: "",
+    bulkRepeaterSlot: "",
+    bulkColorCode: "",
+    bulkRxFrequencyMHz: "",
+    bulkTxFrequencyMHz: "",
+    bulkTxOffsetMHz: "",
   };
 
   const uiState: UiState = {
@@ -942,6 +958,8 @@ sudo udevadm trigger</pre>
     });
 
     const selectedChannel = uiState.selectedChannelId ? document.channels.find((c) => c.id === uiState.selectedChannelId) : null;
+    const filteredIds = new Set(filteredChannels.map((channel) => channel.id));
+    const selectedInFilterCount = channelState.bulkSelectionIds.filter((id) => filteredIds.has(id)).length;
 
     return `
       <h2>Channels</h2>
@@ -956,13 +974,54 @@ sudo udevadm trigger</pre>
               <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
             </select>
           </div>
+          <div class="bulkbar">
+            <strong>Bulk Update</strong>
+            <select id="bulk-target">
+              <option value="filtered" ${channelState.bulkTarget === "filtered" ? "selected" : ""}>Filtered (${filteredChannels.length})</option>
+              <option value="selected" ${channelState.bulkTarget === "selected" ? "selected" : ""}>Selected (${channelState.bulkSelectionIds.length})</option>
+            </select>
+            <button class="button ghost tiny" id="bulk-select-filtered">Select Filtered (${filteredChannels.length})</button>
+            <button class="button ghost tiny" id="bulk-clear-selection" ${channelState.bulkSelectionIds.length === 0 ? "disabled" : ""}>Clear Selected</button>
+            <select id="bulk-mode">
+              <option value="">Mode (unchanged)</option>
+              <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
+              <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
+            </select>
+            <select id="bulk-power">
+              <option value="">Power (unchanged)</option>
+              <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
+              <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
+            </select>
+            <select id="bulk-bandwidth">
+              <option value="">Bandwidth (unchanged)</option>
+              <option value="12.5" ${channelState.bulkBandwidth === "12.5" ? "selected" : ""}>12.5 kHz</option>
+              <option value="20" ${channelState.bulkBandwidth === "20" ? "selected" : ""}>20 kHz</option>
+              <option value="25" ${channelState.bulkBandwidth === "25" ? "selected" : ""}>25 kHz</option>
+            </select>
+            <select id="bulk-slot">
+              <option value="">Time Slot (unchanged)</option>
+              <option value="1" ${channelState.bulkRepeaterSlot === "1" ? "selected" : ""}>TS1</option>
+              <option value="2" ${channelState.bulkRepeaterSlot === "2" ? "selected" : ""}>TS2</option>
+            </select>
+            <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="Color Code (unchanged)" value="${escapeHtml(channelState.bulkColorCode)}" />
+            <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="RX MHz (unchanged)" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
+            <input id="bulk-tx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="TX MHz (unchanged)" value="${escapeHtml(channelState.bulkTxFrequencyMHz)}" />
+            <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="Shift MHz (unchanged)" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
+            <button class="button tiny" id="apply-bulk">Apply</button>
+            <small class="muted-text">${selectedInFilterCount} of ${filteredChannels.length} filtered channels are selected.</small>
+          </div>
           <div class="list">
             ${filteredChannels
               .map(
                 (channel) => `
                   <div class="list-item ${channel.id === uiState.selectedChannelId ? "selected" : ""}" data-channel-select="${channel.id}">
-                    <div class="list-item-name">${escapeHtml(channel.name)}</div>
-                    <div class="list-item-meta">${channel.rxFrequencyMHz.toFixed(4)} MHz (${channel.channelMode})</div>
+                    <label class="channel-bulk-select" title="Select for bulk updates">
+                      <input type="checkbox" data-channel-bulk-toggle="${channel.id}" ${channelState.bulkSelectionIds.includes(channel.id) ? "checked" : ""} />
+                    </label>
+                    <div class="list-item-content">
+                      <div class="list-item-name">${escapeHtml(channel.name)}</div>
+                      <div class="list-item-meta">${channel.rxFrequencyMHz.toFixed(4)} MHz (${channel.channelMode})</div>
+                    </div>
                   </div>
                 `,
               )
@@ -1249,20 +1308,6 @@ sudo udevadm trigger</pre>
             </div>
             <div class="form-actions">
               <button class="button tiny" id="channel-editor-delete">Delete Channel</button>
-            </div>
-            <div class="bulkbar">
-              <strong>Bulk Update (${filteredChannels.length})</strong>
-              <select id="bulk-mode">
-                <option value="">Mode (unchanged)</option>
-                <option value="Analog">Analog</option>
-                <option value="Digital">Digital</option>
-              </select>
-              <select id="bulk-power">
-                <option value="">Power (unchanged)</option>
-                <option value="Low">Low</option>
-                <option value="High">High</option>
-              </select>
-              <button class="button tiny" id="apply-bulk">Apply To Filtered</button>
             </div>
           `
               : `<p class="muted-text">Select a channel to edit</p>`
@@ -1994,6 +2039,26 @@ function bindActiveTab(
     });
   }
 
+  for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-channel-bulk-toggle]")) {
+    toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    toggle.addEventListener("change", () => {
+      const id = Number.parseInt(toggle.dataset.channelBulkToggle ?? "", 10);
+      if (Number.isNaN(id)) {
+        return;
+      }
+      if (toggle.checked) {
+        if (!channelState.bulkSelectionIds.includes(id)) {
+          channelState.bulkSelectionIds = [...channelState.bulkSelectionIds, id];
+        }
+      } else {
+        channelState.bulkSelectionIds = channelState.bulkSelectionIds.filter((itemId) => itemId !== id);
+      }
+      renderState(target, store, store.getState(), channelState, uiState);
+    });
+  }
+
   // Editor fields
   const nameInput = panel.querySelector<HTMLInputElement>("#channel-editor-name");
   const rxInput = panel.querySelector<HTMLInputElement>("#channel-editor-rx");
@@ -2255,6 +2320,21 @@ function bindActiveTab(
   }
 
   // Bulk update
+  panel.querySelector<HTMLSelectElement>("#bulk-target")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.bulkTarget = value === "selected" ? "selected" : "filtered";
+  });
+
+  panel.querySelector<HTMLButtonElement>("#bulk-select-filtered")?.addEventListener("click", () => {
+    channelState.bulkSelectionIds = filteredChannels.map((channel) => channel.id);
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
+  panel.querySelector<HTMLButtonElement>("#bulk-clear-selection")?.addEventListener("click", () => {
+    channelState.bulkSelectionIds = [];
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
   panel.querySelector<HTMLSelectElement>("#bulk-mode")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
     channelState.bulkMode = value === "Analog" || value === "Digital" ? value : "";
@@ -2265,10 +2345,42 @@ function bindActiveTab(
     channelState.bulkPower = value === "Low" || value === "High" ? value : "";
   });
 
+  panel.querySelector<HTMLSelectElement>("#bulk-bandwidth")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.bulkBandwidth = value === "20" || value === "25" || value === "12.5" ? value : "";
+  });
+
+  panel.querySelector<HTMLSelectElement>("#bulk-slot")?.addEventListener("change", (event) => {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    channelState.bulkRepeaterSlot = value === "1" || value === "2" ? value : "";
+  });
+
+  panel.querySelector<HTMLInputElement>("#bulk-color-code")?.addEventListener("input", (event) => {
+    channelState.bulkColorCode = (event.currentTarget as HTMLInputElement).value;
+  });
+
+  panel.querySelector<HTMLInputElement>("#bulk-rx-frequency")?.addEventListener("input", (event) => {
+    channelState.bulkRxFrequencyMHz = (event.currentTarget as HTMLInputElement).value;
+  });
+
+  panel.querySelector<HTMLInputElement>("#bulk-tx-frequency")?.addEventListener("input", (event) => {
+    channelState.bulkTxFrequencyMHz = (event.currentTarget as HTMLInputElement).value;
+  });
+
+  panel.querySelector<HTMLInputElement>("#bulk-tx-offset")?.addEventListener("input", (event) => {
+    channelState.bulkTxOffsetMHz = (event.currentTarget as HTMLInputElement).value;
+  });
+
   panel.querySelector<HTMLButtonElement>("#apply-bulk")?.addEventListener("click", () => {
     const patch: {
       channelMode?: "Analog" | "Digital";
       power?: "Low" | "High";
+      colorCode?: number;
+      repeaterSlot?: 1 | 2;
+      bandwidthKhz?: "12.5" | "20" | "25";
+      rxFrequencyMHz?: number;
+      txFrequencyMHz?: number;
+      txOffsetMHz?: number;
     } = {};
     if (channelState.bulkMode) {
       patch.channelMode = channelState.bulkMode;
@@ -2276,11 +2388,75 @@ function bindActiveTab(
     if (channelState.bulkPower) {
       patch.power = channelState.bulkPower;
     }
+    if (channelState.bulkBandwidth) {
+      patch.bandwidthKhz = channelState.bulkBandwidth;
+    }
+    if (channelState.bulkRepeaterSlot) {
+      patch.repeaterSlot = channelState.bulkRepeaterSlot === "2" ? 2 : 1;
+    }
+    if (channelState.bulkColorCode.trim().length > 0) {
+      const parsed = Number.parseInt(channelState.bulkColorCode, 10);
+      if (Number.isNaN(parsed) || parsed < 0 || parsed > 15) {
+        window.alert("Color Code must be between 0 and 15.");
+        return;
+      }
+      patch.colorCode = parsed;
+    }
+
+    const hasBulkRx = channelState.bulkRxFrequencyMHz.trim().length > 0;
+    const hasBulkTx = channelState.bulkTxFrequencyMHz.trim().length > 0;
+    const hasBulkOffset = channelState.bulkTxOffsetMHz.trim().length > 0;
+
+    if (hasBulkRx) {
+      const parsed = Number.parseFloat(channelState.bulkRxFrequencyMHz);
+      if (Number.isNaN(parsed) || parsed < 100 || parsed > 1000) {
+        window.alert("RX frequency must be between 100 and 1000 MHz.");
+        return;
+      }
+      patch.rxFrequencyMHz = parsed;
+    }
+
+    if (hasBulkTx) {
+      const parsed = Number.parseFloat(channelState.bulkTxFrequencyMHz);
+      if (Number.isNaN(parsed) || parsed < 100 || parsed > 1000) {
+        window.alert("TX frequency must be between 100 and 1000 MHz.");
+        return;
+      }
+      patch.txFrequencyMHz = parsed;
+    }
+
+    if (hasBulkOffset) {
+      const parsed = Number.parseFloat(channelState.bulkTxOffsetMHz);
+      if (Number.isNaN(parsed) || parsed < -100 || parsed > 100) {
+        window.alert("Shift must be between -100 and +100 MHz.");
+        return;
+      }
+      patch.txOffsetMHz = parsed;
+    }
+
+    if (hasBulkRx && hasBulkTx && hasBulkOffset) {
+      const expectedTx = (patch.rxFrequencyMHz ?? 0) + (patch.txOffsetMHz ?? 0);
+      if (Math.abs(expectedTx - (patch.txFrequencyMHz ?? 0)) > 0.00001) {
+        window.alert("RX + Shift must match TX when all three are provided.");
+        return;
+      }
+    }
+
     if (Object.keys(patch).length === 0) {
       return;
     }
+
+    const selectedChannelIds = channelState.bulkTarget === "selected"
+      ? channelState.bulkSelectionIds.filter((channelId) => document.channels.some((channel) => channel.id === channelId))
+      : filteredChannels.map((channel) => channel.id);
+
+    if (selectedChannelIds.length === 0) {
+      window.alert(channelState.bulkTarget === "selected" ? "Select at least one channel for bulk update." : "No channels match current filters.");
+      return;
+    }
+
     store.bulkUpdateChannels(
-      filteredChannels.map((channel) => channel.id),
+      selectedChannelIds,
       patch,
     );
   });

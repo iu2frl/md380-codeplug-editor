@@ -557,6 +557,9 @@ export class EditorStore {
       colorCode?: number;
       repeaterSlot?: 1 | 2;
       bandwidthKhz?: "12.5" | "20" | "25";
+      rxFrequencyMHz?: number;
+      txFrequencyMHz?: number;
+      txOffsetMHz?: number;
     },
   ): void {
     if (!this.state.document || channelIds.length === 0) {
@@ -584,6 +587,35 @@ export class EditorStore {
       if (patch.bandwidthKhz !== undefined) {
         channel.bandwidthKhz = patch.bandwidthKhz;
       }
+
+      const hasRx = patch.rxFrequencyMHz !== undefined;
+      const hasTx = patch.txFrequencyMHz !== undefined;
+      const hasOffset = patch.txOffsetMHz !== undefined;
+
+      if (hasRx && hasOffset) {
+        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
+        channel.txOffsetMHz = patch.txOffsetMHz as number;
+        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
+      } else if (hasRx && hasTx) {
+        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
+        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
+        channel.txOffsetMHz = channel.txFrequencyMHz - channel.rxFrequencyMHz;
+      } else if (hasTx && hasOffset) {
+        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
+        channel.txOffsetMHz = patch.txOffsetMHz as number;
+        channel.rxFrequencyMHz = channel.txFrequencyMHz - channel.txOffsetMHz;
+      } else if (hasRx) {
+        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
+        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
+      } else if (hasTx) {
+        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
+        channel.txOffsetMHz = channel.txFrequencyMHz - channel.rxFrequencyMHz;
+      } else if (hasOffset) {
+        channel.txOffsetMHz = patch.txOffsetMHz as number;
+        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
+      }
+
+      channel._dirty = true;
     }
 
     this.refreshDirty();

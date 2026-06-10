@@ -369,6 +369,76 @@ describe("channels tab", () => {
     if (!listAfter) throw new Error("channels list not found after rerender");
     expect(listAfter.scrollTop).toBe(180);
   });
+
+  it("shows bulk controls without selecting a channel", () => {
+    click(container, '[data-tab="channels"]');
+    expect(container.querySelector("#apply-bulk")).not.toBeNull();
+    expect(container.querySelector("#bulk-target")).not.toBeNull();
+    expect(container.querySelector("#bulk-bandwidth")).not.toBeNull();
+  });
+
+  it("applies bulk patch to filtered channels", () => {
+    click(container, '[data-tab="channels"]');
+
+    const searchInput = container.querySelector<HTMLInputElement>("#channel-search");
+    if (!searchInput) throw new Error("search input not found");
+    searchInput.value = "Alpha";
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const bandwidth = container.querySelector<HTMLSelectElement>("#bulk-bandwidth");
+    const slot = container.querySelector<HTMLSelectElement>("#bulk-slot");
+    const colorCode = container.querySelector<HTMLInputElement>("#bulk-color-code");
+    if (!bandwidth || !slot || !colorCode) throw new Error("bulk controls not found");
+
+    bandwidth.value = "20";
+    bandwidth.dispatchEvent(new Event("change", { bubbles: true }));
+    slot.value = "2";
+    slot.dispatchEvent(new Event("change", { bubbles: true }));
+    colorCode.value = "7";
+    colorCode.dispatchEvent(new Event("input", { bubbles: true }));
+
+    click(container, "#apply-bulk");
+
+    const snapshot = store.getState();
+    const alpha = snapshot.document?.channels.find((channel) => channel.id === 1);
+    const bravo = snapshot.document?.channels.find((channel) => channel.id === 2);
+    expect(alpha?.bandwidthKhz).toBe("20");
+    expect(alpha?.repeaterSlot).toBe(2);
+    expect(alpha?.colorCode).toBe(7);
+    expect(bravo?.bandwidthKhz).toBe("25");
+    expect(bravo?.repeaterSlot).toBe(1);
+    expect(bravo?.colorCode).toBe(0);
+  });
+
+  it("applies bulk RX and shift and derives TX", () => {
+    click(container, '[data-tab="channels"]');
+
+    const searchInput = container.querySelector<HTMLInputElement>("#channel-search");
+    if (!searchInput) throw new Error("search input not found");
+    searchInput.value = "Alpha";
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const rx = container.querySelector<HTMLInputElement>("#bulk-rx-frequency");
+    const offset = container.querySelector<HTMLInputElement>("#bulk-tx-offset");
+    if (!rx || !offset) throw new Error("bulk frequency controls not found");
+
+    rx.value = "430.125";
+    rx.dispatchEvent(new Event("input", { bubbles: true }));
+    offset.value = "5";
+    offset.dispatchEvent(new Event("input", { bubbles: true }));
+
+    click(container, "#apply-bulk");
+
+    const snapshot = store.getState();
+    const alpha = snapshot.document?.channels.find((channel) => channel.id === 1);
+    const bravo = snapshot.document?.channels.find((channel) => channel.id === 2);
+    expect(alpha?.rxFrequencyMHz).toBeCloseTo(430.125, 6);
+    expect(alpha?.txOffsetMHz).toBeCloseTo(5, 6);
+    expect(alpha?.txFrequencyMHz).toBeCloseTo(435.125, 6);
+    expect(bravo?.rxFrequencyMHz).toBeCloseTo(145.5, 6);
+    expect(bravo?.txOffsetMHz).toBeCloseTo(0, 6);
+    expect(bravo?.txFrequencyMHz).toBeCloseTo(145.5, 6);
+  });
 });
 
 describe("newly enabled tabs", () => {

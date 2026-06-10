@@ -342,9 +342,15 @@ select {
 .bulkbar {
   margin-top: 0.55rem;
   display: grid;
-  grid-template-columns: auto 1fr 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
-  align-items: center;
+  align-items: stretch;
+}
+
+.bulkbar strong,
+.bulkbar small,
+.bulkbar .button {
+  grid-column: 1 / -1;
 }
 
 .row {
@@ -419,6 +425,20 @@ select {
   background: var(--card);
   cursor: pointer;
   transition: all 200ms ease;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.channel-bulk-select {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+
+.list-item-content {
+  min-width: 0;
 }
 
 .list-item:hover {
