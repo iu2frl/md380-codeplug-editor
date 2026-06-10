@@ -174,20 +174,21 @@ export function bindCallsignWorkflowActions(
     try {
       const response = await fetch(source, { cache: "no-store" });
       if (!response.ok) {
+        console.error("Failed to download CSV from ${source}. HTTP status: ", response.status);
         throw new Error(`Download failed with HTTP ${response.status}.`);
       }
       const rawCsv = await response.text();
 
       if (!rawCsv || rawCsv.trim() === "" || rawCsv.trim().length < 10) {
-        console.error("Downloaded CSV is empty or too short. Content:", rawCsv);
-        throw new Error("Downloaded CSV is empty.");
+        console.error("Downloaded CSV is empty or too short. Content starts with:", rawCsv.slice(0, 200));
+        throw new Error("Downloaded CSV is empty. Check the console for details and contact support if the issue persists.");
       }
 
       const firstLine = rawCsv.split("\n", 1)[0].trim();
       if (firstLine != "RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY")
       {
         console.error("Unexpected CSV format. First line:", firstLine);
-        throw new Error("CSV format is invalid or unexpected.");
+        throw new Error("CSV format is invalid or unexpected. Check the console for details and contact support if the issue persists.");
       }
 
       uiState.callsignProgressPercent = 30;
