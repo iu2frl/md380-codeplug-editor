@@ -716,6 +716,49 @@ select {
   word-break: break-word;
 }
 
+.guide-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+}
+
+.guide-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(21, 22, 22, 0.4);
+}
+
+.guide-modal-card {
+  position: relative;
+  width: min(860px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff8eb;
+  box-shadow: 0 20px 44px rgba(21, 22, 22, 0.28);
+  padding: 1rem 1rem 1.2rem;
+}
+
+.guide-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.guide-modal-header h2 {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.3rem);
+}
+
+.guide-modal h3 {
+  margin: 0.9rem 0 0.35rem;
+}
+
 .zone-selected-actions {
   display: flex;
   gap: 0.25rem;
@@ -774,6 +817,12 @@ select {
 
   .disabled-grid {
     grid-template-columns: 1fr;
+  }
+
+  .guide-modal-card {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    padding: 0.85rem;
   }
 }
 

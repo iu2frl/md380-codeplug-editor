@@ -587,8 +587,21 @@ describe("newly enabled tabs", () => {
     expect(container.querySelector("#radio-transfer-connect")).not.toBeNull();
     expect(container.querySelector("#radio-transfer-read")).not.toBeNull();
     expect(container.querySelector("#radio-transfer-write")).not.toBeNull();
+    expect(container.querySelector("#radio-transfer-setup-guide-btn")).not.toBeNull();
     expect(container.querySelector("#radio-transfer-progress")).not.toBeNull();
     expect(container.textContent).toContain("Radio Transfer");
+  });
+
+  it("opens full setup guide popup from radio transfer", () => {
+    click(container, '[data-tab="radio-transfer"]');
+    click(container, "#radio-transfer-setup-guide-btn");
+
+    const modal = container.querySelector("#guide-modal");
+    expect(modal).not.toBeNull();
+    expect(modal?.textContent).toContain("Live Read / WebUSB Setup Guide");
+    expect(modal?.textContent).toContain("Windows Driver Setup");
+    expect(modal?.textContent).toContain("Linux Setup");
+    expect(modal?.textContent).toContain("macOS Setup");
   });
 });
 
@@ -600,8 +613,28 @@ describe("landing entrypoints", () => {
     expect(container.querySelector("#create-new-md380-btn")).not.toBeNull();
     expect(container.querySelector("#create-new-md390-btn")).not.toBeNull();
     expect(container.querySelector("#open-existing-btn")).not.toBeNull();
+    expect(container.querySelector("#open-existing-guide-btn")).not.toBeNull();
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
+    expect(container.querySelector("#landing-read-guide-btn")).not.toBeNull();
     expect(container.querySelector("#landing-radio-progress")).toBeNull();
+  });
+
+  it("opens noob-proof import guide popup from landing", () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#open-existing-guide-btn");
+
+    const modal = container.querySelector("#guide-modal");
+    expect(modal).not.toBeNull();
+    expect(modal?.textContent).toContain("Open Existing Codeplug: Noob-Proof Procedure");
+    expect(modal?.textContent).toContain("radio-read");
+    expect(modal?.textContent).toContain("radio-write");
   });
 
   it("keeps all landing buttons disabled until risk checkbox is selected", () => {

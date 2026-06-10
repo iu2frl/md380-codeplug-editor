@@ -39,6 +39,7 @@ type ActiveTab =
 interface UiState {
   activeTab: ActiveTab;
   riskAccepted: boolean;
+  activeGuideModal: "import" | "landing-read" | "radio-transfer" | null;
   selectedZoneId: number | null;
   selectedChannelId: number | null;
   channelsListScrollTop: number;
@@ -148,6 +149,7 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   const uiState: UiState = {
     activeTab: "basic",
     riskAccepted: false,
+    activeGuideModal: null,
     selectedZoneId: null,
     selectedChannelId: null,
     channelsListScrollTop: 0,
@@ -170,9 +172,10 @@ function renderState(
   uiState: UiState,
 ): void {
   if (!state.document) {
-    target.innerHTML = renderLanding(state.importError, uiState.riskAccepted, uiState);
+    target.innerHTML = `${renderLanding(state.importError, uiState.riskAccepted, uiState)}${renderGuideModal(uiState)}`;
     bindFileInputs(target, store);
     bindLandingActions(target, store, state, channelState, uiState);
+    bindGuideModalActions(target, store, state, channelState, uiState);
     return;
   }
 
@@ -183,10 +186,11 @@ function renderState(
     }
   }
 
-  target.innerHTML = renderLoadedLayout(state, uiState);
+  target.innerHTML = `${renderLoadedLayout(state, uiState)}${renderGuideModal(uiState)}`;
   bindFileInputs(target, store);
   bindTopActions(target, store, state);
   bindTabs(target, uiState, state, store, channelState);
+  bindGuideModalActions(target, store, state, channelState, uiState);
 
   const activeTab = target.querySelector<HTMLElement>("#active-tab-panel");
   const validation = target.querySelector<HTMLElement>("#validation");
@@ -267,28 +271,163 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
 
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Open Existing Codeplug</h2>
-          <ol>
-            <li>See: <a href="https://github.com/iu2frl/md380-codeplug-editor/tree/main/tools" target="_blank">tools</a> for instructions.</li>
-            <li>Select the generated <code>.rdt</code> or <code>.bin</code> file below.</li>
-            <li>Edit and export, then write back with <code>radio-write</code>.</li>
-          </ol>
+          <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.</p>
           <button id="open-existing-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open .rdt/.bin</button>
+          <button id="open-existing-guide-btn" class="button ghost" ${riskAccepted ? "" : "disabled"}>Full Step-by-Step Guide</button>
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
 
         <article class="card tile ${riskAccepted ? "" : "muted"}">
           <h2>Read From Radio</h2>
-          <ol>
-            <li>Connect radio in programming mode and approve WebUSB access.</li>
-            <li>Read codeplug directly into this browser session.</li>
-            <li>Edit and export or write back from Radio Transfer.</li>
-          </ol>
+          <p>Connect your radio and load the current codeplug directly into this browser session.</p>
           <button id="landing-read-radio-btn" class="button" ${riskAccepted ? "" : "disabled"}>Read From Radio</button>
+          <button id="landing-read-guide-btn" class="button ghost" ${riskAccepted ? "" : "disabled"}>Read Setup Guide</button>
         </article>
       </section>
     </main>
   `;
+}
+
+function renderGuideModal(uiState: UiState): string {
+  if (!uiState.activeGuideModal) {
+    return "";
+  }
+
+  if (uiState.activeGuideModal === "import") {
+    return `
+      <section id="guide-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
+        <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
+        <article class="guide-modal-card">
+          <header class="guide-modal-header">
+            <h2 id="guide-modal-title">Open Existing Codeplug: Noob-Proof Procedure</h2>
+            <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
+          </header>
+
+          <p>Pick one of these two paths. If this is your first time, use Path A first.</p>
+
+          <h3>Path A: Read Directly in Browser (Fastest)</h3>
+          <ol class="radio-transfer-list">
+            <li>Check the risk confirmation checkbox on the homepage.</li>
+            <li>Click <strong>Read From Radio</strong>.</li>
+            <li>If your browser asks for USB permission, select your radio and click allow.</li>
+            <li>Wait until read completes, then start editing.</li>
+            <li>Export a backup after your first successful read.</li>
+          </ol>
+
+          <h3>Path B: Read with Local Helper (Fallback)</h3>
+          <ol class="radio-transfer-list">
+            <li>Open a terminal in the repository root.</li>
+            <li>Read codeplug with the helper:</li>
+          </ol>
+          <pre class="code-block">python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin</pre>
+          <ol class="radio-transfer-list" start="3">
+            <li>In this app, click <strong>Open .rdt/.bin</strong>.</li>
+            <li>Select <code>artifacts/codeplug/read/my-radio.bin</code>.</li>
+            <li>Edit, validate, then export your updated file.</li>
+            <li>Write back only after creating a backup:</li>
+          </ol>
+          <pre class="code-block">python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin</pre>
+
+          <h3>Useful Links</h3>
+          <ul class="radio-transfer-list">
+            <li><a href="https://github.com/iu2frl/md380-codeplug-editor/tree/main/tools" target="_blank" rel="noopener">Helper docs (tools folder)</a></li>
+            <li><a href="https://github.com/iu2frl/md380-codeplug-editor/blob/main/README.md" target="_blank" rel="noopener">Project README</a></li>
+          </ul>
+        </article>
+      </section>
+    `;
+  }
+
+  if (uiState.activeGuideModal === "landing-read" || uiState.activeGuideModal === "radio-transfer") {
+    return `
+      <section id="guide-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
+        <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
+        <article class="guide-modal-card">
+          <header class="guide-modal-header">
+            <h2 id="guide-modal-title">Live Read / WebUSB Setup Guide (Windows, Linux, macOS)</h2>
+            <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
+          </header>
+
+          <h3>Before You Start</h3>
+          <ol class="radio-transfer-list">
+            <li>Use a Chromium-based browser (Chrome, Edge, Brave).</li>
+            <li>Use HTTPS or localhost (WebUSB requires a secure context).</li>
+            <li>Close other apps that may capture the radio USB interface (CPS, serial tools).</li>
+            <li>Put radio in programming mode, then connect USB.</li>
+          </ol>
+
+          <h3>Windows Driver Setup (Required)</h3>
+          <ol class="radio-transfer-list">
+            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig</a>.</li>
+            <li>In Zadig, open <strong>Options -> List All Devices</strong>.</li>
+            <li>Select your device (often <strong>STM32 BOOTLOADER</strong>).</li>
+            <li>Set target driver to <strong>WinUSB</strong> (not LibUSB / LibUsbK).</li>
+            <li>Click <strong>Replace Driver</strong>, unplug, then replug radio.</li>
+          </ol>
+
+          <h3>Linux Setup</h3>
+          <p>Install udev rules once:</p>
+          <pre class="code-block">sudo cp tools/99-md380.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger</pre>
+          <p class="muted-text">If needed, add your user to plugdev and re-login.</p>
+
+          <h3>macOS Setup</h3>
+          <ol class="radio-transfer-list">
+            <li>No extra driver is usually required.</li>
+            <li>If permission fails, unplug/replug and retry browser permission prompt.</li>
+            <li>Ensure no other app is currently connected to the radio USB interface.</li>
+          </ol>
+
+          <h3>Read Procedure</h3>
+          <ol class="radio-transfer-list">
+            <li>Open <strong>Radio Transfer</strong>.</li>
+            <li>Click <strong>Connect Device</strong> and pick your radio.</li>
+            <li>Click <strong>Read From Radio</strong> and wait for completion.</li>
+            <li>Export a backup immediately after loading.</li>
+          </ol>
+
+          <h3>Write Procedure</h3>
+          <ol class="radio-transfer-list">
+            <li>Confirm model compatibility.</li>
+            <li>Keep a known-good backup in <code>artifacts/codeplug/backup</code>.</li>
+            <li>Click <strong>Write To Radio</strong> only after validation passes.</li>
+          </ol>
+        </article>
+      </section>
+    `;
+  }
+
+  return "";
+}
+
+function bindGuideModalActions(
+  target: HTMLElement,
+  store: EditorStore,
+  state: AppState,
+  channelState: ChannelPanelState,
+  uiState: UiState,
+): void {
+  const closeModal = (): void => {
+    if (!uiState.activeGuideModal) {
+      return;
+    }
+    uiState.activeGuideModal = null;
+    renderState(target, store, store.getState(), channelState, uiState);
+  };
+
+  for (const element of target.querySelectorAll<HTMLElement>("[data-guide-modal-close]")) {
+    element.addEventListener("click", closeModal);
+  }
+
+  target.querySelector<HTMLElement>("#guide-modal")?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeModal();
+    }
+  });
+
+  void state;
 }
 
 function bindLandingActions(
@@ -313,6 +452,14 @@ function bindLandingActions(
       return;
     }
     target.querySelector<HTMLInputElement>("#file-input")?.click();
+  });
+
+  target.querySelector<HTMLButtonElement>("#open-existing-guide-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    uiState.activeGuideModal = "import";
+    renderState(target, store, store.getState(), channelState, uiState);
   });
 
   target.querySelector<HTMLButtonElement>("#create-new-md380-btn")?.addEventListener("click", () => {
@@ -383,6 +530,14 @@ function bindLandingActions(
       uiState.radioTransport = null;
       renderState(target, store, store.getState(), channelState, uiState);
     }
+  });
+
+  target.querySelector<HTMLButtonElement>("#landing-read-guide-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    uiState.activeGuideModal = "landing-read";
+    renderState(target, store, store.getState(), channelState, uiState);
   });
 }
 
@@ -721,45 +876,6 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     const readEnabled = isConnected && !uiState.radioBusy;
     const writeEnabled = isConnected && !uiState.radioBusy;
 
-    const isWindows = /Windows/i.test(capabilities.userAgent);
-    const isLinux = /Linux/i.test(capabilities.userAgent);
-    const isMac = /Mac OS|Macintosh/i.test(capabilities.userAgent);
-
-    let driverRequirements = "";
-    if (isWindows) {
-      driverRequirements = `
-        <section class="radio-transfer-card">
-          <h3>Windows Driver Setup (Required)</h3>
-          <p>WebUSB requires <strong>WinUSB</strong> specifically. LibUSB and LibUsbK do <em>not</em> work with browser WebUSB.</p>
-          <ol class="radio-transfer-list">
-            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig</a>.</li>
-            <li>Put your radio in programming mode (power on while holding PTT + upper side button).</li>
-            <li>In Zadig: Options → List All Devices.</li>
-            <li>Select your radio (look for "STM32 BOOTLOADER" or similar) from the dropdown.</li>
-            <li>Set the target driver to <strong>WinUSB</strong> (use the arrows if another driver is shown).</li>
-            <li>Click "Replace Driver" (even if LibUSB or LibUsbK is currently installed).</li>
-            <li>Unplug and replug the radio after the driver change.</li>
-          </ol>
-          <p class="muted-text">If "USB permission denied" errors persist, ensure no other software (like the official CPS) is using the device.</p>
-        </section>`;
-    } else if (isLinux) {
-      driverRequirements = `
-        <section class="radio-transfer-card">
-          <h3>Linux Setup</h3>
-          <p>Ensure udev rules are installed for non-root USB access:</p>
-          <pre class="code-block">sudo cp tools/99-md380.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules
-sudo udevadm trigger</pre>
-          <p class="muted-text">Your user should also be in the <code>plugdev</code> group.</p>
-        </section>`;
-    } else if (isMac) {
-      driverRequirements = `
-        <section class="radio-transfer-card">
-          <h3>macOS Setup</h3>
-          <p>macOS typically works without additional driver setup. If you encounter issues, ensure no other application is using the radio's USB interface.</p>
-        </section>`;
-    }
-
     return `
       <h2>Radio Transfer</h2>
       <p class="muted-text">Browser-native radio read/write using WebUSB.</p>
@@ -782,9 +898,8 @@ sudo udevadm trigger</pre>
               ? `<div class="radio-transfer-warning">${capabilities.warnings.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
               : ""
           }
+          <button id="radio-transfer-setup-guide-btn" class="button ghost tiny">Open Full Setup Guide</button>
         </section>
-
-        ${driverRequirements}
 
         <section class="radio-transfer-card">
           <h3>Browser Workflow</h3>
@@ -1845,6 +1960,11 @@ function bindActiveTab(
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
       }
+    });
+
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-setup-guide-btn")?.addEventListener("click", () => {
+      uiState.activeGuideModal = "radio-transfer";
+      renderState(target, store, store.getState(), channelState, uiState);
     });
 
     return;
