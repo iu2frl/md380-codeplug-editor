@@ -69,7 +69,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <h2>Open Existing Codeplug</h2>
           <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.</p>
           <button id="open-existing-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open .rdt/.bin</button>
-          <button id="open-existing-guide-btn" class="button ghost" ${riskAccepted ? "" : "disabled"}>Full Step-by-Step Guide</button>
+          <button id="open-existing-guide-btn" class="button ghost">Full Step-by-Step Guide</button>
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
@@ -78,7 +78,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <h2>Read From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
           <button id="landing-read-radio-btn" class="button" ${riskAccepted ? "" : "disabled"}>Read From Radio</button>
-          <button id="landing-read-guide-btn" class="button ghost" ${riskAccepted ? "" : "disabled"}>Read Setup Guide</button>
+          <button id="landing-read-guide-btn" class="button ghost">Read Setup Guide</button>
         </article>
 
         <article class="card tile ${riskAccepted ? "" : "muted"}">

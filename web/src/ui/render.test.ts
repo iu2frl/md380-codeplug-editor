@@ -981,3 +981,95 @@ describe("radio transfer progress", () => {
   });
 });
 
+describe("callsign updater workflow", () => {
+  it("completes build and flash flow with mocked radio write", async () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("1,IK1AAA,Name,City,State,Nick,Country\n", {
+        status: 200,
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+
+    const createObjectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:vitest-callsign");
+    const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+
+    let connected = false;
+    const getSpiFlashSizeSpy = vi.fn(async () => 16 * 1024 * 1024);
+    const readSpiFlashRegionSpy = vi.fn(
+      async (_address: number, size: number, onProgress?: (progress: browserRadio.BrowserTransferProgress) => void) => {
+        onProgress?.({ direction: "read", completedBlocks: 1, totalBlocks: 2, bytesTransferred: 1024, totalBytes: size });
+        onProgress?.({ direction: "read", completedBlocks: 2, totalBlocks: 2, bytesTransferred: size, totalBytes: size });
+        return new Uint8Array(size);
+      },
+    );
+    const writeSpiFlashRegionSpy = vi.fn(
+      async (_address: number, data: Uint8Array, onProgress?: (progress: browserRadio.BrowserTransferProgress) => void) => {
+        onProgress?.({ direction: "write", completedBlocks: 1, totalBlocks: 2, bytesTransferred: 1024, totalBytes: data.byteLength });
+        onProgress?.({ direction: "write", completedBlocks: 2, totalBlocks: 2, bytesTransferred: data.byteLength, totalBytes: data.byteLength });
+      },
+    );
+
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(262144),
+      writeCodeplug: async () => undefined,
+      getSpiFlashSize: getSpiFlashSizeSpy,
+      readSpiFlashRegion: readSpiFlashRegionSpy,
+      writeSpiFlashRegion: writeSpiFlashRegionSpy,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#open-callsign-workflow-btn");
+    click(container, "#callsign-workflow-build-btn");
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Build complete:");
+
+    click(container, "#callsign-workflow-flash-btn");
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(getSpiFlashSizeSpy).toHaveBeenCalledTimes(1);
+    expect(readSpiFlashRegionSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpiFlashRegionSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpiFlashRegionSpy.mock.calls[0]?.[0]).toBe(0x100000);
+    expect(container.textContent).toContain("Flash complete:");
+    expect(createObjectUrlSpy).toHaveBeenCalled();
+    expect(revokeObjectUrlSpy).toHaveBeenCalled();
+    expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Callsign build complete"))).toBe(true);
+    expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Flash complete"))).toBe(true);
+  });
+});
+
