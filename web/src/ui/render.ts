@@ -909,17 +909,17 @@ sudo udevadm trigger</pre>
   if (activeTab === "scan-lists") {
     return `
       <h2>Scan Lists</h2>
-      <p class="muted-text">Read-only right now. Editing support for scan lists is planned.</p>
+      <button class="button tiny" id="add-scan-list">Add Scan List</button>
       <div class="rows">
         ${document.scanLists.length === 0
           ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
           : document.scanLists
               .map(
                 (scanList) => `
-                  <div class="row zone-row readonly-row">
+                  <div class="row zone-row">
                     <input value="${scanList.id}" disabled />
-                    <input value="${escapeHtml(scanList.name)}" disabled />
-                    <input value="Read-only" disabled />
+                    <input data-scan-list-name="${scanList.id}" value="${escapeHtml(scanList.name)}" maxlength="16" />
+                    <button class="button ghost tiny" data-scan-list-delete="${scanList.id}">Delete</button>
                   </div>
                 `,
               )
@@ -931,17 +931,17 @@ sudo udevadm trigger</pre>
   if (activeTab === "group-lists") {
     return `
       <h2>Group Lists</h2>
-      <p class="muted-text">Read-only right now. Editing support for group lists is planned.</p>
+      <button class="button tiny" id="add-group-list">Add Group List</button>
       <div class="rows">
         ${document.groupLists.length === 0
           ? `<p class="muted-text">No group lists found in this codeplug.</p>`
           : document.groupLists
               .map(
                 (groupList) => `
-                  <div class="row zone-row readonly-row">
+                  <div class="row zone-row">
                     <input value="${groupList.id}" disabled />
-                    <input value="${escapeHtml(groupList.name)}" disabled />
-                    <input value="Read-only" disabled />
+                    <input data-group-list-name="${groupList.id}" value="${escapeHtml(groupList.name)}" maxlength="16" />
+                    <button class="button ghost tiny" data-group-list-delete="${groupList.id}">Delete</button>
                   </div>
                 `,
               )
@@ -1978,6 +1978,72 @@ function bindActiveTab(
           store.removeZone(uiState.selectedZoneId);
           uiState.selectedZoneId = null;
         }
+      });
+    }
+
+    return;
+  }
+
+  if (uiState.activeTab === "group-lists") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector<HTMLButtonElement>("#add-group-list")?.addEventListener("click", () => {
+      store.addGroupList();
+    });
+
+    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-group-list-name]")) {
+      input.addEventListener("change", () => {
+        const id = Number.parseInt(input.dataset.groupListName ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.updateGroupList(id, input.value);
+      });
+    }
+
+    for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-delete]")) {
+      deleteButton.addEventListener("click", () => {
+        const id = Number.parseInt(deleteButton.dataset.groupListDelete ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.removeGroupList(id);
+      });
+    }
+
+    return;
+  }
+
+  if (uiState.activeTab === "scan-lists") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelector<HTMLButtonElement>("#add-scan-list")?.addEventListener("click", () => {
+      store.addScanList();
+    });
+
+    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-scan-list-name]")) {
+      input.addEventListener("change", () => {
+        const id = Number.parseInt(input.dataset.scanListName ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.updateScanList(id, input.value);
+      });
+    }
+
+    for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-delete]")) {
+      deleteButton.addEventListener("click", () => {
+        const id = Number.parseInt(deleteButton.dataset.scanListDelete ?? "", 10);
+        if (Number.isNaN(id)) {
+          return;
+        }
+        store.removeScanList(id);
       });
     }
 

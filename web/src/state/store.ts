@@ -266,6 +266,86 @@ export class EditorStore {
     this.refreshDirty();
   }
 
+  addGroupList(): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    const id = this.nextId(this.state.document.groupLists.map((list) => list.id));
+    this.state.document.groupLists.push({
+      id,
+      name: `Group List ${id}`,
+    });
+    this.refreshDirty();
+  }
+
+  updateGroupList(id: number, name: string): void {
+    if (!this.state.document) {
+      return;
+    }
+    const groupList = this.state.document.groupLists.find((item) => item.id === id);
+    if (!groupList) {
+      return;
+    }
+    this.beginMutation();
+    groupList.name = name;
+    this.refreshDirty();
+  }
+
+  removeGroupList(id: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    this.state.document.groupLists = this.state.document.groupLists.filter((item) => item.id !== id);
+    for (const channel of this.state.document.channels) {
+      if (channel.groupListId === id) {
+        channel.groupListId = undefined;
+      }
+    }
+    this.refreshDirty();
+  }
+
+  addScanList(): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    const id = this.nextId(this.state.document.scanLists.map((list) => list.id));
+    this.state.document.scanLists.push({
+      id,
+      name: `Scan List ${id}`,
+    });
+    this.refreshDirty();
+  }
+
+  updateScanList(id: number, name: string): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.name = name;
+    this.refreshDirty();
+  }
+
+  removeScanList(id: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    this.beginMutation();
+    this.state.document.scanLists = this.state.document.scanLists.filter((item) => item.id !== id);
+    for (const channel of this.state.document.channels) {
+      if (channel.scanListId === id) {
+        channel.scanListId = undefined;
+      }
+    }
+    this.refreshDirty();
+  }
+
   addChannel(): void {
     if (!this.state.document) {
       return;

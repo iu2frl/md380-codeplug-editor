@@ -839,14 +839,72 @@ function writeContacts(payload: Uint8Array, document: CodeplugDocument): Map<num
   return contactSlotById;
 }
 
+function writeGroupLists(payload: Uint8Array, document: CodeplugDocument): Map<number, number> {
+  const groupListSlotById = resolveSlots(document.groupLists, GROUP_LISTS_MAX);
+  const activeSlots = new Set<number>(groupListSlotById.values());
+
+  for (let slot = 1; slot <= GROUP_LISTS_MAX; slot += 1) {
+    const base = GROUP_LISTS_OFFSET + (slot - 1) * GROUP_LISTS_RECORD_SIZE;
+    if (base + GROUP_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+
+    if (!activeSlots.has(slot)) {
+      payload[base + GROUP_LISTS_DELETED_OFFSET] = 0;
+      continue;
+    }
+
+    const groupList = document.groupLists.find((item) => groupListSlotById.get(item.id) === slot);
+    if (!groupList) {
+      continue;
+    }
+
+    writeUcs2String(payload, base + GROUP_LIST_NAME_OFFSET, GROUP_LIST_NAME_SIZE, groupList.name);
+    if (payload[base + GROUP_LISTS_DELETED_OFFSET] === 0) {
+      payload[base + GROUP_LISTS_DELETED_OFFSET] = 1;
+    }
+  }
+
+  return groupListSlotById;
+}
+
+function writeScanLists(payload: Uint8Array, document: CodeplugDocument): Map<number, number> {
+  const scanListSlotById = resolveSlots(document.scanLists, SCAN_LISTS_MAX);
+  const activeSlots = new Set<number>(scanListSlotById.values());
+
+  for (let slot = 1; slot <= SCAN_LISTS_MAX; slot += 1) {
+    const base = SCAN_LISTS_OFFSET + (slot - 1) * SCAN_LISTS_RECORD_SIZE;
+    if (base + SCAN_LISTS_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+
+    if (!activeSlots.has(slot)) {
+      payload[base + SCAN_LISTS_DELETED_OFFSET] = 0;
+      continue;
+    }
+
+    const scanList = document.scanLists.find((item) => scanListSlotById.get(item.id) === slot);
+    if (!scanList) {
+      continue;
+    }
+
+    writeUcs2String(payload, base + SCAN_LIST_NAME_OFFSET, SCAN_LIST_NAME_SIZE, scanList.name);
+    if (payload[base + SCAN_LISTS_DELETED_OFFSET] === 0) {
+      payload[base + SCAN_LISTS_DELETED_OFFSET] = 1;
+    }
+  }
+
+  return scanListSlotById;
+}
+
 function writeChannels(
   payload: Uint8Array,
   document: CodeplugDocument,
   contactSlotById: Map<number, number>,
+  scanListSlotById: Map<number, number>,
+  groupListSlotById: Map<number, number>,
 ): Map<number, number> {
   const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
-  const scanListSlotById = resolveSlots(document.scanLists, SCAN_LISTS_MAX);
-  const groupListSlotById = resolveSlots(document.groupLists, GROUP_LISTS_MAX);
   const activeSlots = new Set<number>(channelSlotById.values());
 
   for (let slot = 1; slot <= CHANNELS_MAX; slot += 1) {
@@ -1764,8 +1822,10 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     }
   }
 
+  const groupListSlotById = writeGroupLists(payload, document);
+  const scanListSlotById = writeScanLists(payload, document);
   const contactSlotById = writeContacts(payload, document);
-  const channelSlotById = writeChannels(payload, document, contactSlotById);
+  const channelSlotById = writeChannels(payload, document, contactSlotById, scanListSlotById, groupListSlotById);
   writeZones(payload, document, channelSlotById);
 
   return out;

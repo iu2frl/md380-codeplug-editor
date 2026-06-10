@@ -45,6 +45,8 @@ const CHANNEL_TX_FREQ_OFFSET = 20;
 const CHANNEL_NAME_OFFSET = 32;
 const CHANNEL_BANDWIDTH_BIT_OFFSET = 4;
 const CHANNEL_MODE_BIT_OFFSET = 6;
+const CHANNEL_SCAN_LIST_INDEX_OFFSET = 11;
+const CHANNEL_GROUP_LIST_INDEX_OFFSET = 12;
 const CHANNEL_COLOR_CODE_BIT_OFFSET = 8;
 const CHANNEL_SLOT_BIT_OFFSET = 12;
 const CHANNEL_POWER_BIT_OFFSET = 34;
@@ -53,6 +55,14 @@ const ZONES_OFFSET = 84448;
 const ZONE_RECORD_SIZE = 64;
 const ZONE_NAME_OFFSET = 0;
 const ZONE_CHANNELS_OFFSET = 32;
+
+const GROUP_LISTS_OFFSET = 60448;
+const GROUP_LISTS_RECORD_SIZE = 96;
+const GROUP_LIST_NAME_OFFSET = 0;
+
+const SCAN_LISTS_OFFSET = 100448;
+const SCAN_LISTS_RECORD_SIZE = 104;
+const SCAN_LIST_NAME_OFFSET = 0;
 
 const MODEL_NAME_OFFSET = 293;
 const FREQUENCY_RANGE_BIT_OFFSET = 2480;
@@ -187,6 +197,17 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
   writeUcs2(payload, zoneBase + ZONE_NAME_OFFSET, 32, "Home");
   writeLittleInt(payload, zoneBase + ZONE_CHANNELS_OFFSET, 2, 1);
 
+  const groupListBase = GROUP_LISTS_OFFSET;
+  payload[groupListBase] = 1;
+  writeUcs2(payload, groupListBase + GROUP_LIST_NAME_OFFSET, 32, "North Group");
+
+  const scanListBase = SCAN_LISTS_OFFSET;
+  payload[scanListBase] = 1;
+  writeUcs2(payload, scanListBase + SCAN_LIST_NAME_OFFSET, 32, "City Scan");
+
+  writeBitField(payload, channelBase * 8 + CHANNEL_SCAN_LIST_INDEX_OFFSET * 8, 8, 1);
+  writeBitField(payload, channelBase * 8 + CHANNEL_GROUP_LIST_INDEX_OFFSET * 8, 8, 1);
+
   return payload;
 }
 
@@ -248,9 +269,16 @@ describe("parseCodeplug", () => {
     expect(doc.channels).toHaveLength(1);
     expect(doc.channels[0].name).toBe("Local Repeater");
     expect(doc.channels[0].contactId).toBe(1);
+    expect(doc.channels[0].scanListId).toBe(1);
+    expect(doc.channels[0].groupListId).toBe(1);
     expect(doc.channels[0].channelMode).toBe("Digital");
     expect(doc.channels[0].repeaterSlot).toBe(2);
     expect(doc.channels[0].power).toBe("High");
+
+    expect(doc.groupLists).toHaveLength(1);
+    expect(doc.groupLists[0].name).toBe("North Group");
+    expect(doc.scanLists).toHaveLength(1);
+    expect(doc.scanLists[0].name).toBe("City Scan");
 
     expect(doc.zones).toHaveLength(1);
     expect(doc.zones[0].name).toBe("Home");
@@ -466,6 +494,30 @@ describe("serializeCodeplug", () => {
     const travel = reparsed.zones.find((zone) => zone.name === "Travel");
     expect(travel).toBeTruthy();
     expect(travel?.channelIds).toContain(2);
+  });
+
+  it("writes group and scan list edits and channel references", () => {
+    const payload = buildPayloadFixture();
+    const doc = parseCodeplug("fixture.bin", payload);
+
+    doc.groupLists[0].name = "North Group Updated";
+    doc.scanLists[0].name = "City Scan Updated";
+    doc.groupLists.push({ id: 2, name: "Travel Group" });
+    doc.scanLists.push({ id: 2, name: "Travel Scan" });
+    doc.channels[0].groupListId = 2;
+    doc.channels[0].scanListId = 2;
+
+    const out = serializeCodeplug(doc, payload);
+    const reparsed = parseCodeplug("fixture.bin", out);
+
+    expect(reparsed.groupLists).toHaveLength(2);
+    expect(reparsed.scanLists).toHaveLength(2);
+    expect(reparsed.groupLists.find((item) => item.id === 1)?.name).toBe("North Group Upda");
+    expect(reparsed.scanLists.find((item) => item.id === 1)?.name).toBe("City Scan Update");
+    expect(reparsed.groupLists.find((item) => item.id === 2)?.name).toBe("Travel Group");
+    expect(reparsed.scanLists.find((item) => item.id === 2)?.name).toBe("Travel Scan");
+    expect(reparsed.channels[0].groupListId).toBe(2);
+    expect(reparsed.channels[0].scanListId).toBe(2);
   });
 
   it("round-trips S-variant payload edits", () => {

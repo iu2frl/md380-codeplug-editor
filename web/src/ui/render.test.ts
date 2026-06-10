@@ -145,6 +145,8 @@ function makeDocument(): CodeplugDocument {
         bandwidthKhz: "12.5",
         power: "High",
         contactId: 1,
+        scanListId: 1,
+        groupListId: 1,
       },
       {
         id: 2,
@@ -204,8 +206,8 @@ function makeDocument(): CodeplugDocument {
       { id: 2, name: "Zone Two", channelIds: [1] },
     ],
     contacts: [{ id: 1, name: "TG9", callId: 9 }],
-    groupLists: [],
-    scanLists: [],
+    groupLists: [{ id: 1, name: "North Group" }],
+    scanLists: [{ id: 1, name: "City Scan" }],
   };
 }
 
@@ -528,6 +530,56 @@ describe("newly enabled tabs", () => {
     click(container, '[data-tab="encryption"]');
     expect(container.querySelector("[data-enhanced-key]")).not.toBeNull();
     expect(container.querySelector("[data-basic-key]")).not.toBeNull();
+  });
+
+  it("renders editable group and scan list tabs", () => {
+    click(container, '[data-tab="group-lists"]');
+    expect(container.querySelector("#add-group-list")).not.toBeNull();
+    expect(container.querySelector('[data-group-list-name="1"]')).not.toBeNull();
+
+    click(container, '[data-tab="scan-lists"]');
+    expect(container.querySelector("#add-scan-list")).not.toBeNull();
+    expect(container.querySelector('[data-scan-list-name="1"]')).not.toBeNull();
+  });
+
+  it("adds, updates, and removes group and scan lists", () => {
+    click(container, '[data-tab="group-lists"]');
+
+    click(container, "#add-group-list");
+    let snapshot = store.getState();
+    expect(snapshot.document?.groupLists).toHaveLength(2);
+
+    const groupNameInput = container.querySelector<HTMLInputElement>('[data-group-list-name="2"]');
+    if (!groupNameInput) throw new Error("group list input not found");
+    groupNameInput.value = "Travel Group";
+    groupNameInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    snapshot = store.getState();
+    expect(snapshot.document?.groupLists.find((item) => item.id === 2)?.name).toBe("Travel Group");
+
+    click(container, '[data-group-list-delete="1"]');
+    snapshot = store.getState();
+    expect(snapshot.document?.groupLists.some((item) => item.id === 1)).toBe(false);
+    expect(snapshot.document?.channels.find((item) => item.id === 1)?.groupListId).toBeUndefined();
+
+    click(container, '[data-tab="scan-lists"]');
+
+    click(container, "#add-scan-list");
+    snapshot = store.getState();
+    expect(snapshot.document?.scanLists).toHaveLength(2);
+
+    const scanNameInput = container.querySelector<HTMLInputElement>('[data-scan-list-name="2"]');
+    if (!scanNameInput) throw new Error("scan list input not found");
+    scanNameInput.value = "Travel Scan";
+    scanNameInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    snapshot = store.getState();
+    expect(snapshot.document?.scanLists.find((item) => item.id === 2)?.name).toBe("Travel Scan");
+
+    click(container, '[data-scan-list-delete="1"]');
+    snapshot = store.getState();
+    expect(snapshot.document?.scanLists.some((item) => item.id === 1)).toBe(false);
+    expect(snapshot.document?.channels.find((item) => item.id === 1)?.scanListId).toBeUndefined();
   });
 
   it("renders radio transfer panel", () => {
