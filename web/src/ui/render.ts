@@ -86,6 +86,17 @@ function setRadioProgress(uiState: UiState, progress: BrowserTransferProgress): 
   uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
 }
 
+function normalizeModelToken(value: string | undefined): "MD380" | "MD390" | undefined {
+  const normalized = (value ?? "").toUpperCase();
+  if (normalized.includes("MD390") || normalized.includes("RT8")) {
+    return "MD390";
+  }
+  if (normalized.includes("MD380") || normalized.includes("RT3") || normalized.includes("DR780")) {
+    return "MD380";
+  }
+  return undefined;
+}
+
 function syncRadioProgressUi(target: HTMLElement, uiState: UiState): void {
   const landingProgress = target.querySelector<HTMLProgressElement>("#landing-radio-progress");
   if (landingProgress) {
@@ -1732,6 +1743,20 @@ function bindActiveTab(
       if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
         window.alert("Connect a radio first.");
         return;
+      }
+
+      const connectedDevice = uiState.radioTransport.getConnectedDevice();
+      const connectedModel = normalizeModelToken(
+        [connectedDevice?.manufacturerName, connectedDevice?.productName].filter((item) => Boolean(item)).join(" "),
+      );
+      const codeplugModel = normalizeModelToken(state.document?.model);
+      if (connectedModel && codeplugModel && connectedModel !== codeplugModel) {
+        const confirmed = window.confirm(
+          `Model mismatch detected.\nConnected radio appears to be ${connectedModel}, but loaded codeplug is ${codeplugModel}.\n\nCross-flashing may still work, but it is risky. Continue write?`,
+        );
+        if (!confirmed) {
+          return;
+        }
       }
 
       const bytes = store.exportBytes();

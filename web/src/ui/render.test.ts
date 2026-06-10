@@ -665,5 +665,105 @@ describe("radio transfer progress", () => {
     resolveWrite?.();
     await flushAsyncWork();
   });
+
+  it("shows model mismatch warning and cancels write when user declines", async () => {
+    document.body.innerHTML = "";
+    const { container, store } = mountApp();
+    const doc = makeDocument();
+    doc.model = "MD390";
+    doc.variant = "S";
+    store.loadDocument(doc);
+    vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
+
+    vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    let connected = false;
+    const writeSpy = vi.fn(async () => undefined);
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(262144),
+      writeCodeplug: writeSpy,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    click(container, '[data-tab="radio-transfer"]');
+    click(container, "#radio-transfer-connect");
+    await flushAsyncWork();
+
+    click(container, "#radio-transfer-write");
+    await flushAsyncWork();
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpy).not.toHaveBeenCalled();
+  });
+
+  it("shows model mismatch warning and proceeds when user confirms", async () => {
+    document.body.innerHTML = "";
+    const { container, store } = mountApp();
+    const doc = makeDocument();
+    doc.model = "MD390";
+    doc.variant = "S";
+    store.loadDocument(doc);
+    vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
+
+    vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    let connected = false;
+    const writeSpy = vi.fn(async () => undefined);
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(262144),
+      writeCodeplug: writeSpy,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    click(container, '[data-tab="radio-transfer"]');
+    click(container, "#radio-transfer-connect");
+    await flushAsyncWork();
+
+    click(container, "#radio-transfer-write");
+    await flushAsyncWork();
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+  });
 });
 
