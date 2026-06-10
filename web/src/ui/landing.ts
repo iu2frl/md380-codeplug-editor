@@ -28,7 +28,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <p>A simple web application to interact with your MD380 codeplug, where everything is done in the browser.</p>
       </section>
 
-      <section class="card risk-card">
+      <section class="card risk-card" ${!riskAccepted ? "" : "style='display: none;'"}>
         <h2>Warning</h2>
         <p class="risk-text">
           This app is still under development.<br>
