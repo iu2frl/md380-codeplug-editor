@@ -1,8 +1,8 @@
 name: Deploy Web App to GitHub Pages
 
 on:
-  release:
-    types: [created]
+  #release:
+  #  types: [created]
   schedule:
     # Run every Monday at 03:00 UTC to refresh callsign database
     - cron: "0 3 * * 1"
