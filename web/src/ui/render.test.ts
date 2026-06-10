@@ -1019,7 +1019,7 @@ describe("callsign updater workflow", () => {
           headers: { "Content-Type": "application/json" },
         });
       }
-      return new Response("1,IK1AAA,Name,City,State,Nick,Country\n", {
+      return new Response("RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY\n1,IK1AAA,Name,City,State,Nick,Country\n", {
         status: 200,
         headers: { "Content-Type": "text/csv" },
       });
