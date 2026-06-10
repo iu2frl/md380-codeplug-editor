@@ -555,6 +555,51 @@ describe("radio transfer progress", () => {
     await flushAsyncWork();
   });
 
+  it("shows read failure when radio bytes are not a valid codeplug", async () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    let connected = false;
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(1234),
+      writeCodeplug: async () => undefined,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#landing-read-radio-btn");
+    await flushAsyncWork();
+
+    const alerts = alertSpy.mock.calls.map((call) => String(call[0] ?? ""));
+    expect(alerts.some((message) => message.includes("Read failed:"))).toBe(true);
+    expect(container.textContent).toContain("Unsupported .bin size");
+  });
+
   it("updates radio-transfer write progress without replacing progress element during callbacks", async () => {
     document.body.innerHTML = "";
     const { container, store } = mountApp();

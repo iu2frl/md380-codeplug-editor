@@ -233,8 +233,8 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
           This feature is in the alpha testing stage and might need further refinements to ensure the generated codeplugs are fully compatible with all radio models and firmware versions.
           </p>
           <div class="actions">
-            <button id="create-new-md380-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create MD380 codeplug</button>
-            <button id="create-new-md390-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create MD390 codeplug</button>
+            <button id="create-new-md380-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create new MD380 codeplug</button>
+            <button id="create-new-md390-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create new MD390 codeplug</button>
           </div>
         </article>
 
@@ -330,6 +330,10 @@ function bindLandingActions(
       connected = true;
       const bytes = await transport.readCodeplug(applyProgress);
       store.load("radio-read.bin", bytes);
+      const loadedState = store.getState();
+      if (!loadedState.document) {
+        throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
+      }
       uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
       uiState.radioProgressPercent = 100;
       uiState.radioProgressLabel = "Read complete.";
@@ -1703,6 +1707,10 @@ function bindActiveTab(
       try {
         const bytes = await uiState.radioTransport.readCodeplug(applyProgress);
         store.load("radio-read.bin", bytes);
+        const loadedState = store.getState();
+        if (!loadedState.document) {
+          throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
+        }
         uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Read complete.";
