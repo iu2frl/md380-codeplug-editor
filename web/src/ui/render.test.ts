@@ -1072,7 +1072,9 @@ describe("callsign updater workflow", () => {
     await flushAsyncWork();
 
     expect(fetchSpy).toHaveBeenCalled();
-    expect(fetchSpy.mock.calls.some((call) => String(call[0]).includes("user.csv"))).toBe(true);
+    // Verify BASE_URL-prefixed paths are used (in test env, BASE_URL defaults to "/")
+    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "/user.csv")).toBe(true);
+    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "/callsign-meta.json")).toBe(true);
     expect(container.textContent).toContain("Build complete:");
 
     click(container, "#callsign-workflow-flash-btn");

@@ -114,7 +114,7 @@ export function bindCallsignWorkflowActions(
 
   // Fetch callsign metadata on load if not already fetched
   if (!uiState.callsignLastUpdated) {
-    fetch("/callsign-meta.json", { cache: "no-store" })
+    fetch(`${import.meta.env.BASE_URL}callsign-meta.json`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((meta) => {
         if (meta?.updatedAt) {
@@ -161,7 +161,7 @@ export function bindCallsignWorkflowActions(
       return;
     }
 
-    const source = "/user.csv";
+    const source = `${import.meta.env.BASE_URL}user.csv`;
 
     uiState.callsignBusy = true;
     uiState.callsignProgressVisible = false;
