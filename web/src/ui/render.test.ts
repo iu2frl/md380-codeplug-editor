@@ -1075,9 +1075,9 @@ describe("callsign updater workflow", () => {
     await flushAsyncWork();
 
     expect(fetchSpy).toHaveBeenCalled();
-    // Verify BASE_URL-prefixed paths are used (in test env, BASE_URL defaults to "/")
-    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "/user.csv")).toBe(true);
-    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "/callsign-meta.json")).toBe(true);
+    // Verify BASE_URL-prefixed paths are used
+    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "https://iu2frl.github.io/md380-codeplug-editor/user.csv")).toBe(true);
+    expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "https://iu2frl.github.io/md380-codeplug-editor/callsign-meta.json")).toBe(true);
     expect(container.textContent).toContain("Build complete:");
 
     click(container, "#callsign-workflow-flash-btn");
