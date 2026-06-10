@@ -133,6 +133,8 @@ git clone https://github.com/iu2frl/md380-codeplug-editor.git
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv/Scripts/activate
 pip install -r tools/requirements.txt
+# Get dependencies
+./init-examples.sh
 # Read from radio and save to artifacts/codeplug/read/my-radio.bin
 python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
           </pre>
@@ -148,6 +150,8 @@ git clone https://github.com/iu2frl/md380-codeplug-editor.git
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv/Scripts/activate
 pip install -r tools/requirements.txt
+# Get dependencies
+./init-examples.sh
 # Write back to the transceiver
 python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
           </pre>
