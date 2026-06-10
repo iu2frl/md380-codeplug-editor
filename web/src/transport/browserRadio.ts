@@ -33,6 +33,9 @@ export interface BrowserRadioTransport {
   getConnectedDevice(): BrowserRadioDevice | null;
   readCodeplug(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
   writeCodeplug(data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
+  getSpiFlashSize(): Promise<number>;
+  readSpiFlashRegion(address: number, size: number, onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
+  writeSpiFlashRegion(address: number, data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
 }
 
 interface UsbRequestFilter {
@@ -126,6 +129,8 @@ const CODEPLUG_BLOCK_SIZE = 1024;
 const CODEPLUG_TOTAL_SIZE = 262144;
 const CODEPLUG_BLOCK_START = 2;
 const CODEPLUG_BLOCK_COUNT = CODEPLUG_TOTAL_SIZE / CODEPLUG_BLOCK_SIZE;
+const SPI_BLOCK_SIZE = 1024;
+const SPI_ERASE_STEP = 0x1000;
 
 export function detectBrowserRadioCapabilities(
   nav: Navigator | undefined = globalThis.navigator,
@@ -331,6 +336,150 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
         totalBlocks: CODEPLUG_BLOCK_COUNT,
         bytesTransferred: (index + 1) * CODEPLUG_BLOCK_SIZE,
         totalBytes: CODEPLUG_TOTAL_SIZE,
+      });
+    }
+  }
+
+  async getSpiFlashSize(): Promise<number> {
+    const device = this.requireConnectedDevice();
+    await this.enterDfuIdle(device);
+    await this.download(device, 1, new Uint8Array([0x05]));
+    await this.getStatus(device);
+    await this.getStatus(device);
+    const flashId = await this.upload(device, 1, 4);
+    await this.enterDfuIdle(device);
+
+    const vendor = flashId[0] ?? 0;
+    const model = flashId[1] ?? 0;
+    const capacity = flashId[2] ?? 0;
+    if (vendor === 0xef && model === 0x40 && capacity === 0x18) {
+      return 16 * 1024 * 1024;
+    }
+    if (vendor === 0xef && model === 0x40 && capacity === 0x14) {
+      return 1 * 1024 * 1024;
+    }
+    if (vendor === 0x10 && model === 0xdc && capacity === 0x01) {
+      return 16 * 1024 * 1024;
+    }
+    throw new Error(
+      `Unsupported SPI flash type: ${vendor.toString(16).padStart(2, "0")} ${model
+        .toString(16)
+        .padStart(2, "0")} ${capacity.toString(16).padStart(2, "0")}.`,
+    );
+  }
+
+  async readSpiFlashRegion(address: number, size: number, onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array> {
+    const device = this.requireConnectedDevice();
+    if (address < 0 || size <= 0) {
+      throw new Error("SPI read requires address >= 0 and size > 0.");
+    }
+
+    await this.enterDfuIdle(device);
+    const totalBlocks = Math.ceil(size / SPI_BLOCK_SIZE);
+    const output = new Uint8Array(size);
+    onProgress?.({
+      direction: "read",
+      completedBlocks: 0,
+      totalBlocks,
+      bytesTransferred: 0,
+      totalBytes: size,
+    });
+
+    for (let index = 0; index < totalBlocks; index += 1) {
+      const blockAddress = address + index * SPI_BLOCK_SIZE;
+      const remaining = size - index * SPI_BLOCK_SIZE;
+      const readLength = Math.min(SPI_BLOCK_SIZE, remaining);
+      const command = new Uint8Array([
+        0x01,
+        blockAddress & 0xff,
+        (blockAddress >> 8) & 0xff,
+        (blockAddress >> 16) & 0xff,
+        (blockAddress >> 24) & 0xff,
+      ]);
+
+      await this.download(device, 1, command);
+      await this.getStatus(device);
+      await this.getStatus(device);
+      const block = await this.upload(device, 1, readLength);
+      if (block.byteLength !== readLength) {
+        throw new Error(`Short SPI block read at 0x${blockAddress.toString(16)}.`);
+      }
+      output.set(block, index * SPI_BLOCK_SIZE);
+      await this.enterDfuIdle(device);
+
+      onProgress?.({
+        direction: "read",
+        completedBlocks: index + 1,
+        totalBlocks,
+        bytesTransferred: Math.min((index + 1) * SPI_BLOCK_SIZE, size),
+        totalBytes: size,
+      });
+    }
+
+    return output;
+  }
+
+  async writeSpiFlashRegion(address: number, data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void> {
+    const device = this.requireConnectedDevice();
+    if (address < 0 || data.byteLength === 0) {
+      throw new Error("SPI write requires address >= 0 and non-empty payload.");
+    }
+
+    await this.enterDfuIdle(device);
+    await this.md380Custom(device, 0x91, 0x01);
+
+    for (let eraseAddress = address; eraseAddress < address + data.byteLength + 1; eraseAddress += SPI_ERASE_STEP) {
+      const eraseCommand = new Uint8Array([
+        0x03,
+        eraseAddress & 0xff,
+        (eraseAddress >> 8) & 0xff,
+        (eraseAddress >> 16) & 0xff,
+        (eraseAddress >> 24) & 0xff,
+      ]);
+      await this.download(device, 1, eraseCommand);
+      await this.getStatus(device);
+      await this.getStatus(device);
+      await this.enterDfuIdle(device);
+    }
+
+    const totalBlocks = Math.ceil(data.byteLength / SPI_BLOCK_SIZE);
+    onProgress?.({
+      direction: "write",
+      completedBlocks: 0,
+      totalBlocks,
+      bytesTransferred: 0,
+      totalBytes: data.byteLength,
+    });
+
+    for (let index = 0; index < totalBlocks; index += 1) {
+      const chunkAddress = address + index * SPI_BLOCK_SIZE;
+      const start = index * SPI_BLOCK_SIZE;
+      const end = Math.min(start + SPI_BLOCK_SIZE, data.byteLength);
+      const chunk = data.subarray(start, end);
+      const command = new Uint8Array(9 + chunk.byteLength);
+      command[0] = 0x04;
+      command[1] = chunkAddress & 0xff;
+      command[2] = (chunkAddress >> 8) & 0xff;
+      command[3] = (chunkAddress >> 16) & 0xff;
+      command[4] = (chunkAddress >> 24) & 0xff;
+      command[5] = chunk.byteLength & 0xff;
+      command[6] = (chunk.byteLength >> 8) & 0xff;
+      command[7] = (chunk.byteLength >> 16) & 0xff;
+      command[8] = (chunk.byteLength >> 24) & 0xff;
+      command.set(chunk, 9);
+
+      await this.download(device, 1, command);
+      await this.getStatus(device);
+      await this.getStatus(device);
+      await this.upload(device, 1, chunk.byteLength);
+      await this.enterDfuIdle(device);
+
+      onProgress?.({
+        direction: "write",
+        completedBlocks: index + 1,
+        totalBlocks,
+        bytesTransferred: end,
+        totalBytes: data.byteLength,
       });
     }
   }
