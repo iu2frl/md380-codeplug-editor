@@ -717,6 +717,7 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
       //    'controlTransferIn' on 'USBDevice': A transfer error has occurred."
       //  even if the command succeeds and the radio reboots.
       //  It might be expected as the radio reboots before sending any response.
+      //  See: examples/md380tools/DFU.py line 212 for reference implementation of reboot command.
       const device = this.requireConnectedDevice();
       await this.enterDfuIdle(device);
       await this.md380Custom(device, 0x91, 0x05);
