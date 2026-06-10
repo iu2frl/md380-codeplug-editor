@@ -15,6 +15,7 @@ import {
   setRadioProgress,
   syncRadioProgressUi,
 } from "./uiHelpers";
+import { showToast, showConfirm } from "./dialog";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -1308,7 +1309,7 @@ export function bindActiveTab(
       const capabilities = detectBrowserRadioCapabilities();
       const isConnected = uiState.radioTransport?.isConnected() ?? false;
       if (!isConnected && !capabilities.supported) {
-        window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+        showToast({ type: "error", message: `WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}` });
         return;
       }
 
@@ -1334,7 +1335,7 @@ export function bindActiveTab(
         uiState.radioBusy = false;
         uiState.radioStatusMessage = "Unable to initialize WebUSB transport in this browser.";
         renderState(target, store, store.getState(), channelState, uiState);
-        window.alert("Unable to initialize WebUSB transport in this browser.");
+        showToast({ type: "error", message: "Unable to initialize WebUSB transport in this browser." });
         return;
       }
 
@@ -1343,13 +1344,14 @@ export function bindActiveTab(
         const device = await transport.connect();
         const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
         uiState.radioStatusMessage = `Connected: ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`;
-        window.alert(
-          `Connected to ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`,
-        );
+        showToast({
+          type: "success",
+          message: `Connected to ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : "WebUSB connection failed.";
         uiState.radioStatusMessage = `Connect failed: ${message}`;
-        window.alert(`Connect failed: ${message}`);
+        showToast({ type: "error", message: `Connect failed: ${message}` });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -1358,7 +1360,7 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", async () => {
       if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
-        window.alert("Connect a radio first.");
+        showToast({ type: "warning", message: "Connect a radio first." });
         return;
       }
 
@@ -1382,14 +1384,14 @@ export function bindActiveTab(
         uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Read complete.";
-        window.alert(`Read complete: ${bytes.byteLength} bytes loaded into editor.`);
+        showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
         uiState.radioStatusMessage = `Read failed: ${message}`;
         uiState.radioProgressVisible = false;
         uiState.radioProgressPercent = 0;
         uiState.radioProgressLabel = "";
-        window.alert(`Read failed: ${message}`);
+        showToast({ type: "error", message: `Read failed: ${message}` });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -1398,7 +1400,7 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-write")?.addEventListener("click", async () => {
       if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
-        window.alert("Connect a radio first.");
+        showToast({ type: "warning", message: "Connect a radio first." });
         return;
       }
 
@@ -1408,9 +1410,12 @@ export function bindActiveTab(
       );
       const codeplugModel = normalizeModelToken(state.document?.model);
       if (connectedModel && codeplugModel && connectedModel !== codeplugModel) {
-        const confirmed = window.confirm(
-          `Model mismatch detected.\nConnected radio appears to be ${connectedModel}, but loaded codeplug is ${codeplugModel}.\n\nCross-flashing may still work, but it is risky. Continue write?`,
-        );
+        const confirmed = await showConfirm({
+          title: "Model Mismatch Detected",
+          message: `Connected radio appears to be ${connectedModel}, but loaded codeplug is ${codeplugModel}.\n\nCross-flashing may still work, but it is risky. Continue write?`,
+          confirmLabel: "Continue Anyway",
+          danger: true,
+        });
         if (!confirmed) {
           return;
         }
@@ -1418,7 +1423,7 @@ export function bindActiveTab(
 
       const bytes = store.exportBytes();
       if (!bytes) {
-        window.alert("Nothing to write. Load or edit a codeplug first.");
+        showToast({ type: "warning", message: "Nothing to write. Load or edit a codeplug first." });
         return;
       }
 
@@ -1437,14 +1442,14 @@ export function bindActiveTab(
         uiState.radioStatusMessage = `Write complete: ${bytes.byteLength} bytes sent.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Write complete.";
-        window.alert(`Write complete: ${bytes.byteLength} bytes sent.`);
+        showToast({ type: "success", message: `Write complete: ${bytes.byteLength} bytes sent.` });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
         uiState.radioStatusMessage = `Write failed: ${message}`;
         uiState.radioProgressVisible = false;
         uiState.radioProgressPercent = 0;
         uiState.radioProgressLabel = "";
-        window.alert(`Write failed: ${message}`);
+        showToast({ type: "error", message: `Write failed: ${message}` });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -2059,7 +2064,7 @@ export function bindActiveTab(
     if (channelState.bulkColorCode.trim().length > 0) {
       const parsed = Number.parseInt(channelState.bulkColorCode, 10);
       if (Number.isNaN(parsed) || parsed < 0 || parsed > 15) {
-        window.alert("Color Code must be between 0 and 15.");
+        showToast({ type: "error", message: "Color Code must be between 0 and 15." });
         return;
       }
       patch.colorCode = parsed;
@@ -2071,7 +2076,7 @@ export function bindActiveTab(
     if (hasBulkRx) {
       const parsed = Number.parseFloat(channelState.bulkRxFrequencyMHz);
       if (Number.isNaN(parsed) || parsed < 100 || parsed > 1000) {
-        window.alert("RX frequency must be between 100 and 1000 MHz.");
+        showToast({ type: "error", message: "RX frequency must be between 100 and 1000 MHz." });
         return;
       }
       patch.rxFrequencyMHz = parsed;
@@ -2080,7 +2085,7 @@ export function bindActiveTab(
     if (hasBulkOffset) {
       const parsed = Number.parseFloat(channelState.bulkTxOffsetMHz);
       if (Number.isNaN(parsed) || parsed < -100 || parsed > 100) {
-        window.alert("Shift must be between -100 and +100 MHz.");
+        showToast({ type: "error", message: "Shift must be between -100 and +100 MHz." });
         return;
       }
       patch.txOffsetMHz = parsed;
@@ -2095,7 +2100,7 @@ export function bindActiveTab(
       : filteredChannels.map((channel) => channel.id);
 
     if (selectedChannelIds.length === 0) {
-      window.alert(channelState.bulkTarget === "selected" ? "Select at least one channel for bulk update." : "No channels match current filters.");
+      showToast({ type: "warning", message: channelState.bulkTarget === "selected" ? "Select at least one channel for bulk update." : "No channels match current filters." });
       return;
     }
 

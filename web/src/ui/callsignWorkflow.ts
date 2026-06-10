@@ -14,6 +14,7 @@ import {
   syncRadioProgressUi,
   utcStamp,
 } from "./uiHelpers";
+import { showToast, showConfirm } from "./dialog";
 
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
@@ -192,12 +193,12 @@ export function bindCallsignWorkflowActions(
       uiState.callsignProgressPercent = 100;
       uiState.callsignProgressLabel = "Build complete.";
       uiState.callsignStatusMessage = `Build complete: ${built.payload.byteLength} bytes (${uiState.callsignFormat}, ${uiState.callsignProfile}).`;
-      window.alert(`Callsign build complete: ${built.payload.byteLength} bytes ready to flash.`);
+      showToast({ type: "success", message: `Callsign build complete: ${built.payload.byteLength} bytes ready to flash.` });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Callsign build failed.";
       uiState.callsignStatusMessage = `Build failed: ${message}`;
       uiState.callsignProgressVisible = false;
-      window.alert(`Build failed: ${message}`);
+      showToast({ type: "error", message: `Build failed: ${message}` });
     } finally {
       uiState.callsignBusy = false;
       renderState(target, store, store.getState(), channelState, uiState);
@@ -209,13 +210,16 @@ export function bindCallsignWorkflowActions(
       return;
     }
     if (!uiState.callsignPayload) {
-      window.alert("Build the callsign database first.");
+      showToast({ type: "warning", message: "Build the callsign database first." });
       return;
     }
 
-    const confirmed = window.confirm(
-      `Flash ${uiState.callsignPayload.byteLength} bytes to 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}?\n\nA rollback backup will be downloaded before write.`,
-    );
+    const confirmed = await showConfirm({
+      title: "Flash Callsign Database",
+      message: `Flash ${uiState.callsignPayload.byteLength} bytes to 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}?\n\nA rollback backup will be downloaded before write.`,
+      confirmLabel: "Flash",
+      danger: true,
+    });
     if (!confirmed) {
       return;
     }
@@ -258,12 +262,12 @@ export function bindCallsignWorkflowActions(
       uiState.callsignStatusMessage = `Flash complete: ${uiState.callsignPayload.byteLength} bytes written at 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}.`;
       uiState.callsignProgressPercent = 100;
       uiState.callsignProgressLabel = "Flash complete.";
-      window.alert(`Flash complete. Rollback backup downloaded as ${rollbackName}.`);
+      showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";
       uiState.callsignStatusMessage = `Flash failed: ${message}`;
       uiState.callsignProgressVisible = false;
-      window.alert(`Flash failed: ${message}`);
+      showToast({ type: "error", message: `Flash failed: ${message}` });
     } finally {
       uiState.callsignBusy = false;
       renderState(target, store, store.getState(), channelState, uiState);

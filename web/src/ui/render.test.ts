@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EditorStore } from "../state/store";
 import * as browserRadio from "../transport/browserRadio";
+import * as dialog from "./dialog";
 import { renderApp } from "./render";
 import type { CodeplugDocument } from "../domain/types";
 
@@ -784,7 +785,7 @@ describe("radio transfer progress", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    const toastSpy = vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
@@ -820,8 +821,8 @@ describe("radio transfer progress", () => {
     click(container, "#landing-read-radio-btn");
     await flushAsyncWork();
 
-    const alerts = alertSpy.mock.calls.map((call) => String(call[0] ?? ""));
-    expect(alerts.some((message) => message.includes("Read failed:"))).toBe(true);
+    const toastCalls = toastSpy.mock.calls.map((call) => call[0]);
+    expect(toastCalls.some((opts) => opts.type === "error" && opts.message.includes("Read failed:"))).toBe(true);
     expect(container.textContent).toContain("Unsupported .bin size");
   });
 
@@ -831,7 +832,7 @@ describe("radio transfer progress", () => {
     store.loadDocument(makeDocument());
     vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
 
-    vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
@@ -900,8 +901,8 @@ describe("radio transfer progress", () => {
     store.loadDocument(doc);
     vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
 
-    vi.spyOn(window, "alert").mockImplementation(() => undefined);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(false);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
@@ -950,8 +951,8 @@ describe("radio transfer progress", () => {
     store.loadDocument(doc);
     vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
 
-    vi.spyOn(window, "alert").mockImplementation(() => undefined);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
@@ -998,8 +999,8 @@ describe("callsign updater workflow", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const toastSpy = vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
+    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
@@ -1091,8 +1092,9 @@ describe("callsign updater workflow", () => {
     expect(container.textContent).toContain("Flash complete:");
     expect(createObjectUrlSpy).toHaveBeenCalled();
     expect(revokeObjectUrlSpy).toHaveBeenCalled();
-    expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Callsign build complete"))).toBe(true);
-    expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Flash complete"))).toBe(true);
+    const toastCalls = toastSpy.mock.calls.map((call) => call[0]);
+    expect(toastCalls.some((opts) => opts.type === "success" && opts.message.includes("Callsign build complete"))).toBe(true);
+    expect(toastCalls.some((opts) => opts.type === "success" && opts.message.includes("Flash complete"))).toBe(true);
 
     vi.useRealTimers();
   });

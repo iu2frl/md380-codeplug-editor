@@ -10,6 +10,7 @@ import {
   setRadioProgress,
   syncRadioProgressUi,
 } from "./uiHelpers";
+import { showToast } from "./dialog";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -306,13 +307,13 @@ export function bindLandingActions(
 
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
-      window.alert(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+      showToast({ type: "error", message: `WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}` });
       return;
     }
 
     const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
     if (!transport) {
-      window.alert("Unable to initialize WebUSB transport in this browser.");
+      showToast({ type: "error", message: "Unable to initialize WebUSB transport in this browser." });
       return;
     }
 
@@ -334,14 +335,14 @@ export function bindLandingActions(
       uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
       uiState.radioProgressPercent = 100;
       uiState.radioProgressLabel = "Read complete.";
-      window.alert(`Read complete: ${bytes.byteLength} bytes loaded into editor.`);
+      showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Read failed.";
       uiState.radioStatusMessage = `Read failed: ${message}`;
       uiState.radioProgressVisible = false;
       uiState.radioProgressPercent = 0;
       uiState.radioProgressLabel = "";
-      window.alert(`Read failed: ${message}`);
+      showToast({ type: "error", message: `Read failed: ${message}` });
     } finally {
       if (connected) {
         try {

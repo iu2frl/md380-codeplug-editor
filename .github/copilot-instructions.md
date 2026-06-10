@@ -104,3 +104,4 @@ Before marking any feature complete, ensure:
 - All frontend and backend capabilities must be covered by tests.
 - Tests should be deterministic and reproducible.
 - Tests for the parser are described in [tests.md](../tests.md).
+- After every modification, run all tests and ensure they pass before committing.
