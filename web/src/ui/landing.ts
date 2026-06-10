@@ -39,7 +39,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           Please note: this app does not (yet) support OpenGD77 firmware. This app only supports original or patched (via <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="nofollow">md380tools</a>) firmwares for MD380 and MD390.
         </p>
         <label class="risk-ack">
-          <input id="risk-ack" type="checkbox" ${riskAccepted ? "checked" : ""} />
+          <input id="risk-ack" type="checkbox" ${riskAccepted ? "checked" : ""} ${uiState.busy ? "disabled" : ""}/>
           I understand and accept all risk, including possible device damage or bricking.
         </label>
       </section>
@@ -55,38 +55,38 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         : ""}
 
       <section class="tiles">
-        <article class="card tile ${riskAccepted ? "" : "muted"}">
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
           <p>Start from a blank profile and build your codeplug from scratch.</p>
           <p class="risk-text">
           This feature is in the alpha testing stage and might need further refinements to ensure the generated codeplugs are fully compatible with all radio models and firmware versions.
           </p>
           <div class="actions">
-            <button id="create-new-md380-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create new MD380 codeplug</button>
-            <button id="create-new-md390-btn" class="button" ${riskAccepted ? "" : "disabled"}>Create new MD390 codeplug</button>
+            <button id="create-new-md380-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Create new MD380 codeplug</button>
+            <button id="create-new-md390-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Create new MD390 codeplug</button>
           </div>
         </article>
 
-        <article class="card tile ${riskAccepted ? "" : "muted"}">
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Open Existing Codeplug</h2>
           <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.</p>
-          <button id="open-existing-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open .rdt/.bin</button>
+          <button id="open-existing-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open .rdt/.bin</button>
           <button id="open-existing-guide-btn" class="button ghost">Full Step-by-Step Guide</button>
-          <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted ? "" : "disabled"} />
+          <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted && !uiState.busy ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
 
-        <article class="card tile ${riskAccepted ? "" : "muted"}">
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Read From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
-          <button id="landing-read-radio-btn" class="button" ${riskAccepted ? "" : "disabled"}>Read From Radio</button>
+          <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read From Radio</button>
           <button id="landing-read-guide-btn" class="button ghost">Read Setup Guide</button>
         </article>
 
-        <article class="card tile ${riskAccepted ? "" : "muted"}">
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Callsign Database</h2>
           <p>Download the latest callsign database and write it to the transceiver.</p>
-          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted ? "" : "disabled"}>Open Callsign Workflow</button>
+          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open Callsign Workflow</button>
         </article>
       </section>
     </main>
@@ -295,14 +295,18 @@ export function bindLandingActions(
     if (!uiState.riskAccepted) {
       return;
     }
+    uiState.busy = true;
     store.createBlank("MD380", "bin");
+    uiState.busy = false;
   });
 
   target.querySelector<HTMLButtonElement>("#create-new-md390-btn")?.addEventListener("click", () => {
     if (!uiState.riskAccepted) {
       return;
     }
+    uiState.busy = true;
     store.createBlank("MD390", "bin");
+    uiState.busy = false;
   });
 
   target.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.addEventListener("click", async () => {
@@ -324,6 +328,7 @@ export function bindLandingActions(
 
     let connected = false;
     try {
+      uiState.busy = true;
       uiState.radioTransport = transport;
       uiState.radioProgressVisible = true;
       uiState.radioProgressPercent = 0;
@@ -358,6 +363,7 @@ export function bindLandingActions(
         }
       }
       uiState.radioTransport = null;
+      uiState.busy = false;
       renderState(target, store, store.getState(), channelState, uiState);
     }
   });
@@ -371,7 +377,9 @@ export function bindLandingActions(
     if (!uiState.riskAccepted) {
       return;
     }
+    uiState.busy = true;
     uiState.landingView = "callsign-workflow";
+    uiState.busy = false;
     renderState(target, store, store.getState(), channelState, uiState);
   });
 }

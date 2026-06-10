@@ -36,6 +36,7 @@ export interface UiState {
   activeTab: ActiveTab;
   landingView: "home" | "callsign-workflow";
   riskAccepted: boolean;
+  busy: boolean;
   activeGuideModal: ActiveGuideModal;
   selectedZoneId: number | null;
   selectedChannelId: number | null;
@@ -80,6 +81,7 @@ export function createInitialUiState(): UiState {
     activeTab: "basic",
     landingView: "home",
     riskAccepted: false,
+    busy: false,
     activeGuideModal: null,
     selectedZoneId: null,
     selectedChannelId: null,
