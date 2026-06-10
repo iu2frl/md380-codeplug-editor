@@ -324,7 +324,9 @@ function bindLandingActions(
     } catch (error) {
       const message = error instanceof Error ? error.message : "Read failed.";
       uiState.radioStatusMessage = `Read failed: ${message}`;
-      uiState.radioProgressLabel = `Read failed: ${message}`;
+      uiState.radioProgressVisible = false;
+      uiState.radioProgressPercent = 0;
+      uiState.radioProgressLabel = "";
       window.alert(`Read failed: ${message}`);
     } finally {
       if (connected) {
@@ -335,6 +337,7 @@ function bindLandingActions(
         }
       }
       uiState.radioTransport = null;
+      renderState(target, store, store.getState(), channelState, uiState);
     }
   });
 }
@@ -1694,7 +1697,9 @@ function bindActiveTab(
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
         uiState.radioStatusMessage = `Read failed: ${message}`;
-        uiState.radioProgressLabel = `Read failed: ${message}`;
+        uiState.radioProgressVisible = false;
+        uiState.radioProgressPercent = 0;
+        uiState.radioProgressLabel = "";
         window.alert(`Read failed: ${message}`);
       } finally {
         uiState.radioBusy = false;
@@ -1733,7 +1738,9 @@ function bindActiveTab(
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
         uiState.radioStatusMessage = `Write failed: ${message}`;
-        uiState.radioProgressLabel = `Write failed: ${message}`;
+        uiState.radioProgressVisible = false;
+        uiState.radioProgressPercent = 0;
+        uiState.radioProgressLabel = "";
         window.alert(`Write failed: ${message}`);
       } finally {
         uiState.radioBusy = false;
