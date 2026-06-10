@@ -12,6 +12,7 @@ const RADIO_BUTTONS_MAX = 4;
 const BUTTON_DEFINITIONS_OFFSET = 9014;
 const ONE_LONG_PRESS_DURATION_BIT_OFFSET = 0;
 const TEXT_MESSAGES_OFFSET = 9125;
+const TEXT_MESSAGES_OFFSET_ALT = TEXT_MESSAGES_OFFSET - RDT_HEADER_SIZE;
 const TEXT_MESSAGES_MAX = 50;
 const TEXT_MESSAGE_RECORD_SIZE = 288;
 const PRIVACY_SETTINGS_OFFSET = 23525;
@@ -973,6 +974,37 @@ function writeZones(payload: Uint8Array, document: CodeplugDocument, channelSlot
   }
 }
 
+function countTextMessageRecords(payload: Uint8Array, offset: number): number {
+  if (offset < 0) {
+    return 0;
+  }
+
+  let count = 0;
+  for (let index = 0; index < TEXT_MESSAGES_MAX; index += 1) {
+    const base = offset + index * TEXT_MESSAGE_RECORD_SIZE;
+    if (base + TEXT_MESSAGE_RECORD_SIZE > payload.byteLength) {
+      break;
+    }
+    if (payload[base] === 0) {
+      continue;
+    }
+    const text = readUcs2String(payload, base, TEXT_MESSAGE_RECORD_SIZE);
+    if (text.length > 0) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function resolveTextMessagesOffset(payload: Uint8Array): number {
+  const primaryCount = countTextMessageRecords(payload, TEXT_MESSAGES_OFFSET);
+  const altCount = countTextMessageRecords(payload, TEXT_MESSAGES_OFFSET_ALT);
+  if (altCount > primaryCount) {
+    return TEXT_MESSAGES_OFFSET_ALT;
+  }
+  return TEXT_MESSAGES_OFFSET;
+}
+
 function outputNameFor(fileName: string): string {
   const lower = fileName.toLowerCase();
   if (lower.endsWith(".rdt") || lower.endsWith(".bin") || lower.endsWith(".dfu")) {
@@ -1426,8 +1458,9 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       : 1000;
 
   const textMessages = [];
+  const textMessagesOffset = resolveTextMessagesOffset(payload);
   for (let index = 0; index < TEXT_MESSAGES_MAX; index += 1) {
-    const base = TEXT_MESSAGES_OFFSET + index * TEXT_MESSAGE_RECORD_SIZE;
+    const base = textMessagesOffset + index * TEXT_MESSAGE_RECORD_SIZE;
     if (base + TEXT_MESSAGE_RECORD_SIZE > payload.byteLength) {
       break;
     }
@@ -1639,11 +1672,12 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     payload[offset] = assignment ? Math.max(0, Math.min(255, assignment.actionCode)) : 0;
   }
 
+  const textMessagesOffset = resolveTextMessagesOffset(payload);
   for (const message of document.textMessages) {
     if (!message.slot || message.slot < 1 || message.slot > TEXT_MESSAGES_MAX) {
       continue;
     }
-    const base = TEXT_MESSAGES_OFFSET + (message.slot - 1) * TEXT_MESSAGE_RECORD_SIZE;
+    const base = textMessagesOffset + (message.slot - 1) * TEXT_MESSAGE_RECORD_SIZE;
     if (base + TEXT_MESSAGE_RECORD_SIZE > payload.byteLength) {
       continue;
     }

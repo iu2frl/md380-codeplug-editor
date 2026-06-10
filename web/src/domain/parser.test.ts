@@ -11,6 +11,7 @@ const MENU_SETTINGS_OFFSET = 8981;
 const RADIO_BUTTONS_OFFSET = 8999;
 const BUTTON_DEFINITIONS_OFFSET = 9014;
 const TEXT_MESSAGES_OFFSET = 9125;
+const TEXT_MESSAGES_OFFSET_ALT = TEXT_MESSAGES_OFFSET - RDT_HEADER_SIZE;
 const TEXT_MESSAGE_RECORD_SIZE = 288;
 const PRIVACY_SETTINGS_OFFSET = 23525;
 const PRIVACY_BASIC_KEYS_OFFSET = 144;
@@ -272,6 +273,19 @@ describe("parseCodeplug", () => {
 
     const reparsed = parseCodeplug("fixture.rdt", out);
     expect(reparsed.settings.radioName).toBe("RDT-EDIT");
+  });
+
+  it("parses text messages from alternate offset when primary region is empty", () => {
+    const payload = buildPayloadFixture();
+    payload.fill(0, TEXT_MESSAGES_OFFSET, TEXT_MESSAGES_OFFSET + TEXT_MESSAGE_RECORD_SIZE * 2);
+    writeUcs2(payload, TEXT_MESSAGES_OFFSET_ALT, TEXT_MESSAGE_RECORD_SIZE, "Alt message A");
+    writeUcs2(payload, TEXT_MESSAGES_OFFSET_ALT + TEXT_MESSAGE_RECORD_SIZE, TEXT_MESSAGE_RECORD_SIZE, "Alt message B");
+
+    const doc = parseCodeplug("fixture.bin", payload);
+
+    expect(doc.textMessages).toHaveLength(2);
+    expect(doc.textMessages[0].text).toBe("Alt message A");
+    expect(doc.textMessages[1].text).toBe("Alt message B");
   });
 
   it("detects S variant from model metadata", () => {
