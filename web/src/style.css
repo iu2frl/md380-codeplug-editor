@@ -802,6 +802,13 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .tile > .button,
+  .tile .actions > .button,
+  .tile .actions > label.button {
+    width: 100%;
+    align-self: stretch;
+  }
+
   .toolbar,
   .bulkbar {
     grid-template-columns: 1fr;
