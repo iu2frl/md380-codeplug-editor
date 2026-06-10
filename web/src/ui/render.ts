@@ -10,6 +10,7 @@ import {
 interface ChannelPanelState {
   query: string;
   modeFilter: "all" | "Analog" | "Digital";
+  bulkExpanded: boolean;
   bulkTarget: "filtered" | "selected";
   bulkSelectionIds: number[];
   bulkMode: "" | "Analog" | "Digital";
@@ -133,6 +134,7 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = {
     query: "",
     modeFilter: "all",
+    bulkExpanded: false,
     bulkTarget: "filtered",
     bulkSelectionIds: [],
     bulkMode: "",
@@ -974,42 +976,6 @@ sudo udevadm trigger</pre>
               <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
             </select>
           </div>
-          <div class="bulkbar">
-            <strong>Bulk Update</strong>
-            <select id="bulk-target">
-              <option value="filtered" ${channelState.bulkTarget === "filtered" ? "selected" : ""}>Filtered (${filteredChannels.length})</option>
-              <option value="selected" ${channelState.bulkTarget === "selected" ? "selected" : ""}>Selected (${channelState.bulkSelectionIds.length})</option>
-            </select>
-            <button class="button ghost tiny" id="bulk-select-filtered">Select Filtered (${filteredChannels.length})</button>
-            <button class="button ghost tiny" id="bulk-clear-selection" ${channelState.bulkSelectionIds.length === 0 ? "disabled" : ""}>Clear Selected</button>
-            <select id="bulk-mode">
-              <option value="">Mode (unchanged)</option>
-              <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
-              <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
-            </select>
-            <select id="bulk-power">
-              <option value="">Power (unchanged)</option>
-              <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
-              <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
-            </select>
-            <select id="bulk-bandwidth">
-              <option value="">Bandwidth (unchanged)</option>
-              <option value="12.5" ${channelState.bulkBandwidth === "12.5" ? "selected" : ""}>12.5 kHz</option>
-              <option value="20" ${channelState.bulkBandwidth === "20" ? "selected" : ""}>20 kHz</option>
-              <option value="25" ${channelState.bulkBandwidth === "25" ? "selected" : ""}>25 kHz</option>
-            </select>
-            <select id="bulk-slot">
-              <option value="">Time Slot (unchanged)</option>
-              <option value="1" ${channelState.bulkRepeaterSlot === "1" ? "selected" : ""}>TS1</option>
-              <option value="2" ${channelState.bulkRepeaterSlot === "2" ? "selected" : ""}>TS2</option>
-            </select>
-            <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="Color Code (unchanged)" value="${escapeHtml(channelState.bulkColorCode)}" />
-            <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="RX MHz (unchanged)" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
-            <input id="bulk-tx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="TX MHz (unchanged)" value="${escapeHtml(channelState.bulkTxFrequencyMHz)}" />
-            <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="Shift MHz (unchanged)" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
-            <button class="button tiny" id="apply-bulk">Apply</button>
-            <small class="muted-text">${selectedInFilterCount} of ${filteredChannels.length} filtered channels are selected.</small>
-          </div>
           <div class="list">
             ${filteredChannels
               .map(
@@ -1314,6 +1280,49 @@ sudo udevadm trigger</pre>
           }
         </div>
       </div>
+      <section class="bulk-card">
+        <details id="bulk-editor-card" ${channelState.bulkExpanded ? "open" : ""}>
+          <summary>
+            <span>Bulk Channel Update</span>
+            <span class="muted-text">Filtered: ${filteredChannels.length} | Selected: ${channelState.bulkSelectionIds.length}</span>
+          </summary>
+          <div class="bulkbar">
+            <select id="bulk-target">
+              <option value="filtered" ${channelState.bulkTarget === "filtered" ? "selected" : ""}>Filtered (${filteredChannels.length})</option>
+              <option value="selected" ${channelState.bulkTarget === "selected" ? "selected" : ""}>Selected (${channelState.bulkSelectionIds.length})</option>
+            </select>
+            <button class="button ghost tiny" id="bulk-select-filtered">Select Filtered (${filteredChannels.length})</button>
+            <button class="button ghost tiny" id="bulk-clear-selection" ${channelState.bulkSelectionIds.length === 0 ? "disabled" : ""}>Clear Selected</button>
+            <select id="bulk-mode">
+              <option value="">Mode (unchanged)</option>
+              <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
+              <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
+            </select>
+            <select id="bulk-power">
+              <option value="">Power (unchanged)</option>
+              <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
+              <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
+            </select>
+            <select id="bulk-bandwidth">
+              <option value="">Bandwidth (unchanged)</option>
+              <option value="12.5" ${channelState.bulkBandwidth === "12.5" ? "selected" : ""}>12.5 kHz</option>
+              <option value="20" ${channelState.bulkBandwidth === "20" ? "selected" : ""}>20 kHz</option>
+              <option value="25" ${channelState.bulkBandwidth === "25" ? "selected" : ""}>25 kHz</option>
+            </select>
+            <select id="bulk-slot">
+              <option value="">Time Slot (unchanged)</option>
+              <option value="1" ${channelState.bulkRepeaterSlot === "1" ? "selected" : ""}>TS1</option>
+              <option value="2" ${channelState.bulkRepeaterSlot === "2" ? "selected" : ""}>TS2</option>
+            </select>
+            <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="Color Code (unchanged)" value="${escapeHtml(channelState.bulkColorCode)}" />
+            <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="RX MHz (unchanged)" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
+            <input id="bulk-tx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="TX MHz (unchanged)" value="${escapeHtml(channelState.bulkTxFrequencyMHz)}" />
+            <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="Shift MHz (unchanged)" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
+            <button class="button tiny" id="apply-bulk">Apply</button>
+            <small class="muted-text">${selectedInFilterCount} of ${filteredChannels.length} filtered channels are selected.</small>
+          </div>
+        </details>
+      </section>
     `;
   }
 
@@ -2320,6 +2329,10 @@ function bindActiveTab(
   }
 
   // Bulk update
+  panel.querySelector<HTMLDetailsElement>("#bulk-editor-card")?.addEventListener("toggle", (event) => {
+    channelState.bulkExpanded = (event.currentTarget as HTMLDetailsElement).open;
+  });
+
   panel.querySelector<HTMLSelectElement>("#bulk-target")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
     channelState.bulkTarget = value === "selected" ? "selected" : "filtered";

@@ -372,6 +372,13 @@ describe("channels tab", () => {
 
   it("shows bulk controls without selecting a channel", () => {
     click(container, '[data-tab="channels"]');
+    const bulkCard = container.querySelector<HTMLDetailsElement>("#bulk-editor-card");
+    expect(bulkCard).not.toBeNull();
+    expect(bulkCard?.open).toBe(false);
+
+    bulkCard?.setAttribute("open", "");
+    bulkCard?.dispatchEvent(new Event("toggle"));
+
     expect(container.querySelector("#apply-bulk")).not.toBeNull();
     expect(container.querySelector("#bulk-target")).not.toBeNull();
     expect(container.querySelector("#bulk-bandwidth")).not.toBeNull();
@@ -379,6 +386,10 @@ describe("channels tab", () => {
 
   it("applies bulk patch to filtered channels", () => {
     click(container, '[data-tab="channels"]');
+
+    const bulkCard = container.querySelector<HTMLDetailsElement>("#bulk-editor-card");
+    bulkCard?.setAttribute("open", "");
+    bulkCard?.dispatchEvent(new Event("toggle"));
 
     const searchInput = container.querySelector<HTMLInputElement>("#channel-search");
     if (!searchInput) throw new Error("search input not found");
@@ -412,6 +423,10 @@ describe("channels tab", () => {
 
   it("applies bulk RX and shift and derives TX", () => {
     click(container, '[data-tab="channels"]');
+
+    const bulkCard = container.querySelector<HTMLDetailsElement>("#bulk-editor-card");
+    bulkCard?.setAttribute("open", "");
+    bulkCard?.dispatchEvent(new Event("toggle"));
 
     const searchInput = container.querySelector<HTMLInputElement>("#channel-search");
     if (!searchInput) throw new Error("search input not found");
