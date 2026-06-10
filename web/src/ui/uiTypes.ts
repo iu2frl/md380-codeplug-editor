@@ -46,7 +46,6 @@ export interface UiState {
   radioProgressPercent: number;
   radioProgressLabel: string;
   radioProgressVisible: boolean;
-  callsignSource: string;
   callsignFormat: CallsignFormat;
   callsignProfile: CallsignProfile;
   callsignPayload: Uint8Array | null;
@@ -56,9 +55,8 @@ export interface UiState {
   callsignProgressPercent: number;
   callsignProgressLabel: string;
   callsignProgressVisible: boolean;
+  callsignLastUpdated: string | null;
 }
-
-export const DEFAULT_CALLSIGN_SOURCE = "/user.csv";
 
 export function createInitialChannelPanelState(): ChannelPanelState {
   return {
@@ -92,7 +90,6 @@ export function createInitialUiState(): UiState {
     radioProgressPercent: 0,
     radioProgressLabel: "No transfer in progress.",
     radioProgressVisible: false,
-    callsignSource: DEFAULT_CALLSIGN_SOURCE,
     callsignFormat: "indexed",
     callsignProfile: "global",
     callsignPayload: null,
@@ -102,5 +99,6 @@ export function createInitialUiState(): UiState {
     callsignProgressPercent: 0,
     callsignProgressLabel: "No transfer in progress.",
     callsignProgressVisible: false,
+    callsignLastUpdated: null,
   };
 }

@@ -18,6 +18,15 @@ import {
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
 
+function formatCallsignDate(isoDate: string): string {
+  try {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return isoDate;
+  }
+}
+
 type RenderStateFn = (
   target: HTMLElement,
   store: EditorStore,
@@ -42,10 +51,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
 
       <section class="card">
         <h2>1. Select Options</h2>
-        <label>
-          Source CSV URL
-          <input id="callsign-workflow-source" type="url" value="${escapeHtml(uiState.callsignSource)}" placeholder="https://.../user.csv" ${canBuild ? "" : "disabled"} />
-        </label>
+        ${uiState.callsignLastUpdated ? `<p class="muted-text">Bundled database last updated: <strong>${escapeHtml(formatCallsignDate(uiState.callsignLastUpdated))}</strong>. Database is automatically updated once a week.</p>` : ""}
         <div class="grid">
           <label>
             Database Format
@@ -106,9 +112,18 @@ export function bindCallsignWorkflowActions(
     renderState(target, store, store.getState(), channelState, uiState);
   });
 
-  target.querySelector<HTMLInputElement>("#callsign-workflow-source")?.addEventListener("change", (event) => {
-    uiState.callsignSource = (event.currentTarget as HTMLInputElement).value.trim();
-  });
+  // Fetch callsign metadata on load if not already fetched
+  if (!uiState.callsignLastUpdated) {
+    fetch("/callsign-meta.json", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((meta) => {
+        if (meta?.updatedAt) {
+          uiState.callsignLastUpdated = meta.updatedAt;
+          renderState(target, store, store.getState(), channelState, uiState);
+        }
+      })
+      .catch(() => {});
+  }
 
   target.querySelector<HTMLSelectElement>("#callsign-workflow-format")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
@@ -146,11 +161,7 @@ export function bindCallsignWorkflowActions(
       return;
     }
 
-    const source = uiState.callsignSource.trim();
-    if (!source) {
-      window.alert("Enter a callsign source URL first.");
-      return;
-    }
+    const source = "/user.csv";
 
     uiState.callsignBusy = true;
     uiState.callsignProgressVisible = false;

@@ -3,6 +3,10 @@ name: Deploy Web App to GitHub Pages
 on:
   release:
     types: [created]
+  schedule:
+    # Run every Monday at 03:00 UTC to refresh callsign database
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,8 +43,9 @@ jobs:
 
       - name: Fetch callsign database
         run: |
-          mkdir -p web/public
-          curl -f -o web/public/user.csv https://database.radioid.net/static/user.csv || echo "Warning: Failed to fetch callsign database"
+          mkdir -p public
+          curl -f -o public/user.csv https://database.radioid.net/static/user.csv || echo "Warning: Failed to fetch callsign database"
+          echo "{\"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/callsign-meta.json
 
       - name: Build static site
         env:
