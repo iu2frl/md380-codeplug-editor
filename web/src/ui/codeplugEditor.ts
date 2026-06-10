@@ -966,6 +966,10 @@ export function bindTopActions(target: HTMLElement, store: EditorStore, state: A
       store.redo();
     }
   });
+
+  target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", () => {
+    window.location.reload();
+  });
 }
 
 export function bindTabs(
@@ -976,11 +980,6 @@ export function bindTabs(
   channelState: ChannelPanelState,
   renderState: RenderStateFn,
 ): void {
-  target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", () => {
-    uiState.landingView = "home";
-    renderState(target, store, store.getState(), channelState, uiState);
-  });
-
   for (const tabButton of target.querySelectorAll<HTMLButtonElement>("[data-tab]")) {
     tabButton.addEventListener("click", () => {
       const key = tabButton.dataset.tab;
