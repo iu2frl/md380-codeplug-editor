@@ -555,9 +555,9 @@ select {
 }
 
 .zone-selected-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 0.5rem;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -567,6 +567,10 @@ select {
 
 .zone-selected-name {
   font-size: 0.9rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .radio-transfer-grid {
@@ -636,6 +640,14 @@ select {
 .zone-selected-actions {
   display: flex;
   gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.zone-order-button {
+  min-width: 2rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
 }
 
 @media (max-width: 720px) {

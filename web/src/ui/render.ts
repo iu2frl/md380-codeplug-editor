@@ -791,8 +791,8 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
                             <div class="zone-selected-row" data-zone-selected-row="${channelId}">
                               <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
                               <div class="zone-selected-actions">
-                                <button class="button ghost tiny" data-zone-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>Up</button>
-                                <button class="button ghost tiny" data-zone-channel-down="${channelId}" ${index === selectedZone.channelIds.length - 1 ? "disabled" : ""}>Down</button>
+                                <button class="button ghost tiny zone-order-button" title="Move channel up" aria-label="Move channel up" data-zone-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="Move channel down" aria-label="Move channel down" data-zone-channel-down="${channelId}" ${index === selectedZone.channelIds.length - 1 ? "disabled" : ""}>&darr;</button>
                                 <button class="button ghost tiny" data-zone-channel-remove="${channelId}">Remove</button>
                               </div>
                             </div>
