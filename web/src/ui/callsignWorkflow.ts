@@ -77,7 +77,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
         <button id="callsign-workflow-build-btn" class="button callsign-action-btn" ${canBuild ? "" : "disabled"}>Download + Build DB</button>
         ${
           uiState.callsignPayload
-            ? `<p class="muted-text">Ready payload: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
+            ? `<br><p class="muted-text">Payload ready: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
             : ""
         }
       </section>
@@ -256,7 +256,7 @@ export function bindCallsignWorkflowActions(
 
       uiState.callsignProgressVisible = true;
       uiState.callsignProgressPercent = 0;
-      uiState.callsignProgressLabel = "Flashing callsign database...";
+      uiState.callsignProgressLabel = "Preparing for callsign database flash operation. Please be patient...";
       renderState(target, store, store.getState(), channelState, uiState);
       await transport.writeSpiFlashRegion(CALLSIGN_FLASH_ADDRESS, uiState.callsignPayload, applyProgress);
       uiState.callsignStatusMessage = `Flash complete: ${uiState.callsignPayload.byteLength} bytes written at 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}.`;
