@@ -632,7 +632,7 @@ describe("landing entrypoints", () => {
 
     const modal = container.querySelector("#guide-modal");
     expect(modal).not.toBeNull();
-    expect(modal?.textContent).toContain("Open Existing Codeplug: Noob-Proof Procedure");
+    expect(modal?.textContent).toContain("Open Existing Codeplug");
     expect(modal?.textContent).toContain("radio-read");
     expect(modal?.textContent).toContain("radio-write");
   });

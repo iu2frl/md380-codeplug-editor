@@ -300,7 +300,7 @@ function renderGuideModal(uiState: UiState): string {
         <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
         <article class="guide-modal-card">
           <header class="guide-modal-header">
-            <h2 id="guide-modal-title">Open Existing Codeplug: Noob-Proof Procedure</h2>
+            <h2 id="guide-modal-title">Open Existing Codeplug</h2>
             <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
           </header>
 
