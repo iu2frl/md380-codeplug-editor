@@ -340,8 +340,8 @@ export function bindLandingActions(
       uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
       uiState.radioProgressPercent = 100;
       uiState.radioProgressLabel = "Read complete.";
-      //await transport.rebootRadio();
       showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
+      await transport.rebootRadio();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Read failed.";
       uiState.radioStatusMessage = `Read failed: ${message}`;

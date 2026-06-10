@@ -1389,8 +1389,8 @@ export function bindActiveTab(
         uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Read complete.";
-        //await uiState.radioTransport.rebootRadio();
         showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
+        await uiState.radioTransport.rebootRadio();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
         uiState.radioStatusMessage = `Read failed: ${message}`;
@@ -1448,8 +1448,8 @@ export function bindActiveTab(
         uiState.radioStatusMessage = `Write complete: ${bytes.byteLength} bytes sent.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Write complete.";
-        //await uiState.radioTransport.rebootRadio();
         showToast({ type: "success", message: `Write complete: ${bytes.byteLength} bytes sent.` });
+        await uiState.radioTransport.rebootRadio();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
         uiState.radioStatusMessage = `Write failed: ${message}`;

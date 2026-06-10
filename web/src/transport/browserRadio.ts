@@ -513,7 +513,13 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
   }
 
   private async md380Custom(device: UsbDeviceLike, first: number, second: number): Promise<void> {
-    await this.download(device, 0, new Uint8Array([first & 0xff, second & 0xff]));
+    try
+    {
+      await this.download(device, 0, new Uint8Array([first & 0xff, second & 0xff]));
+    }
+    catch (error) {
+      console.error("Error sending MD380 custom command: ", error);
+    }
     await this.syncStatusAndReturnIdle(device);
   }
 
@@ -703,8 +709,20 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
   }
 
   async rebootRadio(): Promise<void> {
-    const device = this.requireConnectedDevice();
-    await this.md380Custom(device, 0x91, 0x05);
+    try
+    {
+      // TODO: 
+      //  investigate why it randomly fails with:
+      //    "browserRadio.ts:718 Error sending reboot command to radio:  NetworkError: Failed to execute 
+      //    'controlTransferIn' on 'USBDevice': A transfer error has occurred."
+      //  even if the command succeeds and the radio reboots.
+      //  It might be expected as the radio reboots before sending any response.
+      const device = this.requireConnectedDevice();
+      await this.enterDfuIdle(device);
+      await this.md380Custom(device, 0x91, 0x05);
+    } catch (error) {
+      console.debug("Error sending reboot command to radio: ", error);
+    }
   }
 }
 
