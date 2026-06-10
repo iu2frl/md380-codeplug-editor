@@ -1009,12 +1009,19 @@ describe("callsign updater workflow", () => {
       warnings: [],
     });
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response("1,IK1AAA,Name,City,State,Nick,Country\n", {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
+      if (url.includes("callsign-meta.json")) {
+        return new Response(JSON.stringify({ updatedAt: "2026-06-10T03:00:00Z" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response("1,IK1AAA,Name,City,State,Nick,Country\n", {
         status: 200,
         headers: { "Content-Type": "text/csv" },
-      }),
-    );
+      });
+    });
 
     const createObjectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:vitest-callsign");
     const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
@@ -1064,7 +1071,8 @@ describe("callsign updater workflow", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalled();
+    expect(fetchSpy.mock.calls.some((call) => String(call[0]).includes("user.csv"))).toBe(true);
     expect(container.textContent).toContain("Build complete:");
 
     click(container, "#callsign-workflow-flash-btn");
