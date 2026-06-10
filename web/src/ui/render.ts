@@ -79,6 +79,36 @@ function downloadBytes(fileName: string, bytes: Uint8Array): void {
   URL.revokeObjectURL(url);
 }
 
+function setRadioProgress(uiState: UiState, progress: BrowserTransferProgress): void {
+  uiState.radioProgressVisible = true;
+  uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
+  uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
+}
+
+function syncRadioProgressUi(target: HTMLElement, uiState: UiState): void {
+  const landingProgress = target.querySelector<HTMLProgressElement>("#landing-radio-progress");
+  if (landingProgress) {
+    landingProgress.value = uiState.radioProgressPercent;
+  }
+  const landingLabel = target.querySelector<HTMLElement>("#landing-radio-progress-label");
+  if (landingLabel) {
+    landingLabel.textContent = uiState.radioProgressLabel;
+  }
+
+  const transferWrap = target.querySelector<HTMLElement>("#radio-transfer-progress-wrap");
+  if (transferWrap) {
+    transferWrap.classList.toggle("hidden", !uiState.radioProgressVisible);
+  }
+  const transferProgress = target.querySelector<HTMLProgressElement>("#radio-transfer-progress");
+  if (transferProgress) {
+    transferProgress.value = uiState.radioProgressPercent;
+  }
+  const transferLabel = target.querySelector<HTMLElement>("#radio-transfer-progress-label");
+  if (transferLabel) {
+    transferLabel.textContent = uiState.radioProgressLabel;
+  }
+}
+
 export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = {
     query: "",
@@ -172,7 +202,7 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
       <section class="card">
         <h2>Radio Transfer Progress</h2>
         <progress id="landing-radio-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
-        <p class="muted-text">${escapeHtml(uiState.radioProgressLabel)}</p>
+        <p class="muted-text" id="landing-radio-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
       </section>
       `
         : ""}
@@ -218,12 +248,8 @@ function bindLandingActions(
   uiState: UiState,
 ): void {
   const applyProgress = (progress: BrowserTransferProgress): void => {
-    uiState.radioProgressVisible = true;
-    uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
-    uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
-    if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
-      renderState(target, store, store.getState(), channelState, uiState);
-    }
+    setRadioProgress(uiState, progress);
+    syncRadioProgressUi(target, uiState);
   };
 
   target.querySelector<HTMLInputElement>("#risk-ack")?.addEventListener("change", (event) => {
@@ -662,7 +688,7 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
             <li>Write codeplug back with explicit confirmation and backup options.</li>
           </ol>
           <p class="muted-text" id="radio-transfer-status">Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
-          <div class="radio-transfer-progress ${uiState.radioProgressVisible ? "" : "hidden"}">
+          <div id="radio-transfer-progress-wrap" class="radio-transfer-progress ${uiState.radioProgressVisible ? "" : "hidden"}">
             <progress id="radio-transfer-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
             <p class="muted-text" id="radio-transfer-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
           </div>
@@ -1589,12 +1615,8 @@ function bindActiveTab(
       }
 
       const applyProgress = (progress: BrowserTransferProgress): void => {
-        uiState.radioProgressVisible = true;
-        uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
-        uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
-        if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
-          renderState(target, store, store.getState(), channelState, uiState);
-        }
+        setRadioProgress(uiState, progress);
+        syncRadioProgressUi(target, uiState);
       };
 
       uiState.radioBusy = true;
@@ -1633,12 +1655,8 @@ function bindActiveTab(
       }
 
       const applyProgress = (progress: BrowserTransferProgress): void => {
-        uiState.radioProgressVisible = true;
-        uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
-        uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
-        if (progress.completedBlocks % 8 === 0 || progress.completedBlocks === progress.totalBlocks) {
-          renderState(target, store, store.getState(), channelState, uiState);
-        }
+        setRadioProgress(uiState, progress);
+        syncRadioProgressUi(target, uiState);
       };
 
       uiState.radioBusy = true;
