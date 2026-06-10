@@ -323,10 +323,12 @@ function renderGuideModal(uiState: UiState): string {
             <li>Read codeplug with the helper:</li>
           </ol>
           <pre class="code-block">
+# Install the requirements (only needed once)
 git clone https://github.com/iu2frl/md380-codeplug-editor.git
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv/Scripts/activate
 pip install -r tools/requirements.txt
+# Read from radio and save to artifacts/codeplug/read/my-radio.bin
 python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
           </pre>
           <ol class="radio-transfer-list" start="3">
@@ -336,10 +338,12 @@ python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/
             <li>Write back only after creating a backup:</li>
           </ol>
           <pre class="code-block">
+# Install the requirements (only needed once)
 git clone https://github.com/iu2frl/md380-codeplug-editor.git
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv/Scripts/activate
 pip install -r tools/requirements.txt
+# Write back to the transceiver
 python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
           </pre>
 
