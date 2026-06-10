@@ -341,6 +341,24 @@ describe("channels tab", () => {
     expect(rerenderedInput).not.toBeNull();
     expect(document.activeElement).toBe(rerenderedInput);
   });
+
+  it("preserves channels list scroll when editing a channel", () => {
+    click(container, '[data-tab="channels"]');
+    click(container, '[data-channel-select="1"]');
+
+    const listBefore = container.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (!listBefore) throw new Error("channels list not found");
+    listBefore.scrollTop = 180;
+
+    const nameInput = container.querySelector<HTMLInputElement>("#channel-editor-name");
+    if (!nameInput) throw new Error("channel editor name input not found");
+    nameInput.value = "Alpha Updated";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const listAfter = container.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (!listAfter) throw new Error("channels list not found after rerender");
+    expect(listAfter.scrollTop).toBe(180);
+  });
 });
 
 describe("newly enabled tabs", () => {

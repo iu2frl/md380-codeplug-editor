@@ -33,6 +33,7 @@ interface UiState {
   riskAccepted: boolean;
   selectedZoneId: number | null;
   selectedChannelId: number | null;
+  channelsListScrollTop: number;
   radioTransport: BrowserRadioTransport | null;
   radioStatusMessage: string;
   radioBusy: boolean;
@@ -122,6 +123,7 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
     riskAccepted: false,
     selectedZoneId: null,
     selectedChannelId: null,
+    channelsListScrollTop: 0,
     radioTransport: null,
     radioStatusMessage: "Not connected.",
     radioBusy: false,
@@ -145,6 +147,13 @@ function renderState(
     bindFileInputs(target, store);
     bindLandingActions(target, store, state, channelState, uiState);
     return;
+  }
+
+  if (uiState.activeTab === "channels") {
+    const channelsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (channelsList) {
+      uiState.channelsListScrollTop = channelsList.scrollTop;
+    }
   }
 
   target.innerHTML = renderLoadedLayout(state, uiState);
@@ -174,6 +183,13 @@ function renderState(
   `;
 
   bindActiveTab(target, store, state, channelState, uiState);
+
+  if (uiState.activeTab === "channels") {
+    const channelsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (channelsList) {
+      channelsList.scrollTop = uiState.channelsListScrollTop;
+    }
+  }
 }
 
 function renderLanding(importError: string | undefined, riskAccepted: boolean, uiState: UiState): string {
