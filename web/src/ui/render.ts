@@ -317,17 +317,27 @@ function renderGuideModal(uiState: UiState): string {
 
           <h3>Path B: Read with Local Helper (Fallback)</h3>
           <ol class="radio-transfer-list">
-            <li>Open a terminal in the repository root.</li>
+            <li>Clone the repository from <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener">GitHub</a>.</li>
+            <li>Ensure you have Python 3 installed, then install dependencies (see below)</li>
+            <li>Open a terminal in the repository root</li>
             <li>Read codeplug with the helper:</li>
           </ol>
-          <pre class="code-block">python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin</pre>
+          <pre class="code-block">
+            python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
+          </pre>
           <ol class="radio-transfer-list" start="3">
             <li>In this app, click <strong>Open .rdt/.bin</strong>.</li>
             <li>Select <code>artifacts/codeplug/read/my-radio.bin</code>.</li>
             <li>Edit, validate, then export your updated file.</li>
             <li>Write back only after creating a backup:</li>
           </ol>
-          <pre class="code-block">python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin</pre>
+          <pre class="code-block">
+            git clone https://github.com/iu2frl/md380-codeplug-editor.git
+            python -m venv .venv
+            source .venv/bin/activate  # On Windows: .venv/Scripts/activate
+            pip install -r tools/requirements.txt
+            python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
+          </pre>
 
           <h3>Useful Links</h3>
           <ul class="radio-transfer-list">
@@ -361,16 +371,19 @@ function renderGuideModal(uiState: UiState): string {
           <ol class="radio-transfer-list">
             <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig</a>.</li>
             <li>In Zadig, open <strong>Options -> List All Devices</strong>.</li>
-            <li>Select your device (often <strong>STM32 BOOTLOADER</strong>).</li>
+            <li>Select your device (often <strong>STM32 BOOTLOADER</strong> or <strong>Patched MD380/MD390</strong>).</li>
             <li>Set target driver to <strong>WinUSB</strong> (not LibUSB / LibUsbK).</li>
             <li>Click <strong>Replace Driver</strong>, unplug, then replug radio.</li>
           </ol>
 
           <h3>Linux Setup</h3>
           <p>Install udev rules once:</p>
-          <pre class="code-block">sudo cp tools/99-md380.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules
-sudo udevadm trigger</pre>
+          <pre class="code-block">
+            git clone https://github.com/iu2frl/md380-codeplug-editor.git
+            sudo cp tools/99-md380.rules /etc/udev/rules.d/
+            sudo udevadm control --reload-rules
+            sudo udevadm trigger
+          </pre>
           <p class="muted-text">If needed, add your user to plugdev and re-login.</p>
 
           <h3>macOS Setup</h3>
