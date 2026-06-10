@@ -48,6 +48,7 @@ export function renderLoadedLayout(state: AppState, uiState: UiState): string {
           <button id="undo-btn" class="button ghost" ${state.undoCount === 0 ? "disabled" : ""}>Undo</button>
           <button id="redo-btn" class="button ghost" ${state.redoCount === 0 ? "disabled" : ""}>Redo</button>
           <button id="export-btn" class="button ghost">Export Current File</button>
+          <button id="callsign-back-home-btn" class="button ghost">Back To Homepage</button>
         </div>
       </section>
 
@@ -975,6 +976,11 @@ export function bindTabs(
   channelState: ChannelPanelState,
   renderState: RenderStateFn,
 ): void {
+  target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", () => {
+    uiState.landingView = "home";
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
   for (const tabButton of target.querySelectorAll<HTMLButtonElement>("[data-tab]")) {
     tabButton.addEventListener("click", () => {
       const key = tabButton.dataset.tab;
