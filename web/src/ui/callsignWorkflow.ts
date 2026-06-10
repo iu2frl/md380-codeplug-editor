@@ -73,7 +73,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
       <section class="card">
         <h2>2. Download And Build</h2>
         <p class="muted-text">Download source CSV, normalize it, then build the selected callsign DB format.</p>
-        <button id="callsign-workflow-build-btn" class="button" ${canBuild ? "" : "disabled"}>Download + Build DB</button>
+        <button id="callsign-workflow-build-btn" class="button callsign-action-btn" ${canBuild ? "" : "disabled"}>Download + Build DB</button>
         ${
           uiState.callsignPayload
             ? `<p class="muted-text">Ready payload: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
@@ -84,7 +84,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
       <section class="card">
         <h2>3. Write To Transceiver</h2>
         <p class="muted-text">Enabled only after a successful build. A rollback backup is always downloaded before flash.</p>
-        <button id="callsign-workflow-flash-btn" class="button" ${canFlash ? "" : "disabled"}>Write Callsign DB To Radio</button>
+        <button id="callsign-workflow-flash-btn" class="button callsign-action-btn" ${canFlash ? "" : "disabled"}>Write Callsign DB To Radio</button>
       </section>
 
       <section class="card">
@@ -164,9 +164,9 @@ export function bindCallsignWorkflowActions(
     const source = `${import.meta.env.BASE_URL}user.csv`;
 
     uiState.callsignBusy = true;
-    uiState.callsignProgressVisible = false;
+    uiState.callsignProgressVisible = true;
     uiState.callsignProgressPercent = 0;
-    uiState.callsignProgressLabel = "";
+    uiState.callsignProgressLabel = "Downloading callsign CSV...";
     uiState.callsignStatusMessage = "Downloading callsign CSV...";
     renderState(target, store, store.getState(), channelState, uiState);
 
@@ -176,17 +176,27 @@ export function bindCallsignWorkflowActions(
         throw new Error(`Download failed with HTTP ${response.status}.`);
       }
       const rawCsv = await response.text();
+
+      uiState.callsignProgressPercent = 30;
+      uiState.callsignProgressLabel = "Building database...";
+      uiState.callsignStatusMessage = "Building callsign database...";
+      renderState(target, store, store.getState(), channelState, uiState);
+
+      // Yield to browser so progress UI updates before heavy computation
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       const built = buildCallsignDatabase(rawCsv, uiState.callsignFormat, uiState.callsignProfile);
       const stamp = utcStamp();
       uiState.callsignPayload = built.payload;
       uiState.callsignPayloadName = `callsign-${uiState.callsignFormat}-${stamp}.bin`;
+      uiState.callsignProgressPercent = 100;
+      uiState.callsignProgressLabel = "Build complete.";
       uiState.callsignStatusMessage = `Build complete: ${built.payload.byteLength} bytes (${uiState.callsignFormat}, ${uiState.callsignProfile}).`;
-      downloadBytes(uiState.callsignPayloadName, built.payload);
-      downloadBytes(`callsign-source-${stamp}.csv`, built.normalizedCsv);
-      window.alert(`Callsign build complete. Downloaded ${uiState.callsignPayloadName}.`);
+      window.alert(`Callsign build complete: ${built.payload.byteLength} bytes ready to flash.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Callsign build failed.";
       uiState.callsignStatusMessage = `Build failed: ${message}`;
+      uiState.callsignProgressVisible = false;
       window.alert(`Build failed: ${message}`);
     } finally {
       uiState.callsignBusy = false;

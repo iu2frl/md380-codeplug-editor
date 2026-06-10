@@ -994,6 +994,7 @@ describe("radio transfer progress", () => {
 
 describe("callsign updater workflow", () => {
   it("completes build and flash flow with mocked radio write", async () => {
+    vi.useFakeTimers();
     document.body.innerHTML = "";
     const { container } = mountApp();
 
@@ -1069,6 +1070,7 @@ describe("callsign updater workflow", () => {
     click(container, "#open-callsign-workflow-btn");
     click(container, "#callsign-workflow-build-btn");
     await flushAsyncWork();
+    await vi.advanceTimersByTimeAsync(100); // Advance past the 50ms progress yield
     await flushAsyncWork();
 
     expect(fetchSpy).toHaveBeenCalled();
@@ -1091,6 +1093,8 @@ describe("callsign updater workflow", () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalled();
     expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Callsign build complete"))).toBe(true);
     expect(alertSpy.mock.calls.some((call) => String(call[0] ?? "").includes("Flash complete"))).toBe(true);
+
+    vi.useRealTimers();
   });
 });
 

@@ -191,6 +191,11 @@ body {
   text-align: center;
 }
 
+.callsign-action-btn {
+  min-width: 280px;
+  text-align: center;
+}
+
 .muted {
   opacity: 0.72;
 }
