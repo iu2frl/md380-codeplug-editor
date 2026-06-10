@@ -382,7 +382,7 @@ function renderCallsignWorkflow(uiState: UiState): string {
             Database Format
             <select id="callsign-workflow-format" ${canBuild ? "" : "disabled"}>
               <option value="linear" ${uiState.callsignFormat === "linear" ? "selected" : ""}>Linear</option>
-              <option value="indexed" ${uiState.callsignFormat === "indexed" ? "selected" : ""}>Indexed</option>
+              <option value="indexed" ${uiState.callsignFormat === "indexed" ? "selected" : ""}>Indexed (preferred)</option>
             </select>
           </label>
           <label>
