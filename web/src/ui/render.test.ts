@@ -8,9 +8,10 @@
  *
  * @vitest-environment happy-dom
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EditorStore } from "../state/store";
+import * as browserRadio from "../transport/browserRadio";
 import { renderApp } from "./render";
 import type { CodeplugDocument } from "../domain/types";
 
@@ -226,6 +227,15 @@ function click(container: Element, selector: string): void {
   (el as HTMLElement).dispatchEvent(new Event("click", { bubbles: true }));
 }
 
+async function flushAsyncWork(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -432,6 +442,139 @@ describe("landing entrypoints", () => {
     expect(container.querySelector<HTMLButtonElement>("#create-new-btn")?.disabled).toBe(false);
     expect(container.querySelector<HTMLButtonElement>("#open-existing-btn")?.disabled).toBe(false);
     expect(container.querySelector<HTMLButtonElement>("#landing-read-radio-btn")?.disabled).toBe(false);
+  });
+});
+
+describe("radio transfer progress", () => {
+  it("updates landing progress without replacing progress element during callbacks", async () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    const capturedProgressNodes: Array<HTMLProgressElement | null> = [];
+    let connected = false;
+    let resolveRead: ((value: Uint8Array) => void) | null = null;
+    const readPromise = new Promise<Uint8Array>((resolve) => {
+      resolveRead = resolve;
+    });
+
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async (onProgress) => {
+        onProgress?.({ direction: "read", completedBlocks: 1, totalBlocks: 4, bytesTransferred: 1024, totalBytes: 4096 });
+        capturedProgressNodes.push(container.querySelector<HTMLProgressElement>("#landing-radio-progress"));
+
+        onProgress?.({ direction: "read", completedBlocks: 2, totalBlocks: 4, bytesTransferred: 2048, totalBytes: 4096 });
+        capturedProgressNodes.push(container.querySelector<HTMLProgressElement>("#landing-radio-progress"));
+
+        return await readPromise;
+      },
+      writeCodeplug: async () => undefined,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#landing-read-radio-btn");
+    await flushAsyncWork();
+
+    expect(capturedProgressNodes.length).toBe(2);
+    expect(capturedProgressNodes[0]).not.toBeNull();
+    expect(capturedProgressNodes[1]).toBe(capturedProgressNodes[0]);
+
+    const progressLabel = container.querySelector<HTMLElement>("#landing-radio-progress-label");
+    expect(progressLabel?.textContent).toContain("2/4 blocks");
+
+    resolveRead?.(new Uint8Array(262144));
+    await flushAsyncWork();
+  });
+
+  it("updates radio-transfer write progress without replacing progress element during callbacks", async () => {
+    document.body.innerHTML = "";
+    const { container, store } = mountApp();
+    store.loadDocument(makeDocument());
+    vi.spyOn(store, "exportBytes").mockReturnValue(new Uint8Array(262144));
+
+    vi.spyOn(window, "alert").mockImplementation(() => undefined);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    const capturedProgressNodes: Array<HTMLProgressElement | null> = [];
+    let connected = false;
+    let resolveWrite: (() => void) | null = null;
+    const writePromise = new Promise<void>((resolve) => {
+      resolveWrite = resolve;
+    });
+
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(262144),
+      writeCodeplug: async (_data, onProgress) => {
+        onProgress?.({ direction: "write", completedBlocks: 1, totalBlocks: 4, bytesTransferred: 1024, totalBytes: 4096 });
+        capturedProgressNodes.push(container.querySelector<HTMLProgressElement>("#radio-transfer-progress"));
+
+        onProgress?.({ direction: "write", completedBlocks: 2, totalBlocks: 4, bytesTransferred: 2048, totalBytes: 4096 });
+        capturedProgressNodes.push(container.querySelector<HTMLProgressElement>("#radio-transfer-progress"));
+
+        await writePromise;
+      },
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    click(container, '[data-tab="radio-transfer"]');
+    click(container, "#radio-transfer-connect");
+    await flushAsyncWork();
+
+    click(container, "#radio-transfer-write");
+    await flushAsyncWork();
+
+    expect(capturedProgressNodes.length).toBe(2);
+    expect(capturedProgressNodes[0]).not.toBeNull();
+    expect(capturedProgressNodes[1]).toBe(capturedProgressNodes[0]);
+
+    const progressLabel = container.querySelector<HTMLElement>("#radio-transfer-progress-label");
+    expect(progressLabel?.textContent).toContain("2/4 blocks");
+
+    resolveWrite?.();
+    await flushAsyncWork();
   });
 });
 
