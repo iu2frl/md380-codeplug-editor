@@ -283,7 +283,7 @@ export function bindCallsignWorkflowActions(
       uiState.callsignProgressLabel = "Flash complete.";
       renderState(target, store, store.getState(), channelState, uiState);
       showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
-      //await rebootRadio(transport);
+      await rebootRadio(transport);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";
       uiState.callsignStatusMessage = `Flash failed: ${message}`;
