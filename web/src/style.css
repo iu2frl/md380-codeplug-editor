@@ -336,7 +336,12 @@ select {
 }
 
 #channel-mode-filter {
-  flex: 0 1 10.5rem;
+  flex: 1 1 10.5rem;
+}
+
+#bulk-target {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .bulkbar {
