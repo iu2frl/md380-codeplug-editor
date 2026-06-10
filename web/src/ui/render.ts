@@ -794,7 +794,7 @@ sudo udevadm trigger</pre>
             <li>Edit and validate in-browser.</li>
             <li>Write codeplug back with explicit confirmation and backup options.</li>
           </ol>
-          <p class="muted-text" id="radio-transfer-status">Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
+          <p class="muted-text" id="radio-transfer-status"><br>Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
           <div id="radio-transfer-progress-wrap" class="radio-transfer-progress ${uiState.radioProgressVisible ? "" : "hidden"}">
             <progress id="radio-transfer-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
             <p class="muted-text" id="radio-transfer-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
@@ -804,7 +804,7 @@ sudo udevadm trigger</pre>
             <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>Read From Radio</button>
             <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>Write To Radio</button>
           </div>
-          <p class="muted-text">If your browser blocks WebUSB, use the local helper fallback flow.</p>
+          <p class="muted-text"><br>If your browser blocks WebUSB, use the local helper fallback flow.</p>
         </section>
       </div>
     `;
