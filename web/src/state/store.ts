@@ -1,6 +1,10 @@
 import { createBlankCodeplugBytes, parseCodeplug, serializeCodeplug } from "../domain/parser";
-import type { CodeplugDocument, ValidationIssue } from "../domain/types";
+import type { Channel, CodeplugDocument, ValidationIssue } from "../domain/types";
 import { validateDocument } from "../domain/validation";
+
+function syncChannelTxFrequency(channel: Channel): void {
+  channel.txFrequencyMHz = Number((channel.rxFrequencyMHz + channel.txOffsetMHz).toFixed(5));
+}
 
 export interface AppState {
   document?: CodeplugDocument;
@@ -404,9 +408,6 @@ export class EditorStore {
     if (patch.rxFrequencyMHz !== undefined) {
       channel.rxFrequencyMHz = patch.rxFrequencyMHz;
     }
-    if (patch.txFrequencyMHz !== undefined) {
-      channel.txFrequencyMHz = patch.txFrequencyMHz;
-    }
     if (patch.txOffsetMHz !== undefined) {
       channel.txOffsetMHz = patch.txOffsetMHz;
     }
@@ -545,6 +546,7 @@ export class EditorStore {
     if (patch.power !== undefined) {
       channel.power = patch.power;
     }
+    syncChannelTxFrequency(channel);
     channel._dirty = true;
     this.refreshDirty();
   }
@@ -588,32 +590,14 @@ export class EditorStore {
         channel.bandwidthKhz = patch.bandwidthKhz;
       }
 
-      const hasRx = patch.rxFrequencyMHz !== undefined;
-      const hasTx = patch.txFrequencyMHz !== undefined;
-      const hasOffset = patch.txOffsetMHz !== undefined;
-
-      if (hasRx && hasOffset) {
-        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
-        channel.txOffsetMHz = patch.txOffsetMHz as number;
-        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
-      } else if (hasRx && hasTx) {
-        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
-        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
-        channel.txOffsetMHz = channel.txFrequencyMHz - channel.rxFrequencyMHz;
-      } else if (hasTx && hasOffset) {
-        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
-        channel.txOffsetMHz = patch.txOffsetMHz as number;
-        channel.rxFrequencyMHz = channel.txFrequencyMHz - channel.txOffsetMHz;
-      } else if (hasRx) {
-        channel.rxFrequencyMHz = patch.rxFrequencyMHz as number;
-        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
-      } else if (hasTx) {
-        channel.txFrequencyMHz = patch.txFrequencyMHz as number;
-        channel.txOffsetMHz = channel.txFrequencyMHz - channel.rxFrequencyMHz;
-      } else if (hasOffset) {
-        channel.txOffsetMHz = patch.txOffsetMHz as number;
-        channel.txFrequencyMHz = channel.rxFrequencyMHz + channel.txOffsetMHz;
+      if (patch.rxFrequencyMHz !== undefined) {
+        channel.rxFrequencyMHz = patch.rxFrequencyMHz;
       }
+      if (patch.txOffsetMHz !== undefined) {
+        channel.txOffsetMHz = patch.txOffsetMHz;
+      }
+
+      syncChannelTxFrequency(channel);
 
       channel._dirty = true;
     }

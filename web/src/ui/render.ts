@@ -19,7 +19,6 @@ interface ChannelPanelState {
   bulkRepeaterSlot: "" | "1" | "2";
   bulkColorCode: string;
   bulkRxFrequencyMHz: string;
-  bulkTxFrequencyMHz: string;
   bulkTxOffsetMHz: string;
 }
 
@@ -143,7 +142,6 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
     bulkRepeaterSlot: "",
     bulkColorCode: "",
     bulkRxFrequencyMHz: "",
-    bulkTxFrequencyMHz: "",
     bulkTxOffsetMHz: "",
   };
 
@@ -1013,8 +1011,9 @@ sudo udevadm trigger</pre>
             <div class="form-group">
               <label>
                 TX Frequency (MHz)
-                <input id="channel-editor-tx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.txFrequencyMHz.toFixed(5)}" />
+                <input id="channel-editor-tx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.txFrequencyMHz.toFixed(5)}" readonly disabled/>
               </label>
+              <small class="muted-text">Calculated from RX Frequency + TX Offset.</small>
             </div>
             <div class="form-group">
               <label>
@@ -1316,9 +1315,9 @@ sudo udevadm trigger</pre>
             </select>
             <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="Color Code (unchanged)" value="${escapeHtml(channelState.bulkColorCode)}" />
             <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="RX MHz (unchanged)" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
-            <input id="bulk-tx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="TX MHz (unchanged)" value="${escapeHtml(channelState.bulkTxFrequencyMHz)}" />
             <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="Shift MHz (unchanged)" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
             <button class="button tiny" id="apply-bulk">Apply</button>
+            <small class="muted-text">TX Frequency is derived from RX Frequency + Shift.</small>
             <small class="muted-text">${selectedInFilterCount} of ${filteredChannels.length} filtered channels are selected.</small>
           </div>
         </details>
@@ -2071,7 +2070,6 @@ function bindActiveTab(
   // Editor fields
   const nameInput = panel.querySelector<HTMLInputElement>("#channel-editor-name");
   const rxInput = panel.querySelector<HTMLInputElement>("#channel-editor-rx");
-  const txInput = panel.querySelector<HTMLInputElement>("#channel-editor-tx");
   const txOffsetInput = panel.querySelector<HTMLInputElement>("#channel-editor-tx-offset");
   const modeSelect = panel.querySelector<HTMLSelectElement>("#channel-editor-mode");
   const colorCodeInput = panel.querySelector<HTMLInputElement>("#channel-editor-color-code");
@@ -2128,7 +2126,6 @@ function bindActiveTab(
       const updates: Parameters<typeof store.updateChannel>[1] = {};
       if (nameInput) updates.name = nameInput.value;
       if (rxInput) updates.rxFrequencyMHz = Number.parseFloat(rxInput.value);
-      if (txInput) updates.txFrequencyMHz = Number.parseFloat(txInput.value);
       if (txOffsetInput) updates.txOffsetMHz = Number.parseFloat(txOffsetInput.value);
       if (modeSelect) updates.channelMode = modeSelect.value === "Digital" ? "Digital" : "Analog";
       if (colorCodeInput) updates.colorCode = Number.parseInt(colorCodeInput.value, 10);
@@ -2243,24 +2240,7 @@ function bindActiveTab(
       if (decode7Select) updates.decode7 = decode7Select.value === "On" ? "On" : "Off";
       if (decode8Select) updates.decode8 = decode8Select.value === "On" ? "On" : "Off";
 
-      if (rxInput && txInput && txOffsetInput) {
-        const rx = Number.parseFloat(rxInput.value);
-        const tx = Number.parseFloat(txInput.value);
-        if (!Number.isNaN(rx) && !Number.isNaN(tx) && !Number.isNaN(updates.txOffsetMHz ?? Number.NaN)) {
-          updates.txFrequencyMHz = tx;
-        }
-      }
       if (Object.keys(updates).length > 0) {
-        if (updates.rxFrequencyMHz !== undefined && updates.txOffsetMHz !== undefined) {
-          updates.txFrequencyMHz = updates.rxFrequencyMHz + updates.txOffsetMHz;
-        } else if (updates.rxFrequencyMHz !== undefined && updates.txFrequencyMHz !== undefined) {
-          updates.txOffsetMHz = updates.txFrequencyMHz - updates.rxFrequencyMHz;
-        } else if (updates.txFrequencyMHz !== undefined && rxInput) {
-          const rx = Number.parseFloat(rxInput.value);
-          if (!Number.isNaN(rx)) {
-            updates.txOffsetMHz = updates.txFrequencyMHz - rx;
-          }
-        }
         store.updateChannel(uiState.selectedChannelId, updates);
       }
     }
@@ -2268,7 +2248,6 @@ function bindActiveTab(
 
   nameInput?.addEventListener("change", commitChannelChange);
   rxInput?.addEventListener("change", commitChannelChange);
-  txInput?.addEventListener("change", commitChannelChange);
   txOffsetInput?.addEventListener("change", commitChannelChange);
   modeSelect?.addEventListener("change", commitChannelChange);
   colorCodeInput?.addEventListener("change", commitChannelChange);
@@ -2376,10 +2355,6 @@ function bindActiveTab(
     channelState.bulkRxFrequencyMHz = (event.currentTarget as HTMLInputElement).value;
   });
 
-  panel.querySelector<HTMLInputElement>("#bulk-tx-frequency")?.addEventListener("input", (event) => {
-    channelState.bulkTxFrequencyMHz = (event.currentTarget as HTMLInputElement).value;
-  });
-
   panel.querySelector<HTMLInputElement>("#bulk-tx-offset")?.addEventListener("input", (event) => {
     channelState.bulkTxOffsetMHz = (event.currentTarget as HTMLInputElement).value;
   });
@@ -2392,7 +2367,6 @@ function bindActiveTab(
       repeaterSlot?: 1 | 2;
       bandwidthKhz?: "12.5" | "20" | "25";
       rxFrequencyMHz?: number;
-      txFrequencyMHz?: number;
       txOffsetMHz?: number;
     } = {};
     if (channelState.bulkMode) {
@@ -2417,7 +2391,6 @@ function bindActiveTab(
     }
 
     const hasBulkRx = channelState.bulkRxFrequencyMHz.trim().length > 0;
-    const hasBulkTx = channelState.bulkTxFrequencyMHz.trim().length > 0;
     const hasBulkOffset = channelState.bulkTxOffsetMHz.trim().length > 0;
 
     if (hasBulkRx) {
@@ -2429,15 +2402,6 @@ function bindActiveTab(
       patch.rxFrequencyMHz = parsed;
     }
 
-    if (hasBulkTx) {
-      const parsed = Number.parseFloat(channelState.bulkTxFrequencyMHz);
-      if (Number.isNaN(parsed) || parsed < 100 || parsed > 1000) {
-        window.alert("TX frequency must be between 100 and 1000 MHz.");
-        return;
-      }
-      patch.txFrequencyMHz = parsed;
-    }
-
     if (hasBulkOffset) {
       const parsed = Number.parseFloat(channelState.bulkTxOffsetMHz);
       if (Number.isNaN(parsed) || parsed < -100 || parsed > 100) {
@@ -2445,14 +2409,6 @@ function bindActiveTab(
         return;
       }
       patch.txOffsetMHz = parsed;
-    }
-
-    if (hasBulkRx && hasBulkTx && hasBulkOffset) {
-      const expectedTx = (patch.rxFrequencyMHz ?? 0) + (patch.txOffsetMHz ?? 0);
-      if (Math.abs(expectedTx - (patch.txFrequencyMHz ?? 0)) > 0.00001) {
-        window.alert("RX + Shift must match TX when all three are provided.");
-        return;
-      }
     }
 
     if (Object.keys(patch).length === 0) {
@@ -2469,7 +2425,6 @@ function bindActiveTab(
     }
 
     channelState.bulkRxFrequencyMHz = "";
-    channelState.bulkTxFrequencyMHz = "";
     channelState.bulkTxOffsetMHz = "";
 
     store.bulkUpdateChannels(
