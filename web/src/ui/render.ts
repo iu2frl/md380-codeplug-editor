@@ -1506,15 +1506,15 @@ function bindActiveTab(
       });
     };
 
-    radioNameInput?.addEventListener("input", commit);
-    radioIdInput?.addEventListener("input", commit);
-    voxSensitivityInput?.addEventListener("input", commit);
-    txPreambleDurationInput?.addEventListener("input", commit);
-    rxLowBatteryIntervalInput?.addEventListener("input", commit);
+    radioNameInput?.addEventListener("change", commit);
+    radioIdInput?.addEventListener("change", commit);
+    voxSensitivityInput?.addEventListener("change", commit);
+    txPreambleDurationInput?.addEventListener("change", commit);
+    rxLowBatteryIntervalInput?.addEventListener("change", commit);
     backlightTimeoutSelect?.addEventListener("change", commit);
     keypadAutoLockSelect?.addEventListener("change", commit);
-    bootLine1Input?.addEventListener("input", commit);
-    bootLine2Input?.addEventListener("input", commit);
+    bootLine1Input?.addEventListener("change", commit);
+    bootLine2Input?.addEventListener("change", commit);
     alertTonesSelect?.addEventListener("change", commit);
     timeZoneSelect?.addEventListener("change", commit);
     validate();
