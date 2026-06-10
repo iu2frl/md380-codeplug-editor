@@ -230,6 +230,7 @@ code {
   background: #fffaf0;
   color: var(--ink);
   cursor: pointer;
+  min-width: 160px;
 }
 
 .tab.active {
