@@ -281,9 +281,6 @@ export function bindLandingActions(
   });
 
   target.querySelector<HTMLButtonElement>("#open-existing-guide-btn")?.addEventListener("click", () => {
-    if (!uiState.riskAccepted) {
-      return;
-    }
     uiState.activeGuideModal = "import";
     renderState(target, store, store.getState(), channelState, uiState);
   });
@@ -359,9 +356,6 @@ export function bindLandingActions(
   });
 
   target.querySelector<HTMLButtonElement>("#landing-read-guide-btn")?.addEventListener("click", () => {
-    if (!uiState.riskAccepted) {
-      return;
-    }
     uiState.activeGuideModal = "landing-read";
     renderState(target, store, store.getState(), channelState, uiState);
   });

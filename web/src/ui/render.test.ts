@@ -637,6 +637,17 @@ describe("landing entrypoints", () => {
     expect(modal?.textContent).toContain("radio-write");
   });
 
+  it("opens guide popup even when risk checkbox is not selected", () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    click(container, "#open-existing-guide-btn");
+
+    const modal = container.querySelector("#guide-modal");
+    expect(modal).not.toBeNull();
+    expect(modal?.textContent).toContain("Open Existing Codeplug");
+  });
+
   it("keeps all landing buttons disabled until risk checkbox is selected", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
