@@ -203,9 +203,11 @@ function renderLanding(importError: string | undefined, riskAccepted: boolean, u
       <section class="card risk-card">
         <h2>Warning</h2>
         <p class="risk-text">
-          This is a beta app. Not all features were tested and using it may create an unusable codeplug that can freeze your transceiver.
-          It is very hard to brick these devices thanks to their robust design and bootloader, but no operation can be considered 100% safe.
-          By proceeding, you accept all risk and agree that the project maintainer is not responsible for any device damage or malfunctioning.
+          This is a beta app.<br>
+          Not all features were tested and using it may create an unusable codeplug that can freeze your transceiver.<br>
+          It is very hard to brick these devices thanks to their robust design and bootloader, but no operation can be considered 100% safe.<br>
+          By proceeding, you accept all risk and agree that the project maintainer is not responsible for any device damage or malfunctioning.<br>
+          If your transceiver freezes during or after a read/write operation, simply unplug it from the PC and restart it using the volume knob.
         </p>
         <label class="risk-ack">
           <input id="risk-ack" type="checkbox" ${riskAccepted ? "checked" : ""} />
