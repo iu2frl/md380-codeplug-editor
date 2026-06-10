@@ -236,6 +236,12 @@ export function bindCallsignWorkflowActions(
       syncRadioProgressUi(target, uiState);
     };
 
+    const rebootRadio = async (transport: BrowserRadioTransport): Promise<void> => {
+      if (typeof transport.rebootRadio === "function") {
+        await transport.rebootRadio();
+      }
+    };
+
     try {
       const transport = await ensureCallsignTransport();
       const flashSize = await transport.getSpiFlashSize();
@@ -262,8 +268,9 @@ export function bindCallsignWorkflowActions(
       uiState.callsignStatusMessage = `Flash complete: ${uiState.callsignPayload.byteLength} bytes written at 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}.`;
       uiState.callsignProgressPercent = 100;
       uiState.callsignProgressLabel = "Flash complete.";
-      await transport.rebootRadio();
+      renderState(target, store, store.getState(), channelState, uiState);
       showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
+      await rebootRadio(transport);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";
       uiState.callsignStatusMessage = `Flash failed: ${message}`;
