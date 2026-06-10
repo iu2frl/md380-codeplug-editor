@@ -93,6 +93,12 @@ Before marking any feature complete, ensure:
 - No mixing of callsign DB binaries into codeplug export flows.
 - No broad firmware patching scope in this project.
 
+## UI requirements
+
+- Never use `alert()` for user notifications. Use a custom modal.
+- If an operation does not require user attention, do not show a notification at all. Maybe just a progress bar or a label for short operations.
+- If a workflow requires a series of steps, the user should be guided trough by only enabling the next step when the previous one is completed. For example, the "Flash callsign DB" button should only be enabled after a callsign DB binary has been built and validated.
+
 ## Tests
 
 - All frontend and backend capabilities must be covered by tests.
