@@ -323,7 +323,11 @@ function renderGuideModal(uiState: UiState): string {
             <li>Read codeplug with the helper:</li>
           </ol>
           <pre class="code-block">
-            python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
+git clone https://github.com/iu2frl/md380-codeplug-editor.git
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv/Scripts/activate
+pip install -r tools/requirements.txt
+python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
           </pre>
           <ol class="radio-transfer-list" start="3">
             <li>In this app, click <strong>Open .rdt/.bin</strong>.</li>
@@ -332,11 +336,11 @@ function renderGuideModal(uiState: UiState): string {
             <li>Write back only after creating a backup:</li>
           </ol>
           <pre class="code-block">
-            git clone https://github.com/iu2frl/md380-codeplug-editor.git
-            python -m venv .venv
-            source .venv/bin/activate  # On Windows: .venv/Scripts/activate
-            pip install -r tools/requirements.txt
-            python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
+git clone https://github.com/iu2frl/md380-codeplug-editor.git
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv/Scripts/activate
+pip install -r tools/requirements.txt
+python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
           </pre>
 
           <h3>Useful Links</h3>
@@ -379,10 +383,10 @@ function renderGuideModal(uiState: UiState): string {
           <h3>Linux Setup</h3>
           <p>Install udev rules once:</p>
           <pre class="code-block">
-            git clone https://github.com/iu2frl/md380-codeplug-editor.git
-            sudo cp tools/99-md380.rules /etc/udev/rules.d/
-            sudo udevadm control --reload-rules
-            sudo udevadm trigger
+git clone https://github.com/iu2frl/md380-codeplug-editor.git
+sudo cp tools/99-md380.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
           </pre>
           <p class="muted-text">If needed, add your user to plugdev and re-login.</p>
 
