@@ -673,6 +673,46 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
     const connectLabel = isConnected ? "Disconnect Device" : "Connect Device";
     const readEnabled = isConnected && !uiState.radioBusy;
     const writeEnabled = isConnected && !uiState.radioBusy;
+
+    const isWindows = /Windows/i.test(capabilities.userAgent);
+    const isLinux = /Linux/i.test(capabilities.userAgent);
+    const isMac = /Mac OS|Macintosh/i.test(capabilities.userAgent);
+
+    let driverRequirements = "";
+    if (isWindows) {
+      driverRequirements = `
+        <section class="radio-transfer-card">
+          <h3>Windows Driver Setup (Required)</h3>
+          <p>WebUSB requires <strong>WinUSB</strong> specifically. LibUSB and LibUsbK do <em>not</em> work with browser WebUSB.</p>
+          <ol class="radio-transfer-list">
+            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig</a>.</li>
+            <li>Put your radio in programming mode (power on while holding PTT + upper side button).</li>
+            <li>In Zadig: Options → List All Devices.</li>
+            <li>Select your radio (look for "STM32 BOOTLOADER" or similar) from the dropdown.</li>
+            <li>Set the target driver to <strong>WinUSB</strong> (use the arrows if another driver is shown).</li>
+            <li>Click "Replace Driver" (even if LibUSB or LibUsbK is currently installed).</li>
+            <li>Unplug and replug the radio after the driver change.</li>
+          </ol>
+          <p class="muted-text">If "USB permission denied" errors persist, ensure no other software (like the official CPS) is using the device.</p>
+        </section>`;
+    } else if (isLinux) {
+      driverRequirements = `
+        <section class="radio-transfer-card">
+          <h3>Linux Setup</h3>
+          <p>Ensure udev rules are installed for non-root USB access:</p>
+          <pre class="code-block">sudo cp tools/99-md380.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger</pre>
+          <p class="muted-text">Your user should also be in the <code>plugdev</code> group.</p>
+        </section>`;
+    } else if (isMac) {
+      driverRequirements = `
+        <section class="radio-transfer-card">
+          <h3>macOS Setup</h3>
+          <p>macOS typically works without additional driver setup. If you encounter issues, ensure no other application is using the radio's USB interface.</p>
+        </section>`;
+    }
+
     return `
       <h2>Radio Transfer</h2>
       <p class="muted-text">Browser-native radio read/write using WebUSB.</p>
@@ -696,6 +736,8 @@ function renderActiveTab(document: NonNullable<AppState["document"]>, activeTab:
               : ""
           }
         </section>
+
+        ${driverRequirements}
 
         <section class="radio-transfer-card">
           <h3>Browser Workflow</h3>

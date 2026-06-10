@@ -586,6 +586,20 @@ function pickAlternate(usbInterface: UsbInterfaceLike): UsbAlternateLike | undef
   return dfuAlternate ?? alternates[0];
 }
 
+function detectPlatform(): "windows" | "linux" | "macos" | "unknown" {
+  const userAgent = globalThis.navigator?.userAgent ?? "";
+  if (/Windows/i.test(userAgent)) {
+    return "windows";
+  }
+  if (/Linux/i.test(userAgent)) {
+    return "linux";
+  }
+  if (/Mac OS|Macintosh/i.test(userAgent)) {
+    return "macos";
+  }
+  return "unknown";
+}
+
 function normalizeUsbError(error: unknown): string {
   if (!(error instanceof Error)) {
     return "Unknown WebUSB error while connecting to radio.";
@@ -595,6 +609,13 @@ function normalizeUsbError(error: unknown): string {
     return "No USB device was selected. Choose your radio in the browser prompt to continue.";
   }
   if (error.name === "SecurityError") {
+    const platform = detectPlatform();
+    if (platform === "windows") {
+      return "USB permission denied. WebUSB requires the WinUSB driver specifically (not LibUSB or LibUsbK). Use Zadig (https://zadig.akeo.ie) to install or replace the driver with WinUSB. Replug the device after driver change.";
+    }
+    if (platform === "linux") {
+      return "USB permission denied. Ensure udev rules are installed and your user is in the plugdev group. See tools/99-md380.rules for setup instructions.";
+    }
     return "USB permission denied by browser security settings.";
   }
   if (error.name === "NetworkError") {
