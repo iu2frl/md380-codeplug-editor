@@ -1823,8 +1823,27 @@ function bindActiveTab(
 
   // Search and filter
   panel.querySelector<HTMLInputElement>("#channel-search")?.addEventListener("input", (event) => {
-    channelState.query = (event.currentTarget as HTMLInputElement).value;
+    const sourceInput = event.currentTarget as HTMLInputElement;
+    const selectionStart = sourceInput.selectionStart;
+    const selectionEnd = sourceInput.selectionEnd;
+    const selectionDirection = sourceInput.selectionDirection;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+
+    channelState.query = sourceInput.value;
     renderState(target, store, store.getState(), channelState, uiState);
+
+    window.scrollTo(scrollX, scrollY);
+
+    const restoredInput = target.querySelector<HTMLInputElement>("#channel-search");
+    if (!restoredInput) {
+      return;
+    }
+
+    restoredInput.focus({ preventScroll: true });
+    if (selectionStart !== null && selectionEnd !== null) {
+      restoredInput.setSelectionRange(selectionStart, selectionEnd, selectionDirection ?? "none");
+    }
   });
 
   panel.querySelector<HTMLSelectElement>("#channel-mode-filter")?.addEventListener("change", (event) => {

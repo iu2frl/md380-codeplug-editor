@@ -327,6 +327,20 @@ describe("channels tab", () => {
     const items = container.querySelectorAll("[data-channel-select]");
     expect(items.length).toBe(1);
   });
+
+  it("keeps focus in search input while typing", () => {
+    click(container, '[data-tab="channels"]');
+    const searchInput = container.querySelector<HTMLInputElement>("#channel-search");
+    if (!searchInput) throw new Error("search input not found");
+
+    searchInput.focus();
+    searchInput.value = "A";
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const rerenderedInput = container.querySelector<HTMLInputElement>("#channel-search");
+    expect(rerenderedInput).not.toBeNull();
+    expect(document.activeElement).toBe(rerenderedInput);
+  });
 });
 
 describe("newly enabled tabs", () => {
