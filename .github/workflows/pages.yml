@@ -37,6 +37,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch callsign database
+        run: |
+          mkdir -p web/public
+          curl -f -o web/public/user.csv https://database.radioid.net/static/user.csv || echo "Warning: Failed to fetch callsign database"
+
       - name: Build static site
         env:
           BASE_PATH: /${{ github.event.repository.name }}/

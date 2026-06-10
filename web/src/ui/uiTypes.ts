@@ -58,7 +58,7 @@ export interface UiState {
   callsignProgressVisible: boolean;
 }
 
-export const DEFAULT_CALLSIGN_SOURCE = "https://database.radioid.net/static/user.csv";
+export const DEFAULT_CALLSIGN_SOURCE = "/user.csv";
 
 export function createInitialChannelPanelState(): ChannelPanelState {
   return {
