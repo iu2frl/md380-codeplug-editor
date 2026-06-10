@@ -454,6 +454,48 @@ describe("channels tab", () => {
     expect(bravo?.txOffsetMHz).toBeCloseTo(0, 6);
     expect(bravo?.txFrequencyMHz).toBeCloseTo(145.5, 6);
   });
+
+  it("clears bulk frequency inputs after apply so later edits do not reuse stale values", () => {
+    click(container, '[data-tab="channels"]');
+
+    const bulkCard = container.querySelector<HTMLDetailsElement>('#bulk-editor-card');
+    bulkCard?.setAttribute('open', '');
+    bulkCard?.dispatchEvent(new Event('toggle'));
+
+    const searchInput = container.querySelector<HTMLInputElement>('#channel-search');
+    if (!searchInput) throw new Error('search input not found');
+    searchInput.value = 'Alpha';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const rx = container.querySelector<HTMLInputElement>('#bulk-rx-frequency');
+    const offset = container.querySelector<HTMLInputElement>('#bulk-tx-offset');
+    const tx = container.querySelector<HTMLInputElement>('#bulk-tx-frequency');
+    if (!rx || !offset || !tx) throw new Error('bulk frequency controls not found');
+
+    rx.value = '430.125';
+    rx.dispatchEvent(new Event('input', { bubbles: true }));
+    offset.value = '5';
+    offset.dispatchEvent(new Event('input', { bubbles: true }));
+
+    click(container, '#apply-bulk');
+
+    expect(container.querySelector<HTMLInputElement>('#bulk-rx-frequency')?.value).toBe('');
+    expect(container.querySelector<HTMLInputElement>('#bulk-tx-frequency')?.value).toBe('');
+    expect(container.querySelector<HTMLInputElement>('#bulk-tx-offset')?.value).toBe('');
+
+    const txAfterClear = container.querySelector<HTMLInputElement>('#bulk-tx-frequency');
+    if (!txAfterClear) throw new Error('bulk tx control not found after apply');
+    txAfterClear.value = '440.125';
+    txAfterClear.dispatchEvent(new Event('input', { bubbles: true }));
+
+    click(container, '#apply-bulk');
+
+    const snapshot = store.getState();
+    const alpha = snapshot.document?.channels.find((channel) => channel.id === 1);
+    expect(alpha?.rxFrequencyMHz).toBeCloseTo(430.125, 6);
+    expect(alpha?.txOffsetMHz).toBeCloseTo(10, 6);
+    expect(alpha?.txFrequencyMHz).toBeCloseTo(440.125, 6);
+  });
 });
 
 describe("newly enabled tabs", () => {

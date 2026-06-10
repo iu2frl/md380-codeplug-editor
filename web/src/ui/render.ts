@@ -2468,6 +2468,10 @@ function bindActiveTab(
       return;
     }
 
+    channelState.bulkRxFrequencyMHz = "";
+    channelState.bulkTxFrequencyMHz = "";
+    channelState.bulkTxOffsetMHz = "";
+
     store.bulkUpdateChannels(
       selectedChannelIds,
       patch,
