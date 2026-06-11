@@ -114,7 +114,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Firmware Backup</h2>
-          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually by turning on the transceiver while pressing the PTT button.</p>
+          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually by turning on the transceiver while pressing PTT and the button above it.</p>
           <button id="open-firmware-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Backup Firmware</button>
         </article>
       </section>
@@ -153,8 +153,8 @@ export function renderGuideModal(uiState: UiState): string {
             <li>Use a <strong>Chromium-based browser</strong> (Chrome, Edge, Brave). Firefox and Safari do not support WebUSB.</li>
             <li>Use <strong>HTTPS</strong> or <strong>localhost</strong> (WebUSB requires a secure context).</li>
             <li>Close any other apps that may capture the radio USB interface (CPS software, serial tools).</li>
-            <li>To operate on the firmware, put your radio in <strong>programming mode</strong> before connecting USB by holding the <strong>PTT</strong> button while powering on the radio.</li>
-            <li>To operate on codeplug, callsign database, RTC clock, or screenshots, simply connect the radio via USB in normal mode.</li>
+            <li>To operate on the firmware, put your radio in <strong>programming mode</strong> before connecting USB by holding <strong>PTT and the button above it</strong> while powering on the radio.</li>
+            <li>To operate on codeplug, callsign database, RTC clock, or screenshots, simply connect the radio via USB in <strong>normal mode</strong>.</li>
           </ol>
 
           <h3>Windows Setup</h3>
