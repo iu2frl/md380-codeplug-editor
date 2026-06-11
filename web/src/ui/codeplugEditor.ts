@@ -405,7 +405,6 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>Read From Radio</button>
             <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>Write To Radio</button>
           </div>
-          <p class="muted-text"><br>If your browser blocks WebUSB, use the local helper fallback flow.</p>
         </section>
       </div>
     `;
