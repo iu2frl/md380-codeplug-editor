@@ -96,6 +96,20 @@ export class EditorStore {
     this.load(fileName, createBlankCodeplugBytes(format, model));
   }
 
+  reset(importError?: string): void {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.baselineDocument = undefined;
+    this.state = {
+      validationIssues: [],
+      isDirty: false,
+      undoCount: 0,
+      redoCount: 0,
+      importError,
+    };
+    this.emit();
+  }
+
   undo(): void {
     if (!this.state.document || this.undoStack.length === 0) {
       return;

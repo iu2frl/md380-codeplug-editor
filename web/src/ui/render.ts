@@ -67,7 +67,7 @@ function renderState(
 
   target.innerHTML = `${renderLoadedLayout(state, uiState)}${renderGuideModal(uiState)}`;
   bindFileInputs(target, store);
-  bindTopActions(target, store, state);
+  bindTopActions(target, store, state, channelState, uiState);
   bindTabs(target, uiState, state, store, channelState, renderState);
   bindGuideModalActions(target, store, state, channelState, uiState, renderState);
 

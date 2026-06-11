@@ -943,7 +943,13 @@ export function bindFileInputs(target: HTMLElement, store: EditorStore): void {
   }
 }
 
-export function bindTopActions(target: HTMLElement, store: EditorStore, state: AppState): void {
+export function bindTopActions(
+  target: HTMLElement,
+  store: EditorStore,
+  state: AppState,
+  channelState: ChannelPanelState,
+  uiState: UiState,
+): void {
   target.querySelector<HTMLButtonElement>("#export-btn")?.addEventListener("click", () => {
     const snapshot = store.getState();
     if (!snapshot.document) {
@@ -968,8 +974,54 @@ export function bindTopActions(target: HTMLElement, store: EditorStore, state: A
     }
   });
 
-  target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", () => {
-    window.location.reload();
+  target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", async () => {
+    if (state.isDirty) {
+      const confirmed = await showConfirm({
+        title: "Discard Unsaved Changes?",
+        message: "You have unsaved codeplug changes. Going back to homepage will discard them.",
+        confirmLabel: "Discard And Go Home",
+        danger: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    if (uiState.radioTransport?.isConnected()) {
+      try {
+        await uiState.radioTransport.disconnect();
+      } catch {
+        // Ignore disconnect failures while returning home.
+      }
+    }
+
+    uiState.landingView = "home";
+    uiState.activeTab = "basic";
+    uiState.activeGuideModal = null;
+    uiState.selectedZoneId = null;
+    uiState.selectedChannelId = null;
+    uiState.channelsListScrollTop = 0;
+    uiState.radioTransport = null;
+    uiState.radioStatusMessage = "Not connected.";
+    uiState.radioBusy = false;
+    uiState.radioProgressPercent = 0;
+    uiState.radioProgressLabel = "No transfer in progress.";
+    uiState.radioProgressVisible = false;
+
+    channelState.query = "";
+    channelState.modeFilter = "all";
+    channelState.bulkExpanded = false;
+    channelState.bulkTarget = "filtered";
+    channelState.bulkSelectionIds = [];
+    channelState.bulkMode = "";
+    channelState.bulkPower = "";
+    channelState.bulkBandwidth = "";
+    channelState.bulkRepeaterSlot = "";
+    channelState.bulkColorCode = "";
+    channelState.bulkRxFrequencyMHz = "";
+    channelState.bulkTxOffsetMHz = "";
+
+    store.reset();
   });
 }
 
