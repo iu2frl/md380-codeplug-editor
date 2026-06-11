@@ -942,7 +942,7 @@ function normalizeUsbError(error: unknown): string {
       return "USB permission denied. WebUSB requires the WinUSB driver specifically (not LibUSB or LibUsbK). Use Zadig (https://zadig.akeo.ie) to install or replace the driver with WinUSB. Replug the device after driver change.";
     }
     if (platform === "linux") {
-      return "USB permission denied. Ensure udev rules are installed and your user is in the plugdev group. See tools/99-md380.rules for setup instructions.";
+      return "USB permission denied. Ensure udev rules are installed and your user is in the plugdev group. See the Setup Guide in the app for instructions.";
     }
     return "USB permission denied by browser security settings.";
   }

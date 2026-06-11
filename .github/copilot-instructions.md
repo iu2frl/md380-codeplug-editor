@@ -19,11 +19,6 @@ web/                          # Vite TypeScript application (static build)
 ├── testdata/                # Known-good codeplug fixtures for testing
 └── test-results/
 
-tools/                        # Python helpers (manual/interactive workflows)
-├── radio_codeplug_helper.py  # Read/write codeplug via USB (manual)
-├── radio_callsign_helper.py  # Callsign DB build/flash
-└── radio_common.py          # Shared USB/DFU logic
-
 artifacts/                    # Generated artifacts with JSON manifests
 ├── codeplug/{read,edited,backup}
 └── callsign/{raw,build,backup}
@@ -38,14 +33,13 @@ artifacts/                    # Generated artifacts with JSON manifests
 - Validate channels, zones, contacts, general settings
 - Preserve binary fidelity and raw record bytes during edit
 
-**Callsign Domain** (`web/src/domain/callsign.ts`, `tools/radio_callsign_helper.py`):
+**Callsign Domain** (`web/src/domain/callsign.ts`):
 - Download/import CSV, build indexed callsign binary
 - Flash to radio SPI flash at dedicated address
 - Separate from codeplug artifacts and workflows
 
 **Transport Layer** (`web/src/transport/`):
 - Browser WebUSB/DFU for radio read/write
-- Python helpers for manual USB workflows
 - Keep low-level logic isolated from domain logic
 
 ### Artifact Paths & Manifests

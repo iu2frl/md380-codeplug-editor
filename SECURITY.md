@@ -5,7 +5,6 @@
 Security reports are accepted for:
 
 - The web application in `web/`
-- Local helper scripts in `tools/`
 - Build and dependency configuration in this repository
 
 ## Reporting a Vulnerability
@@ -49,6 +48,5 @@ The following are generally out of scope unless chainable to meaningful impact:
 
 ## Dependency Security
 
-- Keep `npm` and Python dependencies updated.
-- Prefer minimal privileges for local helper execution.
+- Keep `npm` dependencies updated.
 - Do not commit secrets or tokens into the repository.

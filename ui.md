@@ -94,11 +94,15 @@ Acceptance criteria:
 
 ### User Flow
 
-- Homepage has two tiles:
-  - Create new codeplug (currently unavailable)
-  - Open existing codeplug
-    - Instruct how to use the local Python helper
-    - Upload helper output (`.rdt`/`.bin`) to enable editing
+- Homepage has tiles for:
+  - Create new codeplug
+  - Open existing codeplug (upload `.rdt`/`.bin` file)
+  - Read from radio (WebUSB)
+  - WebUSB setup guide (Windows/Linux/macOS instructions)
+  - Callsign database workflow
+  - Radio time sync
+  - Radio screenshot capture
+  - Firmware backup
 - After a file is loaded/created, the app shows tabs:
   - Basic: model, maker, firmware, CPS version, MCU version, unique device ID, frequency range
   - General: radio name, DMR ID, VOX sensitivity, TX preamble duration, RX low battery interval, backlight timeout, keypad auto lock, boot message, alert tones, time zone

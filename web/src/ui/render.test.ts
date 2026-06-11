@@ -599,54 +599,38 @@ describe("newly enabled tabs", () => {
 
     const modal = container.querySelector("#guide-modal");
     expect(modal).not.toBeNull();
-    expect(modal?.textContent).toContain("Live Read / WebUSB Setup Guide");
-    expect(modal?.textContent).toContain("Windows Driver Setup");
+    expect(modal?.textContent).toContain("WebUSB Setup Guide");
+    expect(modal?.textContent).toContain("Windows Setup");
     expect(modal?.textContent).toContain("Linux Setup");
     expect(modal?.textContent).toContain("macOS Setup");
   });
 });
 
 describe("landing entrypoints", () => {
-  it("shows create, upload, and read-from-radio entrypoints", () => {
+  it("shows create, upload, read-from-radio, and setup guide entrypoints", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
     expect(container.querySelector("#create-new-md380-btn")).not.toBeNull();
     expect(container.querySelector("#create-new-md390-btn")).not.toBeNull();
     expect(container.querySelector("#open-existing-btn")).not.toBeNull();
-    expect(container.querySelector("#open-existing-guide-btn")).not.toBeNull();
     expect(container.querySelector("#landing-read-radio-btn")).not.toBeNull();
-    expect(container.querySelector("#landing-read-guide-btn")).not.toBeNull();
+    expect(container.querySelector("#open-setup-guide-btn")).not.toBeNull();
     expect(container.querySelector("#landing-radio-progress")).toBeNull();
   });
 
-  it("opens noob-proof import guide popup from landing", () => {
+  it("opens unified setup guide popup from landing", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
-    if (!riskAck) throw new Error("risk checkbox not found");
-    riskAck.checked = true;
-    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
-
-    click(container, "#open-existing-guide-btn");
+    click(container, "#open-setup-guide-btn");
 
     const modal = container.querySelector("#guide-modal");
     expect(modal).not.toBeNull();
-    expect(modal?.textContent).toContain("Open Existing Codeplug");
-    expect(modal?.textContent).toContain("radio-read");
-    expect(modal?.textContent).toContain("radio-write");
-  });
-
-  it("opens guide popup even when risk checkbox is not selected", () => {
-    document.body.innerHTML = "";
-    const { container } = mountApp();
-
-    click(container, "#open-existing-guide-btn");
-
-    const modal = container.querySelector("#guide-modal");
-    expect(modal).not.toBeNull();
-    expect(modal?.textContent).toContain("Open Existing Codeplug");
+    expect(modal?.textContent).toContain("WebUSB Setup Guide");
+    expect(modal?.textContent).toContain("Windows Setup");
+    expect(modal?.textContent).toContain("Linux Setup");
+    expect(modal?.textContent).toContain("macOS Setup");
   });
 
   it("keeps all landing buttons disabled until risk checkbox is selected", () => {

@@ -79,7 +79,6 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <h2>Open Existing Codeplug</h2>
           <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.</p>
           <button id="open-existing-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open .rdt/.bin</button>
-          <button id="open-existing-guide-btn" class="button ghost">Full Step-by-Step Guide</button>
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted && !uiState.busy ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
@@ -88,7 +87,12 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <h2>Read From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
           <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read From Radio</button>
-          <button id="landing-read-guide-btn" class="button ghost">Read Setup Guide</button>
+        </article>
+
+        <article class="card tile">
+          <h2>WebUSB Setup Guide</h2>
+          <p>Instructions for setting up your browser and operating system to communicate with your radio via USB.</p>
+          <button id="open-setup-guide-btn" class="button ghost">Open Setup Guide</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
@@ -135,131 +139,69 @@ export function renderGuideModal(uiState: UiState): string {
     return "";
   }
 
-  if (uiState.activeGuideModal === "import") {
+  if (uiState.activeGuideModal === "setup" || uiState.activeGuideModal === "landing-read" || uiState.activeGuideModal === "radio-transfer") {
     return `
       <section id="guide-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
         <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
         <article class="guide-modal-card">
           <header class="guide-modal-header">
-            <h2 id="guide-modal-title">Open Existing Codeplug</h2>
+            <h2 id="guide-modal-title">WebUSB Setup Guide</h2>
             <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
           </header>
 
-          <p>Pick one of these two paths. If this is your first time, use Path A first.</p>
-
-          <h3>Path A: Read Directly in Browser (Fastest)</h3>
+          <h3>Prerequisites</h3>
           <ol class="radio-transfer-list">
-            <li>Check the risk confirmation checkbox on the homepage.</li>
-            <li>Click <strong>Read From Radio</strong>.</li>
-            <li>If your browser asks for USB permission, select your radio and click allow.</li>
-            <li>Wait until read completes, then start editing.</li>
-            <li>Export a backup after your first successful read.</li>
+            <li>Use a <strong>Chromium-based browser</strong> (Chrome, Edge, Brave). Firefox and Safari do not support WebUSB.</li>
+            <li>Use <strong>HTTPS</strong> or <strong>localhost</strong> (WebUSB requires a secure context).</li>
+            <li>Close any other apps that may capture the radio USB interface (CPS software, serial tools).</li>
+            <li>To operate on the firmware, put your radio in <strong>programming mode</strong> before connecting USB by holding the <strong>PTT</strong> button while powering on the radio.</li>
+            <li>To operate on codeplug, callsign database, RTC clock, or screenshots, simply connect the radio via USB in normal mode.</li>
           </ol>
 
-          <h3>Path B: Read with Local Helper (Fallback)</h3>
+          <h3>Windows Setup</h3>
+          <p>Windows requires installing the WinUSB driver using Zadig:</p>
           <ol class="radio-transfer-list">
-            <li>Clone the repository from <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener">GitHub</a>.</li>
-            <li>Ensure you have Python 3 installed, then install dependencies (see below)</li>
-            <li>Open a terminal in the repository root</li>
-            <li>Read codeplug with the helper:</li>
+            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener noreferrer nofollow">Zadig</a>.</li>
+            <li>In Zadig, open <strong>Options &rarr; List All Devices</strong>.</li>
+            <li>Select your device (usually shows as <strong>STM32 BOOTLOADER</strong> or <strong>Patched MD380/MD390</strong>).</li>
+            <li>Set target driver to <strong>WinUSB</strong> (not LibUSB or LibUsbK).</li>
+            <li>Click <strong>Replace Driver</strong>, then unplug and replug your radio.</li>
           </ol>
-          <pre class="code-block">
-# Install the requirements (only needed once)
-git clone https://github.com/iu2frl/md380-codeplug-editor.git
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv/Scripts/activate
-pip install -r tools/requirements.txt
-# Get dependencies
-./init-examples.sh
-# Read from radio and save to artifacts/codeplug/read/my-radio.bin
-python3 tools/radio_codeplug_helper.py radio-read --out artifacts/codeplug/read/my-radio.bin
-          </pre>
-          <ol class="radio-transfer-list" start="3">
-            <li>In this app, click <strong>Open .rdt/.bin</strong>.</li>
-            <li>Select <code>artifacts/codeplug/read/my-radio.bin</code>.</li>
-            <li>Edit, validate, then export your updated file.</li>
-            <li>Write back only after creating a backup:</li>
-          </ol>
-          <pre class="code-block">
-# Install the requirements (only needed once)
-git clone https://github.com/iu2frl/md380-codeplug-editor.git
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv/Scripts/activate
-pip install -r tools/requirements.txt
-# Get dependencies
-./init-examples.sh
-# Write back to the transceiver
-python3 tools/radio_codeplug_helper.py radio-write --in artifacts/codeplug/edited/my-radio-updated.bin
-          </pre>
-
-          <h3>Useful Links</h3>
-          <ul class="radio-transfer-list">
-            <li><a href="https://github.com/iu2frl/md380-codeplug-editor/tree/main/tools" target="_blank" rel="noopener">Helper docs (tools folder)</a></li>
-            <li><a href="https://github.com/iu2frl/md380-codeplug-editor/blob/main/README.md" target="_blank" rel="noopener">Project README</a></li>
-          </ul>
-        </article>
-      </section>
-    `;
-  }
-
-  if (uiState.activeGuideModal === "landing-read" || uiState.activeGuideModal === "radio-transfer") {
-    return `
-      <section id="guide-modal" class="guide-modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
-        <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
-        <article class="guide-modal-card">
-          <header class="guide-modal-header">
-            <h2 id="guide-modal-title">Live Read / WebUSB Setup Guide (Windows, Linux, macOS)</h2>
-            <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
-          </header>
-
-          <h3>Before You Start</h3>
-          <ol class="radio-transfer-list">
-            <li>Use a Chromium-based browser (Chrome, Edge, Brave).</li>
-            <li>Use HTTPS or localhost (WebUSB requires a secure context).</li>
-            <li>Close other apps that may capture the radio USB interface (CPS, serial tools).</li>
-            <li>Put radio in programming mode, then connect USB.</li>
-          </ol>
-
-          <h3>Windows Driver Setup (Required)</h3>
-          <ol class="radio-transfer-list">
-            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig</a>.</li>
-            <li>In Zadig, open <strong>Options -> List All Devices</strong>.</li>
-            <li>Select your device (often <strong>STM32 BOOTLOADER</strong> or <strong>Patched MD380/MD390</strong>).</li>
-            <li>Set target driver to <strong>WinUSB</strong> (not LibUSB / LibUsbK).</li>
-            <li>Click <strong>Replace Driver</strong>, unplug, then replug radio.</li>
-          </ol>
+          <p>If Zadig shows <strong>GuiSTDFUDev</strong> as installed driver, you will need to manually uninstall it from Device Manager and then install WinUSB with Zadig.</p>
 
           <h3>Linux Setup</h3>
-          <p>Install udev rules once:</p>
+          <p>Linux requires udev rules to grant USB access without root. Copy the rules file from the repository:</p>
           <pre class="code-block">
 git clone https://github.com/iu2frl/md380-codeplug-editor.git
-sudo cp tools/99-md380.rules /etc/udev/rules.d/
+sudo cp md380-codeplug-editor/tools/99-md380.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 sudo udevadm trigger
           </pre>
-          <p class="muted-text">If needed, add your user to plugdev and re-login.</p>
+          <p class="muted-text">If needed, add your user to the <code>plugdev</code> group and re-login.</p>
 
           <h3>macOS Setup</h3>
           <ol class="radio-transfer-list">
-            <li>No extra driver is usually required.</li>
-            <li>If permission fails, unplug/replug and retry browser permission prompt.</li>
-            <li>Ensure no other app is currently connected to the radio USB interface.</li>
+            <li>No extra driver is usually required on macOS.</li>
+            <li>If the browser permission prompt fails, unplug and replug the radio, then try again.</li>
+            <li>Ensure no other app is currently using the radio USB interface.</li>
           </ol>
 
-          <h3>Read Procedure</h3>
+          <h3>Using the App</h3>
           <ol class="radio-transfer-list">
-            <li>Open <strong>Radio Transfer</strong>.</li>
-            <li>Click <strong>Connect Device</strong> and pick your radio.</li>
-            <li>Click <strong>Read From Radio</strong> and wait for completion.</li>
-            <li>Export a backup immediately after loading.</li>
+            <li>Accept the risk acknowledgment on the homepage.</li>
+            <li>Click <strong>Read From Radio</strong> to load your current codeplug.</li>
+            <li>When prompted, select your radio from the browser USB permission dialog.</li>
+            <li>After reading, export a backup before making changes.</li>
+            <li>Edit your codeplug (channels, zones, contacts, settings).</li>
+            <li>Click <strong>Write To Radio</strong> to save changes back to your radio.</li>
           </ol>
 
-          <h3>Write Procedure</h3>
-          <ol class="radio-transfer-list">
-            <li>Confirm model compatibility.</li>
-            <li>Keep a known-good backup in <code>artifacts/codeplug/backup</code>.</li>
-            <li>Click <strong>Write To Radio</strong> only after validation passes.</li>
-          </ol>
+          <h3>Useful Links</h3>
+          <ul class="radio-transfer-list">
+            <li><a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig USB driver installer (Windows)</a></li>
+            <li><a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener">MD380 Tools (patched firmware)</a></li>
+            <li><a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener">Project GitHub</a></li>
+          </ul>
         </article>
       </section>
     `;
@@ -342,8 +284,8 @@ export function bindLandingActions(
     target.querySelector<HTMLInputElement>("#file-input")?.click();
   });
 
-  target.querySelector<HTMLButtonElement>("#open-existing-guide-btn")?.addEventListener("click", () => {
-    uiState.activeGuideModal = "import";
+  target.querySelector<HTMLButtonElement>("#open-setup-guide-btn")?.addEventListener("click", () => {
+    uiState.activeGuideModal = "setup";
     renderState(target, store, store.getState(), channelState, uiState);
   });
 
@@ -422,11 +364,6 @@ export function bindLandingActions(
       uiState.busy = false;
       renderState(target, store, store.getState(), channelState, uiState);
     }
-  });
-
-  target.querySelector<HTMLButtonElement>("#landing-read-guide-btn")?.addEventListener("click", () => {
-    uiState.activeGuideModal = "landing-read";
-    renderState(target, store, store.getState(), channelState, uiState);
   });
 
   target.querySelector<HTMLButtonElement>("#open-callsign-workflow-btn")?.addEventListener("click", () => {

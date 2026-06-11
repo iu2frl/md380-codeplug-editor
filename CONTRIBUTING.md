@@ -36,15 +36,6 @@ npm test
 npm run build
 ```
 
-### Local Helpers
-
-Run from repository root:
-
-```bash
-python3 tools/radio_codeplug_helper.py --help
-python3 tools/radio_callsign_helper.py --help
-```
-
 ## Coding Guidelines
 
 - TypeScript-first for frontend code.
