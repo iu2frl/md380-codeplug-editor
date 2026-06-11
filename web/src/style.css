@@ -251,7 +251,6 @@ code {
 }
 
 .disabled-grid {
-  margin-top: 0.8rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.45rem;
