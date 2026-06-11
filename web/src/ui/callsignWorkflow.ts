@@ -79,7 +79,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
       <section class="card">
         <h2>3. Write To Transceiver</h2>
         <p class="muted-text">Enabled only after a successful build.</p>
-        <label class="backup-db">
+        <label class="perform-db-backup">
           <input id="perform-db-backup" type="checkbox" ${performDatabaseBackup ? "checked" : ""} ${canFlash? "" : "disabled"}/>
           Perform a backup of the callsigns database before writing the new entries.
         </label>
