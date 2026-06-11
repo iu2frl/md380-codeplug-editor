@@ -91,7 +91,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Read From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
-          <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read From Radio</button>
+          <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read Codeplug From Radio</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
@@ -103,7 +103,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Radio Date / Time Sync</h2>
           <p>Sync date, time, and timezone from this machine to the transceiver clock.</p>
-          <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date / Time</button>
+          <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date and Time</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
