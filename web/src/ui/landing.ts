@@ -98,13 +98,13 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Radio Screenshot</h2>
-          <p>Capture the current LCD display (160×128 px) from the radio and save it as a PNG. Requires patched firmware.</p>
+          <p>Capture the current LCD display (160x128 px) from the radio and save it as a PNG. Requires patched firmware, see <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener noreferrer">MD380 Tools</a>.</p>
           <button id="open-screenshot-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Capture Screenshot</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Firmware Backup</h2>
-          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually.</p>
+          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually by turning on the transceiver while pressing the PTT button.</p>
           <button id="open-firmware-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Backup Firmware</button>
         </article>
       </section>
