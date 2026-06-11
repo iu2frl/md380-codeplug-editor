@@ -20,6 +20,8 @@ import { showToast, showConfirm } from "./dialog";
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
 
+var performDatabaseBackup = false;
+
 type RenderStateFn = (
   target: HTMLElement,
   store: EditorStore,
@@ -76,7 +78,11 @@ export function renderCallsignWorkflow(uiState: UiState): string {
 
       <section class="card">
         <h2>3. Write To Transceiver</h2>
-        <p class="muted-text">Enabled only after a successful build. A rollback backup is always downloaded before flash.</p>
+        <p class="muted-text">Enabled only after a successful build.</p>
+        <label class="backup-db">
+          <input id="perform-db-backup" type="checkbox" ${performDatabaseBackup ? "checked" : ""} ${canFlash? "" : "disabled"}/>
+          Perform a backup of the callsigns database before writing the new entries.
+        </label>
         <button id="callsign-workflow-flash-btn" class="button callsign-action-btn" ${canFlash ? "" : "disabled"}>Write Callsign DB To Radio</button>
       </section>
 
@@ -113,6 +119,11 @@ export function bindCallsignWorkflowActions(
   target.querySelector<HTMLSelectElement>("#callsign-workflow-profile")?.addEventListener("change", (event) => {
     const value = (event.currentTarget as HTMLSelectElement).value;
     uiState.callsignProfile = value === "eu" ? "eu" : "global";
+  });
+
+  target.querySelector<HTMLInputElement>("#perform-db-backup")?.addEventListener("change", (event) => {
+    performDatabaseBackup = (event.currentTarget as HTMLInputElement).checked;
+    renderState(target, store, state, channelState, uiState);
   });
 
   const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
@@ -215,7 +226,7 @@ export function bindCallsignWorkflowActions(
 
     const confirmed = await showConfirm({
       title: "Flash Callsign Database",
-      message: `Flash ${uiState.callsignPayload.byteLength} bytes to 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}?\n\nA rollback backup will be downloaded before write.`,
+      message: `Flash ${uiState.callsignPayload.byteLength} bytes to 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}?.`,
       confirmLabel: "Flash",
       danger: true,
     });
@@ -251,14 +262,20 @@ export function bindCallsignWorkflowActions(
         throw new Error(`Payload exceeds flash bounds (${flashSize} bytes total).`);
       }
 
-      uiState.callsignProgressVisible = true;
-      uiState.callsignProgressPercent = 0;
-      uiState.callsignProgressLabel = "Reading rollback backup...";
-      renderState(target, store, store.getState(), channelState, uiState);
-      const backup = await transport.readSpiFlashRegion(CALLSIGN_FLASH_ADDRESS, uiState.callsignPayload.byteLength, applyProgress);
-      const rollbackName = `callsign-backup-${utcStamp()}.bin`;
-      downloadBytes(rollbackName, backup);
+      // TODO: not sure what to do with the backup, maybe we should implement a restore feature?
+      var rollbackName = "";
+      if (performDatabaseBackup)
+      {
+        uiState.callsignProgressVisible = true;
+        uiState.callsignProgressPercent = 0;
+        uiState.callsignProgressLabel = "Reading rollback backup...";
+        renderState(target, store, store.getState(), channelState, uiState);
+        const backup = await transport.readSpiFlashRegion(CALLSIGN_FLASH_ADDRESS, uiState.callsignPayload.byteLength, applyProgress);
+        rollbackName = `callsign-backup-${utcStamp()}.bin`;
+        downloadBytes(rollbackName, backup);
+      }
 
+      // TODO: the original code was deleting the flash before writing the new DB
       uiState.callsignProgressVisible = true;
       uiState.callsignProgressPercent = 0;
       uiState.callsignProgressLabel = "Preparing for callsign database flash operation. Please be patient...";
@@ -268,7 +285,14 @@ export function bindCallsignWorkflowActions(
       uiState.callsignProgressPercent = 100;
       uiState.callsignProgressLabel = "Flash complete.";
       renderState(target, store, store.getState(), channelState, uiState);
-      showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
+      if (performDatabaseBackup)
+      {
+        showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
+      }
+      else
+      {
+        showToast({ type: "success", message: `Flash complete.` });
+      }
       await safeRebootRadio(transport);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";

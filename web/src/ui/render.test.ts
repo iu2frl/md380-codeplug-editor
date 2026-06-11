@@ -1064,6 +1064,11 @@ describe("callsign updater workflow", () => {
     expect(fetchSpy.mock.calls.some((call) => String(call[0]) === "https://iu2frl.github.io/md380-codeplug-editor/callsign-meta.json")).toBe(true);
     expect(container.textContent).toContain("Build complete:");
 
+    const performDbBackup = container.querySelector<HTMLInputElement>("#perform-db-backup");
+    if (!performDbBackup) throw new Error("db-backup checkbox not found");
+    performDbBackup.checked = true;
+    performDbBackup.dispatchEvent(new Event("change", { bubbles: true }));
+
     click(container, "#callsign-workflow-flash-btn");
     await flushAsyncWork();
     await flushAsyncWork();
