@@ -47,7 +47,11 @@ export interface BrowserRadioTransport {
   writeSpiFlashRegion(address: number, data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
   syncRtcClock?(payload: BrowserRtcSyncPayload): Promise<void>;
   rebootRadio(): Promise<void>;
+  captureScreenshot?(onProgress?: (line: number, total: number) => void): Promise<Uint8Array>;
 }
+
+export const SCREENSHOT_WIDTH = 160;
+export const SCREENSHOT_HEIGHT = 128;
 
 interface UsbRequestFilter {
   vendorId?: number;
@@ -757,6 +761,42 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
       // Log at debug level to avoid alarming users.
       console.debug("Transfer error sending reboot command (expected during reboot): ", error);
     }
+  }
+
+  async captureScreenshot(onProgress?: (line: number, total: number) => void): Promise<Uint8Array> {
+    const device = this.requireConnectedDevice();
+    await this.enterDfuIdle(device);
+
+    // LCD is 160×128 pixels, 3 bytes per pixel (BGR). Each line read is:
+    //   - send command 0x84, x1=0, y1=<line>, x2=159, y2=<line>
+    //   - getStatus twice (state transition)
+    //   - upload 1 block: 5-byte header echo + 160*3 pixel bytes
+    // See: examples/md380tools/md380_tool.py read_framebuf_line()
+    const pixels = new Uint8Array(SCREENSHOT_WIDTH * SCREENSHOT_HEIGHT * 3);
+
+    for (let y = 0; y < SCREENSHOT_HEIGHT; y += 1) {
+      const command = new Uint8Array([0x84, 0x00, y, SCREENSHOT_WIDTH - 1, y]);
+      await this.download(device, 1, command);
+      await this.getStatus(device);
+      await this.getStatus(device);
+      const lineBytes = SCREENSHOT_WIDTH * 3;
+      const raw = await this.upload(device, 1, lineBytes + 5);
+      if (raw.byteLength < lineBytes + 5) {
+        throw new Error(`Short framebuffer response at line ${y}: expected ${lineBytes + 5} bytes, got ${raw.byteLength}.`);
+      }
+      // Bytes 0-4 are the header echo; bytes 5+ are BGR pixel data. Convert to RGB.
+      for (let x = 0; x < SCREENSHOT_WIDTH; x += 1) {
+        const srcOffset = 5 + x * 3;
+        const dstOffset = (y * SCREENSHOT_WIDTH + x) * 3;
+        pixels[dstOffset]     = raw[srcOffset + 2]; // R
+        pixels[dstOffset + 1] = raw[srcOffset + 1]; // G
+        pixels[dstOffset + 2] = raw[srcOffset];     // B
+      }
+      await this.enterDfuIdle(device);
+      onProgress?.(y + 1, SCREENSHOT_HEIGHT);
+    }
+
+    return pixels;
   }
 }
 

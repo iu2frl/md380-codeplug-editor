@@ -95,6 +95,12 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <p>Sync date, time, and timezone from this machine to the transceiver clock.</p>
           <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date / Time</button>
         </article>
+
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
+          <h2>Radio Screenshot</h2>
+          <p>Capture the current LCD display (160×128 px) from the radio and save it as a PNG. Requires patched firmware.</p>
+          <button id="open-screenshot-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Capture Screenshot</button>
+        </article>
       </section>
 
       <section class="card tile landing-footer">
@@ -426,6 +432,16 @@ export function bindLandingActions(
     }
     uiState.busy = true;
     uiState.landingView = "time-sync-workflow";
+    uiState.busy = false;
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
+  target.querySelector<HTMLButtonElement>("#open-screenshot-workflow-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    uiState.busy = true;
+    uiState.landingView = "screenshot-workflow";
     uiState.busy = false;
     renderState(target, store, store.getState(), channelState, uiState);
   });

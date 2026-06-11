@@ -34,7 +34,7 @@ export type ActiveGuideModal = "import" | "landing-read" | "radio-transfer" | nu
 
 export interface UiState {
   activeTab: ActiveTab;
-  landingView: "home" | "callsign-workflow" | "time-sync-workflow";
+  landingView: "home" | "callsign-workflow" | "time-sync-workflow" | "screenshot-workflow";
   riskAccepted: boolean;
   busy: boolean;
   activeGuideModal: ActiveGuideModal;
@@ -60,6 +60,11 @@ export interface UiState {
   timeSyncTimeZone: string;
   timeSyncStatusMessage: string;
   timeSyncBusy: boolean;
+  screenshotBusy: boolean;
+  screenshotStatusMessage: string;
+  screenshotProgressLine: number;
+  screenshotProgressVisible: boolean;
+  screenshotImageData: Uint8Array | null;
 }
 
 export function createInitialChannelPanelState(): ChannelPanelState {
@@ -108,5 +113,10 @@ export function createInitialUiState(): UiState {
     timeSyncTimeZone: "",
     timeSyncStatusMessage: "No date/time sync performed yet.",
     timeSyncBusy: false,
+    screenshotBusy: false,
+    screenshotStatusMessage: "No screenshot captured yet.",
+    screenshotProgressLine: 0,
+    screenshotProgressVisible: false,
+    screenshotImageData: null,
   };
 }

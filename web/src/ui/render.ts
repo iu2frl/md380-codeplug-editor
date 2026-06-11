@@ -10,6 +10,10 @@ import {
   renderTimeSyncWorkflow,
 } from "./timeSyncWorkflow";
 import {
+  bindScreenshotWorkflowActions,
+  renderScreenshotWorkflow,
+} from "./screenshotWorkflow";
+import {
   bindGuideModalActions,
   bindLandingActions,
   renderGuideModal,
@@ -44,13 +48,17 @@ function renderState(
         ? renderCallsignWorkflow(uiState)
         : uiState.landingView === "time-sync-workflow"
           ? renderTimeSyncWorkflow(uiState)
-        : renderLanding(state.importError, uiState.riskAccepted, uiState)
+          : uiState.landingView === "screenshot-workflow"
+            ? renderScreenshotWorkflow(uiState)
+            : renderLanding(state.importError, uiState.riskAccepted, uiState)
     }${renderGuideModal(uiState)}`;
     bindFileInputs(target, store);
     if (uiState.landingView === "callsign-workflow") {
       bindCallsignWorkflowActions(target, store, state, channelState, uiState, renderState);
     } else if (uiState.landingView === "time-sync-workflow") {
       bindTimeSyncWorkflowActions(target, store, state, channelState, uiState, renderState);
+    } else if (uiState.landingView === "screenshot-workflow") {
+      bindScreenshotWorkflowActions(target, store, state, channelState, uiState, renderState);
     } else {
       bindLandingActions(target, store, state, channelState, uiState, renderState);
     }
