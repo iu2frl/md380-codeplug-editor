@@ -48,10 +48,17 @@ export interface BrowserRadioTransport {
   syncRtcClock?(payload: BrowserRtcSyncPayload): Promise<void>;
   rebootRadio(): Promise<void>;
   captureScreenshot?(onProgress?: (line: number, total: number) => void): Promise<Uint8Array>;
+  readFirmware?(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
 }
 
 export const SCREENSHOT_WIDTH = 160;
 export const SCREENSHOT_HEIGHT = 128;
+
+// Firmware is stored in internal flash from 0x0800c000 to 0x080e0000 (868 KB).
+// Reading requires the radio to be in STM32 bootloader mode (PTT + top button at power-on).
+export const FIRMWARE_START_ADDRESS = 0x0800c000;
+export const FIRMWARE_END_ADDRESS = 0x080e0000;
+export const FIRMWARE_TOTAL_SIZE = FIRMWARE_END_ADDRESS - FIRMWARE_START_ADDRESS; // 868352 bytes
 
 interface UsbRequestFilter {
   vendorId?: number;
@@ -146,6 +153,9 @@ const CODEPLUG_BLOCK_START = 2;
 const CODEPLUG_BLOCK_COUNT = CODEPLUG_TOTAL_SIZE / CODEPLUG_BLOCK_SIZE;
 const SPI_BLOCK_SIZE = 1024;
 const SPI_ERASE_STEP = 0x1000;
+const FIRMWARE_BLOCK_SIZE = 1024;
+const FIRMWARE_BLOCK_START = 2;
+const FIRMWARE_BLOCK_COUNT = FIRMWARE_TOTAL_SIZE / FIRMWARE_BLOCK_SIZE;
 
 export function detectBrowserRadioCapabilities(
   nav: Navigator | undefined = globalThis.navigator,
@@ -797,6 +807,50 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     }
 
     return pixels;
+  }
+
+  async readFirmware(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array> {
+    const device = this.requireConnectedDevice();
+
+    // Firmware backup requires the radio to be in STM32 bootloader mode.
+    // The user must enter this mode manually by holding PTT + top button while powering on.
+    // In this mode, the manufacturer string is "STMicroelectronics" or "AnyRoad Technology".
+    // We verify we can read by checking the DFU state.
+    await this.enterDfuIdle(device);
+
+    // Set address pointer to firmware start (0x0800c000).
+    // The DFU upload formula is: Address = ((wBlockNum - 2) * wTransferSize) + Address_Pointer
+    await this.setAddress(device, FIRMWARE_START_ADDRESS);
+
+    const out = new Uint8Array(FIRMWARE_TOTAL_SIZE);
+    onProgress?.({
+      direction: "read",
+      completedBlocks: 0,
+      totalBlocks: FIRMWARE_BLOCK_COUNT,
+      bytesTransferred: 0,
+      totalBytes: FIRMWARE_TOTAL_SIZE,
+    });
+
+    for (let index = 0; index < FIRMWARE_BLOCK_COUNT; index += 1) {
+      const blockNumber = FIRMWARE_BLOCK_START + index;
+      const block = await this.upload(device, blockNumber, FIRMWARE_BLOCK_SIZE);
+      if (block.byteLength !== FIRMWARE_BLOCK_SIZE) {
+        throw new Error(
+          `Short firmware block at ${blockNumber}: expected ${FIRMWARE_BLOCK_SIZE} bytes, got ${block.byteLength}.`,
+        );
+      }
+      out.set(block, index * FIRMWARE_BLOCK_SIZE);
+      await this.getStatus(device);
+      onProgress?.({
+        direction: "read",
+        completedBlocks: index + 1,
+        totalBlocks: FIRMWARE_BLOCK_COUNT,
+        bytesTransferred: (index + 1) * FIRMWARE_BLOCK_SIZE,
+        totalBytes: FIRMWARE_TOTAL_SIZE,
+      });
+    }
+
+    return out;
   }
 }
 

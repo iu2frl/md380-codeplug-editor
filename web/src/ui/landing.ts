@@ -101,6 +101,12 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <p>Capture the current LCD display (160×128 px) from the radio and save it as a PNG. Requires patched firmware.</p>
           <button id="open-screenshot-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Capture Screenshot</button>
         </article>
+
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
+          <h2>Firmware Backup</h2>
+          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually.</p>
+          <button id="open-firmware-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Backup Firmware</button>
+        </article>
       </section>
 
       <section class="card tile landing-footer">
@@ -442,6 +448,16 @@ export function bindLandingActions(
     }
     uiState.busy = true;
     uiState.landingView = "screenshot-workflow";
+    uiState.busy = false;
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
+  target.querySelector<HTMLButtonElement>("#open-firmware-workflow-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    uiState.busy = true;
+    uiState.landingView = "firmware-workflow";
     uiState.busy = false;
     renderState(target, store, store.getState(), channelState, uiState);
   });

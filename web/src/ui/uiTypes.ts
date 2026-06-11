@@ -34,7 +34,7 @@ export type ActiveGuideModal = "import" | "landing-read" | "radio-transfer" | nu
 
 export interface UiState {
   activeTab: ActiveTab;
-  landingView: "home" | "callsign-workflow" | "time-sync-workflow" | "screenshot-workflow";
+  landingView: "home" | "callsign-workflow" | "time-sync-workflow" | "screenshot-workflow" | "firmware-workflow";
   riskAccepted: boolean;
   busy: boolean;
   activeGuideModal: ActiveGuideModal;
@@ -65,6 +65,11 @@ export interface UiState {
   screenshotProgressLine: number;
   screenshotProgressVisible: boolean;
   screenshotImageData: Uint8Array | null;
+  firmwareBusy: boolean;
+  firmwareStatusMessage: string;
+  firmwareProgressPercent: number;
+  firmwareProgressLabel: string;
+  firmwareProgressVisible: boolean;
 }
 
 export function createInitialChannelPanelState(): ChannelPanelState {
@@ -118,5 +123,10 @@ export function createInitialUiState(): UiState {
     screenshotProgressLine: 0,
     screenshotProgressVisible: false,
     screenshotImageData: null,
+    firmwareBusy: false,
+    firmwareStatusMessage: "No firmware backup performed yet.",
+    firmwareProgressPercent: 0,
+    firmwareProgressLabel: "No transfer in progress.",
+    firmwareProgressVisible: false,
   };
 }

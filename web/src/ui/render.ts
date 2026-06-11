@@ -14,6 +14,10 @@ import {
   renderScreenshotWorkflow,
 } from "./screenshotWorkflow";
 import {
+  bindFirmwareWorkflowActions,
+  renderFirmwareWorkflow,
+} from "./firmwareWorkflow";
+import {
   bindGuideModalActions,
   bindLandingActions,
   renderGuideModal,
@@ -50,7 +54,9 @@ function renderState(
           ? renderTimeSyncWorkflow(uiState)
           : uiState.landingView === "screenshot-workflow"
             ? renderScreenshotWorkflow(uiState)
-            : renderLanding(state.importError, uiState.riskAccepted, uiState)
+            : uiState.landingView === "firmware-workflow"
+              ? renderFirmwareWorkflow(uiState)
+              : renderLanding(state.importError, uiState.riskAccepted, uiState)
     }${renderGuideModal(uiState)}`;
     bindFileInputs(target, store);
     if (uiState.landingView === "callsign-workflow") {
@@ -59,6 +65,8 @@ function renderState(
       bindTimeSyncWorkflowActions(target, store, state, channelState, uiState, renderState);
     } else if (uiState.landingView === "screenshot-workflow") {
       bindScreenshotWorkflowActions(target, store, state, channelState, uiState, renderState);
+    } else if (uiState.landingView === "firmware-workflow") {
+      bindFirmwareWorkflowActions(target, store, state, channelState, uiState, renderState);
     } else {
       bindLandingActions(target, store, state, channelState, uiState, renderState);
     }
