@@ -65,7 +65,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <article class="card tile">
           <h2>Setup Guide</h2>
           <p>Instructions for setting up your browser and operating system to communicate with your radio via USB.</p>
-          <button id="open-setup-guide-btn" class="button ghost">Show Setup Guide</button>
+          <button id="open-setup-guide-btn" class="button">Show Setup Guide</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
