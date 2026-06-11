@@ -3,6 +3,7 @@ import { radioButtonActionOptions } from "../domain/parser";
 import {
   createBrowserRadioTransport,
   detectBrowserRadioCapabilities,
+  type BrowserRadioTransport,
   type BrowserTransferProgress,
 } from "../transport/browserRadio";
 import type { ActiveTab, ChannelPanelState, UiState } from "./uiTypes";
@@ -1310,18 +1311,44 @@ export function bindActiveTab(
       return;
     }
 
-    panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", async () => {
+    const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
       const capabilities = detectBrowserRadioCapabilities();
-      const isConnected = uiState.radioTransport?.isConnected() ?? false;
-      if (!isConnected && !capabilities.supported) {
-        showToast({ type: "error", message: `WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}` });
-        return;
+      if (!capabilities.supported) {
+        throw new Error(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
       }
 
-      uiState.radioBusy = true;
-      renderState(target, store, store.getState(), channelState, uiState);
+      const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
+      if (!transport) {
+        throw new Error("Unable to initialize WebUSB transport in this browser.");
+      }
+
+      uiState.radioTransport = transport;
+      if (!transport.isConnected()) {
+        const device = await transport.connect();
+        const label = [device.manufacturerName, device.productName]
+          .filter((item) => Boolean(item))
+          .join(" ")
+          .trim();
+        uiState.radioStatusMessage = `Connected: ${label || "USB radio"} (VID: 0x${device.vendorId
+          .toString(16)
+          .padStart(4, "0")}, PID: 0x${device.productId.toString(16).padStart(4, "0")}).`;
+      }
+
+      return transport;
+    };
+
+    const safeRebootRadio = async (transport: BrowserRadioTransport): Promise<void> => {
+      if (typeof transport.rebootRadio === "function") {
+        await transport.rebootRadio();
+      }
+    };
+
+    panel.querySelector<HTMLButtonElement>("#radio-transfer-connect")?.addEventListener("click", async () => {
+      const isConnected = uiState.radioTransport?.isConnected() ?? false;
 
       if (isConnected && uiState.radioTransport) {
+        uiState.radioBusy = true;
+        renderState(target, store, store.getState(), channelState, uiState);
         try {
           await uiState.radioTransport.disconnect();
           uiState.radioStatusMessage = "Disconnected.";
@@ -1335,23 +1362,14 @@ export function bindActiveTab(
         return;
       }
 
-      const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
-      if (!transport) {
-        uiState.radioBusy = false;
-        uiState.radioStatusMessage = "Unable to initialize WebUSB transport in this browser.";
-        renderState(target, store, store.getState(), channelState, uiState);
-        showToast({ type: "error", message: "Unable to initialize WebUSB transport in this browser." });
-        return;
-      }
+      uiState.radioBusy = true;
+      renderState(target, store, store.getState(), channelState, uiState);
 
       try {
-        uiState.radioTransport = transport;
-        const device = await transport.connect();
-        const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
-        uiState.radioStatusMessage = `Connected: ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`;
+        const transport = await ensureRadioTransport();
         showToast({
           type: "success",
-          message: `Connected to ${label || "USB radio"} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)}).`,
+          message: `Connected to ${uiState.radioStatusMessage.split(": ")[1] || "USB radio"}.`,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "WebUSB connection failed.";
@@ -1390,7 +1408,7 @@ export function bindActiveTab(
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Read complete.";
         showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
-        await uiState.radioTransport.rebootRadio();
+        await safeRebootRadio(uiState.radioTransport);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
         uiState.radioStatusMessage = `Read failed: ${message}`;
@@ -1449,7 +1467,7 @@ export function bindActiveTab(
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Write complete.";
         showToast({ type: "success", message: `Write complete: ${bytes.byteLength} bytes sent.` });
-        await uiState.radioTransport.rebootRadio();
+        await safeRebootRadio(uiState.radioTransport);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
         uiState.radioStatusMessage = `Write failed: ${message}`;
