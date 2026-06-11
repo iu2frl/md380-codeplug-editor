@@ -61,8 +61,13 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
       </section>
       `
         : ""}
-
       <section class="tiles">
+        <article class="card tile">
+          <h2>Setup Guide</h2>
+          <p>Instructions for setting up your browser and operating system to communicate with your radio via USB.</p>
+          <button id="open-setup-guide-btn" class="button ghost">Show Setup Guide</button>
+        </article>
+
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Create New Codeplug</h2>
           <p>Start from a blank profile and build your codeplug from scratch.</p>
@@ -87,12 +92,6 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <h2>Read From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
           <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read From Radio</button>
-        </article>
-
-        <article class="card tile">
-          <h2>WebUSB Setup Guide</h2>
-          <p>Instructions for setting up your browser and operating system to communicate with your radio via USB.</p>
-          <button id="open-setup-guide-btn" class="button ghost">Open Setup Guide</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
