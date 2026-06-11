@@ -115,7 +115,7 @@ export function bindCallsignWorkflowActions(
     uiState.callsignProfile = value === "eu" ? "eu" : "global";
   });
 
-  const ensureCallsignTransport = async (): Promise<BrowserRadioTransport> => {
+  const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
       throw new Error(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
@@ -235,14 +235,14 @@ export function bindCallsignWorkflowActions(
       syncRadioProgressUi(target, uiState);
     };
 
-    const rebootRadio = async (transport: BrowserRadioTransport): Promise<void> => {
+    const safeRebootRadio = async (transport: BrowserRadioTransport): Promise<void> => {
       if (typeof transport.rebootRadio === "function") {
         await transport.rebootRadio();
       }
     };
 
     try {
-      const transport = await ensureCallsignTransport();
+      const transport = await ensureRadioTransport();
       const flashSize = await transport.getSpiFlashSize();
       if (flashSize < CALLSIGN_RECOMMENDED_MIN_FLASH) {
         throw new Error(`Unsupported flash size ${flashSize} bytes; expected at least ${CALLSIGN_RECOMMENDED_MIN_FLASH}.`);
@@ -269,7 +269,7 @@ export function bindCallsignWorkflowActions(
       uiState.callsignProgressLabel = "Flash complete.";
       renderState(target, store, store.getState(), channelState, uiState);
       showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
-      await rebootRadio(transport);
+      await safeRebootRadio(transport);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";
       uiState.callsignStatusMessage = `Flash failed: ${message}`;
