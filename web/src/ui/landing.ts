@@ -89,19 +89,19 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Read From Radio</h2>
+          <h2>Read Codeplug From Radio</h2>
           <p>Connect your radio and load the current codeplug directly into this browser session.</p>
           <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read Codeplug From Radio</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Callsign Database</h2>
+          <h2>Update Callsign Database</h2>
           <p>Download the latest callsign database and write it to the transceiver.</p>
           <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Update Callsigns Database</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Radio Date / Time Sync</h2>
+          <h2>Radio Date and Time Sync</h2>
           <p>Sync date, time, and timezone from this machine to the transceiver clock.</p>
           <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date and Time</button>
         </article>
