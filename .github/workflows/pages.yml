@@ -1,11 +1,11 @@
 name: Deploy Web App to GitHub Pages
 
 on:
-  #release:
-  #  types: [created]
-  schedule:
-    # Run every Monday at 03:00 UTC to refresh callsign database
-    - cron: "0 3 * * 1"
+  push:
+    branches:
+      - master
+    paths:
+      - 'web/**'
   workflow_dispatch:
 
 permissions:
