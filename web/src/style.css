@@ -200,7 +200,6 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
-  font-weight: 600;
 }
 
 .perform-db-backup input {
