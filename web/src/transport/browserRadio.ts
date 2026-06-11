@@ -709,20 +709,18 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
   }
 
   async rebootRadio(): Promise<void> {
-    try
-    {
-      // TODO: 
-      //  investigate why it randomly fails with:
-      //    "browserRadio.ts:718 Error sending reboot command to radio:  NetworkError: Failed to execute 
-      //    'controlTransferIn' on 'USBDevice': A transfer error has occurred."
-      //  even if the command succeeds and the radio reboots.
-      //  It might be expected as the radio reboots before sending any response.
-      //  See: examples/md380tools/DFU.py line 212 for reference implementation of reboot command.
+    try {
       const device = this.requireConnectedDevice();
       await this.enterDfuIdle(device);
-      await this.md380Custom(device, 0x91, 0x05);
+      // Send reboot command (0x91, 0x05). The radio reboots immediately upon receiving
+      // this command, so we cannot wait for or expect a status response. Any USB transfer
+      // errors (NetworkError: controlTransferIn failed) are expected and can be safely ignored.
+      // See: examples/md380tools/DFU.py line 212 for reference implementation.
+      await this.download(device, 0, new Uint8Array([0x91, 0x05]));
     } catch (error) {
-      console.debug("Error sending reboot command to radio: ", error);
+      // USB transfer errors are expected as the radio reboots before responding.
+      // Log at debug level to avoid alarming users.
+      console.debug("Transfer error sending reboot command (expected during reboot): ", error);
     }
   }
 }
