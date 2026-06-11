@@ -6,6 +6,10 @@ import {
   renderCallsignWorkflow,
 } from "./callsignWorkflow";
 import {
+  bindTimeSyncWorkflowActions,
+  renderTimeSyncWorkflow,
+} from "./timeSyncWorkflow";
+import {
   bindGuideModalActions,
   bindLandingActions,
   renderGuideModal,
@@ -38,11 +42,15 @@ function renderState(
     target.innerHTML = `${
       uiState.landingView === "callsign-workflow"
         ? renderCallsignWorkflow(uiState)
+        : uiState.landingView === "time-sync-workflow"
+          ? renderTimeSyncWorkflow(uiState)
         : renderLanding(state.importError, uiState.riskAccepted, uiState)
     }${renderGuideModal(uiState)}`;
     bindFileInputs(target, store);
     if (uiState.landingView === "callsign-workflow") {
       bindCallsignWorkflowActions(target, store, state, channelState, uiState, renderState);
+    } else if (uiState.landingView === "time-sync-workflow") {
+      bindTimeSyncWorkflowActions(target, store, state, channelState, uiState, renderState);
     } else {
       bindLandingActions(target, store, state, channelState, uiState, renderState);
     }

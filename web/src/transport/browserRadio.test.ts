@@ -354,4 +354,134 @@ describe("detectBrowserRadioCapabilities", () => {
       },
     );
   });
+
+  it("syncs RTC clock with BCD-encoded payload", async () => {
+    const downloads: Array<{ value: number; bytes: number[] }> = [];
+    const fakeDevice = {
+      vendorId: 0x0483,
+      productId: 0xdf11,
+      opened: false,
+      configuration: null,
+      open: async () => {
+        fakeDevice.opened = true;
+      },
+      close: async () => {
+        fakeDevice.opened = false;
+      },
+      selectConfiguration: async (value: number) => {
+        fakeDevice.configuration = {
+          configurationValue: value,
+          interfaces: [{ interfaceNumber: 1, alternates: [{ alternateSetting: 0 }] }],
+        };
+      },
+      claimInterface: async () => Promise.resolve(),
+      releaseInterface: async () => Promise.resolve(),
+      controlTransferOut: async (setup: { request: number; value: number }, data?: BufferSource) => {
+        if (setup.request === 1) {
+          const view = data instanceof Uint8Array ? data : new Uint8Array(0);
+          downloads.push({ value: setup.value, bytes: Array.from(view) });
+        }
+        return { status: "ok" as const };
+      },
+      controlTransferIn: async (setup: { request: number }, _length: number) => {
+        if (setup.request === 5) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(2).buffer) };
+        }
+        if (setup.request === 3) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(0, 0, 0, 0, 5, 0).buffer) };
+        }
+        if (setup.request === 2) {
+          return { status: "ok" as const, data: new DataView(new Uint8Array(32).buffer) };
+        }
+        throw new Error(`unexpected controlTransferIn request ${setup.request}`);
+      },
+    };
+
+    await withMockUsb(
+      {
+        requestDevice: async () => fakeDevice,
+      },
+      async () => {
+        const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
+        const transport = createBrowserRadioTransport(caps);
+        expect(transport).not.toBeNull();
+        await transport!.connect();
+        if (!transport!.syncRtcClock) {
+          throw new Error("syncRtcClock is unavailable on transport");
+        }
+
+        await transport!.syncRtcClock({
+          year: 2026,
+          month: 6,
+          day: 11,
+          hour: 14,
+          minute: 30,
+          second: 45,
+        });
+
+        const rtcPayload = downloads.find((item) => item.value === 0 && item.bytes[0] === 0xb5);
+        expect(rtcPayload).toBeDefined();
+        expect(rtcPayload?.bytes).toEqual([0xb5, 0x20, 0x26, 0x06, 0x11, 0x14, 0x30, 0x45]);
+      },
+    );
+  });
+
+  it("rejects RTC sync payloads outside supported range", async () => {
+    const fakeDevice = {
+      vendorId: 0x0483,
+      productId: 0xdf11,
+      opened: false,
+      configuration: null,
+      open: async () => {
+        fakeDevice.opened = true;
+      },
+      close: async () => {
+        fakeDevice.opened = false;
+      },
+      selectConfiguration: async (value: number) => {
+        fakeDevice.configuration = {
+          configurationValue: value,
+          interfaces: [{ interfaceNumber: 1, alternates: [{ alternateSetting: 0 }] }],
+        };
+      },
+      claimInterface: async () => Promise.resolve(),
+      releaseInterface: async () => Promise.resolve(),
+      controlTransferOut: async () => ({ status: "ok" as const }),
+      controlTransferIn: async (setup: { request: number }) => {
+        if (setup.request === 5) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(2).buffer) };
+        }
+        if (setup.request === 3) {
+          return { status: "ok" as const, data: new DataView(Uint8Array.of(0, 0, 0, 0, 5, 0).buffer) };
+        }
+        throw new Error(`unexpected controlTransferIn request ${setup.request}`);
+      },
+    };
+
+    await withMockUsb(
+      {
+        requestDevice: async () => fakeDevice,
+      },
+      async () => {
+        const caps = detectBrowserRadioCapabilities(globalThis.navigator, true);
+        const transport = createBrowserRadioTransport(caps);
+        expect(transport).not.toBeNull();
+        await transport!.connect();
+        if (!transport!.syncRtcClock) {
+          throw new Error("syncRtcClock is unavailable on transport");
+        }
+
+        await expect(
+          transport!.syncRtcClock({
+            year: 1999,
+            month: 6,
+            day: 11,
+            hour: 14,
+            minute: 30,
+            second: 45,
+          }),
+        ).rejects.toThrow("RTC year must be between 2000 and 2099.");
+      },
+    );
+  });
 });

@@ -89,6 +89,12 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
           <p>Download the latest callsign database and write it to the transceiver.</p>
           <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Update Callsigns Database</button>
         </article>
+
+        <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
+          <h2>Radio Date / Time Sync</h2>
+          <p>Sync date, time, and timezone from this machine to the transceiver clock.</p>
+          <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date / Time</button>
+        </article>
       </section>
 
       <section class="card tile landing-footer">
@@ -410,6 +416,16 @@ export function bindLandingActions(
     }
     uiState.busy = true;
     uiState.landingView = "callsign-workflow";
+    uiState.busy = false;
+    renderState(target, store, store.getState(), channelState, uiState);
+  });
+
+  target.querySelector<HTMLButtonElement>("#open-time-sync-workflow-btn")?.addEventListener("click", () => {
+    if (!uiState.riskAccepted) {
+      return;
+    }
+    uiState.busy = true;
+    uiState.landingView = "time-sync-workflow";
     uiState.busy = false;
     renderState(target, store, store.getState(), channelState, uiState);
   });

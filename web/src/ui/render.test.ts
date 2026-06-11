@@ -1100,3 +1100,70 @@ describe("callsign updater workflow", () => {
   });
 });
 
+describe("time sync workflow", () => {
+  it("syncs radio date/time using selected timezone", async () => {
+    document.body.innerHTML = "";
+    const { container } = mountApp();
+
+    const toastSpy = vi.spyOn(dialog, "showToast").mockImplementation(() => undefined);
+    vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
+      isSecureContext: true,
+      hasNavigatorUsb: true,
+      hasRequestDevice: true,
+      userAgent: "Vitest Chromium",
+      supported: true,
+      blockers: [],
+      warnings: [],
+    });
+
+    let connected = false;
+    const syncRtcClockSpy = vi.fn(async () => undefined);
+    const rebootSpy = vi.fn(async () => undefined);
+
+    const fakeTransport: browserRadio.BrowserRadioTransport = {
+      connect: async () => {
+        connected = true;
+        return { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" };
+      },
+      disconnect: async () => {
+        connected = false;
+      },
+      isConnected: () => connected,
+      getConnectedDevice: () => (connected ? { vendorId: 0x0483, productId: 0xdf11, productName: "MD380" } : null),
+      readCodeplug: async () => new Uint8Array(262144),
+      writeCodeplug: async () => undefined,
+      getSpiFlashSize: async () => 16 * 1024 * 1024,
+      readSpiFlashRegion: async () => new Uint8Array(0),
+      writeSpiFlashRegion: async () => undefined,
+      syncRtcClock: syncRtcClockSpy,
+      rebootRadio: rebootSpy,
+    };
+
+    vi.spyOn(browserRadio, "createBrowserRadioTransport").mockReturnValue(fakeTransport);
+
+    const riskAck = container.querySelector<HTMLInputElement>("#risk-ack");
+    if (!riskAck) throw new Error("risk checkbox not found");
+    riskAck.checked = true;
+    riskAck.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#open-time-sync-workflow-btn");
+    const zoneSelect = container.querySelector<HTMLSelectElement>("#time-sync-workflow-timezone");
+    if (!zoneSelect) throw new Error("time sync timezone selector not found");
+    zoneSelect.value = "UTC+2:00";
+    zoneSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    click(container, "#time-sync-workflow-apply-btn");
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(syncRtcClockSpy).toHaveBeenCalledTimes(1);
+    expect(rebootSpy).toHaveBeenCalledTimes(1);
+    const firstPayload = syncRtcClockSpy.mock.calls[0]?.[0] as browserRadio.BrowserRtcSyncPayload;
+    expect(firstPayload.year).toBeGreaterThanOrEqual(2000);
+    expect(firstPayload.month).toBeGreaterThanOrEqual(1);
+    expect(firstPayload.month).toBeLessThanOrEqual(12);
+    expect(container.textContent).toContain("Sync complete:");
+    expect(toastSpy.mock.calls.some((call) => call[0].type === "success")).toBe(true);
+  });
+});
+

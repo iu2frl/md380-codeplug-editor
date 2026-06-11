@@ -34,7 +34,7 @@ export type ActiveGuideModal = "import" | "landing-read" | "radio-transfer" | nu
 
 export interface UiState {
   activeTab: ActiveTab;
-  landingView: "home" | "callsign-workflow";
+  landingView: "home" | "callsign-workflow" | "time-sync-workflow";
   riskAccepted: boolean;
   busy: boolean;
   activeGuideModal: ActiveGuideModal;
@@ -57,6 +57,9 @@ export interface UiState {
   callsignProgressLabel: string;
   callsignProgressVisible: boolean;
   callsignLastUpdated: string | null;
+  timeSyncTimeZone: string;
+  timeSyncStatusMessage: string;
+  timeSyncBusy: boolean;
 }
 
 export function createInitialChannelPanelState(): ChannelPanelState {
@@ -102,5 +105,8 @@ export function createInitialUiState(): UiState {
     callsignProgressLabel: "No transfer in progress.",
     callsignProgressVisible: false,
     callsignLastUpdated: null,
+    timeSyncTimeZone: "",
+    timeSyncStatusMessage: "No date/time sync performed yet.",
+    timeSyncBusy: false,
   };
 }

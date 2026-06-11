@@ -26,6 +26,15 @@ export interface BrowserTransferProgress {
   totalBytes: number;
 }
 
+export interface BrowserRtcSyncPayload {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
 export interface BrowserRadioTransport {
   connect(): Promise<BrowserRadioDevice>;
   disconnect(): Promise<void>;
@@ -36,6 +45,7 @@ export interface BrowserRadioTransport {
   getSpiFlashSize(): Promise<number>;
   readSpiFlashRegion(address: number, size: number, onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
   writeSpiFlashRegion(address: number, data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
+  syncRtcClock?(payload: BrowserRtcSyncPayload): Promise<void>;
   rebootRadio(): Promise<void>;
 }
 
@@ -485,6 +495,31 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     }
   }
 
+  async syncRtcClock(payload: BrowserRtcSyncPayload): Promise<void> {
+    const device = this.requireConnectedDevice();
+    validateRtcPayload(payload);
+
+    await this.enterDfuIdle(device);
+    await this.md380Custom(device, 0x91, 0x02);
+
+    const yearCentury = Math.floor(payload.year / 100);
+    const yearWithinCentury = payload.year % 100;
+    const command = new Uint8Array([
+      0xb5,
+      bcdByte(yearCentury),
+      bcdByte(yearWithinCentury),
+      bcdByte(payload.month),
+      bcdByte(payload.day),
+      bcdByte(payload.hour),
+      bcdByte(payload.minute),
+      bcdByte(payload.second),
+    ]);
+
+    await this.download(device, 0, command);
+    await this.waitForDownloadIdle(device);
+    await this.enterDfuIdle(device);
+  }
+
   private requireConnectedDevice(): UsbDeviceLike {
     if (!this.device || this.claimedInterfaceNumber === null || !this.device.opened) {
       throw new Error("Connect a radio first.");
@@ -741,6 +776,33 @@ function pickInterface(configuration: UsbConfigurationLike): UsbInterfaceLike | 
   );
 
   return dfu ?? interfaces[0];
+}
+
+function bcdByte(value: number): number {
+  const tens = Math.floor(value / 10);
+  const ones = value % 10;
+  return ((tens & 0x0f) << 4) | (ones & 0x0f);
+}
+
+function validateRtcPayload(payload: BrowserRtcSyncPayload): void {
+  if (payload.year < 2000 || payload.year > 2099) {
+    throw new Error("RTC year must be between 2000 and 2099.");
+  }
+  if (payload.month < 1 || payload.month > 12) {
+    throw new Error("RTC month must be between 1 and 12.");
+  }
+  if (payload.day < 1 || payload.day > 31) {
+    throw new Error("RTC day must be between 1 and 31.");
+  }
+  if (payload.hour < 0 || payload.hour > 23) {
+    throw new Error("RTC hour must be between 0 and 23.");
+  }
+  if (payload.minute < 0 || payload.minute > 59) {
+    throw new Error("RTC minute must be between 0 and 59.");
+  }
+  if (payload.second < 0 || payload.second > 59) {
+    throw new Error("RTC second must be between 0 and 59.");
+  }
 }
 
 function pickAlternate(usbInterface: UsbInterfaceLike): UsbAlternateLike | undefined {
