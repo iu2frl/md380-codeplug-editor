@@ -38,6 +38,9 @@ jobs:
           cache: "npm"
           cache-dependency-path: web/package-lock.json
 
+      - name: Verify npm install-script approvals
+        run: npm run check:scripts-approval
+
       - name: Install dependencies
         run: npm ci
 

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:known": "KNOWN_CODEPLUG_STRICT=1 vitest run src/domain/known-codeplug.test.ts"
+    "test:known": "KNOWN_CODEPLUG_STRICT=1 vitest run src/domain/known-codeplug.test.ts",
+    "check:scripts-approval": "./scripts/check-scripts-approval.sh"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
@@ -16,5 +17,8 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.6"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
   }
 }
