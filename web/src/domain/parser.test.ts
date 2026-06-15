@@ -591,3 +591,37 @@ describe("createBlankCodeplugBytes", () => {
     expect(parsed.settings.radioId).toBeGreaterThan(0);
   });
 });
+
+describe("radio-format loading (no RDT header)", () => {
+  it("infers MD380 model from D variant when loading raw payload from radio", () => {
+    const payload = buildPayloadFixture();
+    // Simulate radio read by loading the raw 262144-byte payload as a .bin file
+    const parsed = parseCodeplug("radio-read.bin", payload);
+
+    // Model should be inferred from variant since there's no RDT header
+    expect(parsed.model).toBe("MD380");
+    expect(parsed.variant).toBe("D");
+    expect(parsed.fileName).toBe("radio-read.bin");
+  });
+
+  it("infers MD390 model from S variant when loading from radio", () => {
+    const bytes = createBlankCodeplugBytes("bin", "MD390");
+    const parsed = parseCodeplug("radio-s-read.bin", bytes);
+
+    expect(parsed.model).toBe("MD390");
+    expect(parsed.variant).toBe("S");
+  });
+
+  it("preserves all basic info fields when model is inferred", () => {
+    const payload = buildPayloadFixture();
+    const parsed = parseCodeplug("radio-read.bin", payload);
+
+    expect(parsed.basicInfo.cpsVersion).toBe("1012");
+    expect(parsed.basicInfo.frequencyRange).toBe("400-480");
+    expect(parsed.basicInfo.lastProgrammedTime).toBe("2024-06-09 12:30:45");
+    // These fields are always "Not stored in codeplug"
+    expect(parsed.basicInfo.firmwareVersion).toBe("Not stored in codeplug");
+    expect(parsed.basicInfo.mcuVersion).toBe("Not stored in codeplug");
+    expect(parsed.basicInfo.uniqueDeviceId).toBe("Not stored in codeplug");
+  });
+});

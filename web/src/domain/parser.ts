@@ -276,6 +276,16 @@ function detectVariantFromModel(model: string): RadioVariant {
   return "unknown";
 }
 
+function inferModelFromVariant(variant: RadioVariant): string {
+  if (variant === "S") {
+    return "MD390";
+  }
+  if (variant === "D") {
+    return "MD380";
+  }
+  return "";
+}
+
 function detectFormat(fileName: string): "rdt" | "bin" | "dfu" {
   const lowerName = fileName.toLowerCase();
   if (lowerName.endsWith(".rdt")) {
@@ -1740,6 +1750,11 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
         : "Unknown";
 
   const byModel = detectVariantFromModel(model);
+  const detectedVariant = byModel === "unknown" ? detectVariantFromSize(bytes.byteLength) : byModel;
+  
+  // If no model name was found (e.g., loading from radio), infer from variant
+  const finalModel = model.trim().length > 0 ? model : inferModelFromVariant(detectedVariant);
+  
   if (model.trim().length > 0 && byModel === "unknown") {
     throw new CodeplugParseError(`Unsupported radio model '${model}'. This build supports MD380/RT3 and MD390/RT8 variants.`);
   }
@@ -1747,12 +1762,12 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
   return {
     fileName,
     format: detectFormat(fileName),
-    variant: byModel === "unknown" ? detectVariantFromSize(bytes.byteLength) : byModel,
+    variant: detectedVariant,
     sourceSize: bytes.byteLength,
     outputFileName: outputNameFor(fileName),
     payloadOffset: layout.payloadOffset,
     payloadLength: layout.payloadLength,
-    model,
+    model: finalModel,
     basicInfo: {
       firmwareVersion: "Not stored in codeplug",
       cpsVersion,
