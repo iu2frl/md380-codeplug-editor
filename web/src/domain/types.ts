@@ -156,6 +156,28 @@ export interface PrivacySettings {
   basicKeys: string[];
 }
 
+export interface NumberKeyEntry {
+  /** Slot index 0-9 (corresponds to radio keys 0-9). */
+  slot: number;
+  /** Logical contact ID, or undefined if unassigned. */
+  contactId?: number;
+}
+
+export interface OneTouchAction {
+  /** Slot index 1-6. */
+  slot: number;
+  /** "None" = unassigned, "Digital" = DMR call, "Analog" = DTMF dial. */
+  mode: "None" | "Digital" | "Analog";
+  /** When mode is "Digital": call type. */
+  callType: "Call" | "Text Message";
+  /** When mode is "Digital" + callType "Call": logical contact ID. */
+  contactId?: number;
+  /** When mode is "Digital" + callType "Text Message": text message ID. */
+  textMessageId?: number;
+  /** When mode is "Analog": the DTMF signalling system to use. */
+  dtmfSystem: "DTMF-1" | "DTMF-2" | "DTMF-3" | "DTMF-4";
+}
+
 export interface BasicRadioInfo {
   firmwareVersion: string;
   cpsVersion: string;
@@ -186,6 +208,8 @@ export interface CodeplugDocument {
   longPressDurationMs: number;
   textMessages: TextMessage[];
   privacySettings: PrivacySettings;
+  numberKeys: NumberKeyEntry[];
+  oneTouchActions: OneTouchAction[];
 }
 
 export interface ValidationIssue {

@@ -280,6 +280,79 @@ export class EditorStore {
     this.refreshDirty();
   }
 
+  updateNumberKey(slot: number, contactId?: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const target = this.state.document.numberKeys.find((item) => item.slot === slot);
+    if (!target) {
+      return;
+    }
+    this.beginMutation();
+    target.contactId = contactId;
+    this.refreshDirty();
+  }
+
+  updateOneTouchAction(
+    slot: number,
+    patch: Partial<{
+      mode: "None" | "Digital" | "Analog";
+      callType: "Call" | "Text Message";
+      contactId?: number;
+      textMessageId?: number;
+      dtmfSystem: "DTMF-1" | "DTMF-2" | "DTMF-3" | "DTMF-4";
+    }>,
+  ): void {
+    if (!this.state.document) {
+      return;
+    }
+    const target = this.state.document.oneTouchActions.find((item) => item.slot === slot);
+    if (!target) {
+      return;
+    }
+
+    this.beginMutation();
+
+    if (patch.mode !== undefined) {
+      target.mode = patch.mode;
+      if (patch.mode === "None") {
+        target.contactId = undefined;
+        target.textMessageId = undefined;
+      } else if (patch.mode === "Analog") {
+        target.callType = "Call";
+        target.contactId = undefined;
+        target.textMessageId = undefined;
+      } else if (patch.mode === "Digital") {
+        target.callType = "Call";
+      }
+    }
+
+    if (patch.callType !== undefined && target.mode === "Digital") {
+      target.callType = patch.callType;
+      if (patch.callType === "Call") {
+        target.textMessageId = undefined;
+      } else {
+        target.contactId = undefined;
+      }
+    }
+
+    if (patch.dtmfSystem !== undefined) {
+      target.dtmfSystem = patch.dtmfSystem;
+    }
+
+    if (Object.hasOwn(patch, "contactId") && target.mode === "Digital" && target.callType === "Call") {
+      target.contactId = patch.contactId;
+      target.textMessageId = undefined;
+    }
+
+    if (Object.hasOwn(patch, "textMessageId") && target.mode === "Digital" && target.callType === "Text Message") {
+      target.textMessageId = patch.textMessageId;
+      target.contactId = undefined;
+    }
+
+    this.refreshDirty();
+  }
+
   addGroupList(): void {
     if (!this.state.document) {
       return;

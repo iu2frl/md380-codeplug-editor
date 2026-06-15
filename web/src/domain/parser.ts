@@ -1,4 +1,4 @@
-import type { Channel, CodeplugDocument, Contact, GroupList, RadioVariant, ScanList, Zone } from "./types";
+import type { Channel, CodeplugDocument, Contact, GroupList, NumberKeyEntry, OneTouchAction, RadioVariant, ScanList, Zone } from "./types";
 
 const KNOWN_RDT_SIZE = 262709;
 const KNOWN_RAW_SIZE = 262144;
@@ -22,6 +22,23 @@ const PRIVACY_ENHANCED_KEY_SIZE = 16;
 const PRIVACY_BASIC_KEYS_MAX = 16;
 const PRIVACY_BASIC_KEYS_OFFSET = 144;
 const PRIVACY_BASIC_KEY_SIZE = 2;
+
+const ONE_TOUCH_OFFSET = 9017;
+const ONE_TOUCH_MAX = 6;
+const ONE_TOUCH_RECORD_SIZE = 4;
+// Mode field: bits 2-7 of byte 0 (bitOffset=0, bitSize=6)
+// Indexed string values: 0=unset/None, 48=None, 52=Digital, 58=Analog
+const OT_MODE_RAW_NONE = 48;
+const OT_MODE_RAW_DIGITAL = 52;
+const OT_MODE_RAW_ANALOG = 58;
+// CallType/DTMF field: bits 0-1 of byte 0 (bitOffset=6, bitSize=2)
+// iStrings: 0=Call (or DTMF-1), 1=Text Message (or DTMF-2), 2=DTMF-3, 3=DTMF-4
+// TextMessage/Encode field: byte 1 (bitOffset=8, bitSize=8) — 1-based message slot
+// Call field: bytes 2-3 (bitOffset=16, bitSize=16) — 1-based contact slot
+
+const NUMBER_KEY_OFFSET = 9041;
+const NUMBER_KEY_MAX = 10;
+const NUMBER_KEY_RECORD_SIZE = 2;
 
 const MENU_HANG_TIME_BIT_OFFSET = 0;
 const MENU_RADIO_DISABLE_BIT_OFFSET = 8;
@@ -1187,6 +1204,109 @@ function validateInput(fileName: string, bytes: Uint8Array): void {
   throw new CodeplugParseError(".dfu import is not supported in-browser yet. Use .rdt or .bin files.");
 }
 
+function decodeOneTouchMode(raw: number): "None" | "Digital" | "Analog" {
+  if (raw === OT_MODE_RAW_DIGITAL) return "Digital";
+  if (raw === OT_MODE_RAW_ANALOG) return "Analog";
+  return "None";
+}
+
+function encodeOneTouchMode(mode: "None" | "Digital" | "Analog"): number {
+  if (mode === "Digital") return OT_MODE_RAW_DIGITAL;
+  if (mode === "Analog") return OT_MODE_RAW_ANALOG;
+  return OT_MODE_RAW_NONE;
+}
+
+function parseNumberKeys(payload: Uint8Array, contactSlotToLogicalId: Map<number, number>): NumberKeyEntry[] {
+  const entries: NumberKeyEntry[] = [];
+  for (let slot = 0; slot < NUMBER_KEY_MAX; slot += 1) {
+    const base = NUMBER_KEY_OFFSET + slot * NUMBER_KEY_RECORD_SIZE;
+    if (base + NUMBER_KEY_RECORD_SIZE > payload.byteLength) break;
+    const raw = readLittleInt(payload, base, 2);
+    const contactId = raw > 0 ? contactSlotToLogicalId.get(raw) : undefined;
+    entries.push({ slot, contactId });
+  }
+  return entries;
+}
+
+function writeNumberKeys(payload: Uint8Array, entries: NumberKeyEntry[], contactSlotById: Map<number, number>): void {
+  for (let slot = 0; slot < NUMBER_KEY_MAX; slot += 1) {
+    const base = NUMBER_KEY_OFFSET + slot * NUMBER_KEY_RECORD_SIZE;
+    if (base + NUMBER_KEY_RECORD_SIZE > payload.byteLength) continue;
+    const entry = entries.find((item) => item.slot === slot);
+    const slotValue = entry?.contactId !== undefined ? (contactSlotById.get(entry.contactId) ?? 0) : 0;
+    writeLittleInt(payload, base, 2, slotValue);
+  }
+}
+
+function parseOneTouchActions(
+  payload: Uint8Array,
+  contactSlotToLogicalId: Map<number, number>,
+  textMessages: { id: number; slot?: number }[],
+): OneTouchAction[] {
+  const actions: OneTouchAction[] = [];
+  for (let index = 0; index < ONE_TOUCH_MAX; index += 1) {
+    const base = ONE_TOUCH_OFFSET + index * ONE_TOUCH_RECORD_SIZE;
+    if (base + ONE_TOUCH_RECORD_SIZE > payload.byteLength) break;
+    const modeRaw = readBitField(payload, base * 8 + 0, 6);
+    const mode = decodeOneTouchMode(modeRaw);
+    const callTypeOrDtmfRaw = readBitField(payload, base * 8 + 6, 2);
+    const textMsgRaw = readBitField(payload, base * 8 + 8, 8);
+    const contactSlot = readLittleInt(payload, base + 2, 2);
+    const dtmfSystem = (["DTMF-1", "DTMF-2", "DTMF-3", "DTMF-4"] as const)[callTypeOrDtmfRaw] ?? "DTMF-1";
+    const callType: "Call" | "Text Message" = callTypeOrDtmfRaw === 1 ? "Text Message" : "Call";
+    const contactId = contactSlot > 0 ? contactSlotToLogicalId.get(contactSlot) : undefined;
+    const textMsg = textMsgRaw > 0 ? textMessages.find((m) => m.slot === textMsgRaw) : undefined;
+    actions.push({
+      slot: index + 1,
+      mode,
+      callType,
+      contactId,
+      textMessageId: textMsg?.id,
+      dtmfSystem,
+    });
+  }
+  return actions;
+}
+
+function writeOneTouchActions(
+  payload: Uint8Array,
+  actions: OneTouchAction[],
+  contactSlotById: Map<number, number>,
+  textMessages: { id: number; slot?: number }[],
+): void {
+  for (let index = 0; index < ONE_TOUCH_MAX; index += 1) {
+    const base = ONE_TOUCH_OFFSET + index * ONE_TOUCH_RECORD_SIZE;
+    if (base + ONE_TOUCH_RECORD_SIZE > payload.byteLength) continue;
+    const action = actions.find((a) => a.slot === index + 1);
+    if (!action || action.mode === "None") {
+      writeBitField(payload, base * 8 + 0, 6, OT_MODE_RAW_NONE);
+      writeBitField(payload, base * 8 + 6, 2, 0);
+      writeBitField(payload, base * 8 + 8, 8, 0);
+      writeLittleInt(payload, base + 2, 2, 0);
+      continue;
+    }
+    writeBitField(payload, base * 8 + 0, 6, encodeOneTouchMode(action.mode));
+    if (action.mode === "Analog") {
+      const dtmfIdx = ["DTMF-1", "DTMF-2", "DTMF-3", "DTMF-4"].indexOf(action.dtmfSystem);
+      writeBitField(payload, base * 8 + 6, 2, dtmfIdx >= 0 ? dtmfIdx : 0);
+      writeBitField(payload, base * 8 + 8, 8, 0);
+      writeLittleInt(payload, base + 2, 2, 0);
+    } else {
+      // Digital
+      writeBitField(payload, base * 8 + 6, 2, action.callType === "Text Message" ? 1 : 0);
+      if (action.callType === "Text Message") {
+        const textMsg = action.textMessageId !== undefined ? textMessages.find((m) => m.id === action.textMessageId) : undefined;
+        writeBitField(payload, base * 8 + 8, 8, textMsg?.slot ?? 0);
+        writeLittleInt(payload, base + 2, 2, 0);
+      } else {
+        writeBitField(payload, base * 8 + 8, 8, 0);
+        const contactSlot = action.contactId !== undefined ? (contactSlotById.get(action.contactId) ?? 0) : 0;
+        writeLittleInt(payload, base + 2, 2, contactSlot);
+      }
+    }
+  }
+}
+
 export function createBlankCodeplugBytes(format: "bin" | "rdt" = "bin", model: "MD380" | "MD390" = "MD380"): Uint8Array {
   const out = format === "rdt" ? new Uint8Array(KNOWN_RDT_SIZE) : new Uint8Array(KNOWN_RAW_SIZE);
 
@@ -1732,6 +1852,9 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     privacySettings.basicKeys.push(reverseHexByteOrder(readHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE)));
   }
 
+  const numberKeys = parseNumberKeys(payload, contactSlotToLogicalId);
+  const oneTouchActions = parseOneTouchActions(payload, contactSlotToLogicalId, textMessages);
+
   const frequencyRangeIndex =
     BASIC_INFO_OFFSET + Math.floor(BASIC_FREQUENCY_RANGE_BIT_OFFSET / 8) < payload.byteLength
       ? readBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8)
@@ -1799,8 +1922,11 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     longPressDurationMs,
     textMessages,
     privacySettings,
+    numberKeys,
+    oneTouchActions,
   };
 }
+
 
 export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uint8Array): Uint8Array {
   const out = new Uint8Array(originalBytes);
@@ -1987,6 +2113,8 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   }
 
   const contactSlotById = writeContacts(payload, document);
+  writeNumberKeys(payload, document.numberKeys ?? [], contactSlotById);
+  writeOneTouchActions(payload, document.oneTouchActions ?? [], contactSlotById, document.textMessages ?? []);
   const groupListSlotById = writeGroupLists(payload, document, contactSlotById);
   const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
   const scanListSlotById = writeScanLists(payload, document, channelSlotById);

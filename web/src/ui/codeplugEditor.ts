@@ -62,6 +62,7 @@ export function renderLoadedLayout(state: AppState, uiState: UiState): string {
           ${renderTabButton("digital-text", "Digital Text Message", uiState.activeTab, false)}
           ${renderTabButton("encryption", "Encryption", uiState.activeTab, false)}
           ${renderTabButton("digital-contacts", "Digital Contacts", uiState.activeTab, false)}
+          ${renderTabButton("dtmf", "DTMF", uiState.activeTab, false)}
           ${renderTabButton("zones", "Zones", uiState.activeTab, false)}
           ${renderTabButton("group-lists", "Group Lists", uiState.activeTab, false)}
           ${renderTabButton("scan-lists", "Scan Lists", uiState.activeTab, false)}
@@ -211,6 +212,102 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             `,
           )
           .join("")}
+      </div>
+    `;
+  }
+
+  if (activeTab === "dtmf") {
+    return `
+      <h2>DTMF</h2>
+      <p class="muted-text">Manage DTMF Number Keys (0-9) and One Touch actions.</p>
+
+      <h3>Number Keys</h3>
+      <div class="rows">
+        ${Array.from({ length: 10 }, (_, digit) => {
+          const entry = document.numberKeys.find((item) => item.slot === digit);
+          return `
+            <label>
+              Key ${digit}
+              <select data-number-key-slot="${digit}">
+                <option value="">None</option>
+                ${document.contacts
+                  .map(
+                    (contact) =>
+                      `<option value="${contact.id}" ${entry?.contactId === contact.id ? "selected" : ""}>#${contact.id} ${escapeHtml(contact.name)}</option>`,
+                  )
+                  .join("")}
+              </select>
+            </label>
+          `;
+        }).join("")}
+      </div>
+
+      <h3>One Touch</h3>
+      <div class="rows">
+        ${Array.from({ length: 6 }, (_, index) => {
+          const slot = index + 1;
+          const action = document.oneTouchActions.find((item) => item.slot === slot);
+          const resolvedAction = action ?? {
+            slot,
+            mode: "None",
+            callType: "Call",
+            dtmfSystem: "DTMF-1",
+          };
+
+          return `
+            <div class="row zone-row">
+              <input value="One Touch ${slot}" disabled />
+
+              <select data-one-touch-mode="${slot}">
+                <option value="None" ${resolvedAction.mode === "None" ? "selected" : ""}>None</option>
+                <option value="Digital" ${resolvedAction.mode === "Digital" ? "selected" : ""}>Digital</option>
+                <option value="Analog" ${resolvedAction.mode === "Analog" ? "selected" : ""}>Analog</option>
+              </select>
+
+              ${resolvedAction.mode === "Digital"
+                ? `
+                  <select data-one-touch-call-type="${slot}">
+                    <option value="Call" ${resolvedAction.callType === "Call" ? "selected" : ""}>Call</option>
+                    <option value="Text Message" ${resolvedAction.callType === "Text Message" ? "selected" : ""}>Text Message</option>
+                  </select>
+
+                  ${resolvedAction.callType === "Text Message"
+                    ? `
+                      <select data-one-touch-text-message="${slot}">
+                        <option value="">None</option>
+                        ${document.textMessages
+                          .map(
+                            (message) =>
+                              `<option value="${message.id}" ${resolvedAction.textMessageId === message.id ? "selected" : ""}>${escapeHtml(message.text)}</option>`,
+                          )
+                          .join("")}
+                      </select>
+                    `
+                    : `
+                      <select data-one-touch-contact="${slot}">
+                        <option value="">None</option>
+                        ${document.contacts
+                          .map(
+                            (contact) =>
+                              `<option value="${contact.id}" ${resolvedAction.contactId === contact.id ? "selected" : ""}>#${contact.id} ${escapeHtml(contact.name)}</option>`,
+                          )
+                          .join("")}
+                      </select>
+                    `}
+                `
+                : resolvedAction.mode === "Analog"
+                  ? `
+                    <select data-one-touch-dtmf-system="${slot}">
+                      <option value="DTMF-1" ${resolvedAction.dtmfSystem === "DTMF-1" ? "selected" : ""}>DTMF-1</option>
+                      <option value="DTMF-2" ${resolvedAction.dtmfSystem === "DTMF-2" ? "selected" : ""}>DTMF-2</option>
+                      <option value="DTMF-3" ${resolvedAction.dtmfSystem === "DTMF-3" ? "selected" : ""}>DTMF-3</option>
+                      <option value="DTMF-4" ${resolvedAction.dtmfSystem === "DTMF-4" ? "selected" : ""}>DTMF-4</option>
+                    </select>
+                  `
+                  : `<span class="muted-text">No action configured.</span>`}
+            </div>
+          `;
+        }).join("")}
       </div>
     `;
   }
@@ -1262,6 +1359,7 @@ export function bindTabs(
         key === "digital-text" ||
         key === "encryption" ||
         key === "digital-contacts" ||
+        key === "dtmf" ||
         key === "zones" ||
         key === "group-lists" ||
         key === "scan-lists" ||
@@ -1572,6 +1670,87 @@ export function bindActiveTab(
         }
       });
     }
+    return;
+  }
+
+  if (uiState.activeTab === "dtmf") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-number-key-slot]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.numberKeySlot ?? "", 10);
+        if (Number.isNaN(slot) || slot < 0 || slot > 9) {
+          return;
+        }
+        const contactId = Number.parseInt(select.value, 10);
+        store.updateNumberKey(slot, Number.isNaN(contactId) ? undefined : contactId);
+      });
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-mode]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.oneTouchMode ?? "", 10);
+        if (Number.isNaN(slot) || slot < 1 || slot > 6) {
+          return;
+        }
+        const mode = select.value;
+        if (mode === "None" || mode === "Digital" || mode === "Analog") {
+          store.updateOneTouchAction(slot, { mode });
+        }
+      });
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-call-type]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.oneTouchCallType ?? "", 10);
+        if (Number.isNaN(slot) || slot < 1 || slot > 6) {
+          return;
+        }
+        const callType = select.value;
+        if (callType === "Call" || callType === "Text Message") {
+          store.updateOneTouchAction(slot, { callType });
+        }
+      });
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-contact]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.oneTouchContact ?? "", 10);
+        if (Number.isNaN(slot) || slot < 1 || slot > 6) {
+          return;
+        }
+        const contactId = Number.parseInt(select.value, 10);
+        store.updateOneTouchAction(slot, { contactId: Number.isNaN(contactId) ? undefined : contactId });
+      });
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-text-message]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.oneTouchTextMessage ?? "", 10);
+        if (Number.isNaN(slot) || slot < 1 || slot > 6) {
+          return;
+        }
+        const textMessageId = Number.parseInt(select.value, 10);
+        store.updateOneTouchAction(slot, { textMessageId: Number.isNaN(textMessageId) ? undefined : textMessageId });
+      });
+    }
+
+    for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-dtmf-system]")) {
+      select.addEventListener("change", () => {
+        const slot = Number.parseInt(select.dataset.oneTouchDtmfSystem ?? "", 10);
+        if (Number.isNaN(slot) || slot < 1 || slot > 6) {
+          return;
+        }
+        const dtmfSystem = select.value;
+        if (dtmfSystem === "DTMF-1" || dtmfSystem === "DTMF-2" || dtmfSystem === "DTMF-3" || dtmfSystem === "DTMF-4") {
+          store.updateOneTouchAction(slot, { dtmfSystem });
+        }
+      });
+    }
+
     return;
   }
 

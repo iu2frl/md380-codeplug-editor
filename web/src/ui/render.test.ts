@@ -93,6 +93,13 @@ function makeDocument(): CodeplugDocument {
       enhancedKeys: Array.from({ length: 8 }, () => "ffffffffffffffffffffffffffffffff"),
       basicKeys: Array.from({ length: 16 }, () => "ffff"),
     },
+    numberKeys: Array.from({ length: 10 }, (_, slot) => ({ slot })),
+    oneTouchActions: Array.from({ length: 6 }, (_, index) => ({
+      slot: index + 1,
+      mode: "None" as const,
+      callType: "Call" as const,
+      dtmfSystem: "DTMF-1" as const,
+    })),
     channels: [
       {
         id: 1,
