@@ -285,7 +285,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                         ${document.textMessages
                           .map(
                             (message) =>
-                              `<option value="${message.id}" ${resolvedAction.textMessageId === message.id ? "selected" : ""}>${escapeHtml(message.text)}</option>`,
+                              `<option value="${message.id}" ${resolvedAction.textMessageId === message.id ? "selected" : ""}>${escapeHtml(String(message.slot ?? message.id))} ${escapeHtml(message.text)}</option>`,
                           )
                           .join("")}
                       </select>
