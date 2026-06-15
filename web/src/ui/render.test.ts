@@ -85,7 +85,7 @@ function makeDocument(): CodeplugDocument {
       { id: 1, name: "Side Button 1 Short Press", actionCode: 0 },
       { id: 2, name: "Side Button 1 Long Press", actionCode: 14 },
       { id: 3, name: "Side Button 2 Short Press", actionCode: 4 },
-      { id: 4, name: "Side Button 2 Long Press", actionCode: 5 },
+      { id: 4, name: "Side Button 2 Long Press", actionCode: 55 },
     ],
     longPressDurationMs: 1000,
     textMessages: [{ id: 1, text: "Hello world", slot: 1 }],
@@ -523,6 +523,7 @@ describe("newly enabled tabs", () => {
     click(container, '[data-tab="buttons"]');
     expect(container.querySelector("#long-press-duration")).not.toBeNull();
     expect(container.querySelector('[data-radio-button="1"]')).not.toBeNull();
+    expect(container.querySelector<HTMLSelectElement>('[data-radio-button="4"]')?.value).toBe("55");
 
     click(container, '[data-tab="digital-text"]');
     expect(container.querySelector("#add-text-message")).not.toBeNull();

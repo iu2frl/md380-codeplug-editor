@@ -375,3 +375,4 @@ web/test-results/*
 artifacts/*
 web/public/user.csv
 web/public/callsign-meta.json
+*.rdt

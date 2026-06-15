@@ -214,9 +214,20 @@ function buildPayloadFixture(model: string = "MD380"): Uint8Array {
 function buildRdtFixtureFromPayload(payload: Uint8Array): Uint8Array {
   const rdt = new Uint8Array(RDT_SIZE);
   rdt.fill(0x5a, 0, RDT_HEADER_SIZE);
-  rdt.set(new TextEncoder().encode("DfuSe"), 0);
   rdt.set(payload, RDT_HEADER_SIZE);
+  rdt.set(new TextEncoder().encode("DfuSe"), 0);
   rdt.fill(0xa5, RDT_HEADER_SIZE + PAYLOAD_SIZE);
+
+  const modelSize = 8;
+  const model = new TextDecoder().decode(payload.slice(MODEL_NAME_OFFSET, MODEL_NAME_OFFSET + modelSize)).replace(/\0+$/, "");
+  for (let index = 0; index < modelSize; index += 1) {
+    rdt[MODEL_NAME_OFFSET + index] = index < model.length ? model.charCodeAt(index) : 0;
+  }
+  rdt[RADIO_BUTTONS_OFFSET] = payload[RADIO_BUTTONS_OFFSET];
+  rdt[RADIO_BUTTONS_OFFSET + 1] = payload[RADIO_BUTTONS_OFFSET + 1];
+  rdt[RADIO_BUTTONS_OFFSET + 2] = payload[RADIO_BUTTONS_OFFSET + 2];
+  rdt[RADIO_BUTTONS_OFFSET + 3] = payload[RADIO_BUTTONS_OFFSET + 3];
+  rdt[BUTTON_DEFINITIONS_OFFSET] = payload[BUTTON_DEFINITIONS_OFFSET];
   return rdt;
 }
 

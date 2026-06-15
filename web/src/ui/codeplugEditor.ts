@@ -1,5 +1,5 @@
 import type { AppState, EditorStore } from "../state/store";
-import { radioButtonActionOptions } from "../domain/parser";
+import { radioButtonActionLabel, radioButtonActionOptions } from "../domain/parser";
 import {
   createBrowserRadioTransport,
   detectBrowserRadioCapabilities,
@@ -283,11 +283,15 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
       <div class="rows">
         ${document.radioButtons
           .map(
-            (item) => `
+            (item) => {
+              const selectedOption = { code: item.actionCode, label: radioButtonActionLabel(item.actionCode) };
+              const itemOptions = [selectedOption, ...options.filter((option) => option.code !== item.actionCode)];
+
+              return `
               <label>
                 ${escapeHtml(item.name)}
                 <select data-radio-button="${item.id}">
-                  ${options
+                  ${itemOptions
                     .map(
                       (option) =>
                         `<option value="${option.code}" ${item.actionCode === option.code ? "selected" : ""}>${escapeHtml(option.label)}</option>`,
@@ -295,7 +299,8 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                     .join("")}
                 </select>
               </label>
-            `,
+            `;
+            },
           )
           .join("")}
       </div>

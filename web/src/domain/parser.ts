@@ -231,7 +231,14 @@ const RADIO_BUTTON_ACTIONS = [
   { code: 26, label: "Battery Indicator" },
   { code: 30, label: "Manual Dial For Private" },
   { code: 31, label: "Lone Work On/Off" },
+  { code: 34, label: "Record On/Off (Firmware)" },
+  { code: 35, label: "Record Playback (Firmware)" },
+  { code: 36, label: "Delete All Recorded (Firmware)" },
   { code: 38, label: "1750 Hz" },
+  { code: 47, label: "Toggle Up/Down" },
+  { code: 48, label: "Right Key" },
+  { code: 49, label: "Left Key" },
+  { code: 55, label: "Zone -" },
   { code: 80, label: "Toggle Backlight (md380tools)" },
   { code: 81, label: "Set Talkgroup (md380tools)" },
   { code: 82, label: "Morse Narrator (md380tools)" },
@@ -1181,8 +1188,9 @@ export function createBlankCodeplugBytes(format: "bin" | "rdt" = "bin", model: "
 
   const payloadOffset = format === "rdt" ? RDT_HEADER_SIZE : 0;
   const payload = out.subarray(payloadOffset, payloadOffset + PAYLOAD_SIZE);
+  const rdtTarget = format === "rdt" ? out : payload;
 
-  writeAscii(payload, MODEL_NAME_OFFSET, MODEL_NAME_SIZE, model);
+  writeAscii(rdtTarget, MODEL_NAME_OFFSET, MODEL_NAME_SIZE, model);
   writeLittleInt(payload, GENERAL_SETTINGS_OFFSET + RADIO_ID_OFFSET, RADIO_ID_SIZE, 1000001);
   writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, RADIO_NAME_SIZE, "NEW-RADIO");
   writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + INTRO_SCREEN_LINE1_OFFSET, INTRO_SCREEN_LINE_SIZE, "MD380 EDITOR");
@@ -1197,11 +1205,11 @@ export function createBlankCodeplugBytes(format: "bin" | "rdt" = "bin", model: "
   writeBitField(payload, BASIC_INFO_OFFSET * 8 + BASIC_FREQUENCY_RANGE_BIT_OFFSET, 8, 2);
   writeNibbleDecimalString(payload, BASIC_CPS_VERSION_OFFSET, BASIC_CPS_VERSION_SIZE, "0001");
 
-  payload[RADIO_BUTTONS_OFFSET] = 14;
-  payload[RADIO_BUTTONS_OFFSET + 1] = 4;
-  payload[RADIO_BUTTONS_OFFSET + 2] = 5;
-  payload[RADIO_BUTTONS_OFFSET + 3] = 23;
-  payload[BUTTON_DEFINITIONS_OFFSET] = 4;
+  rdtTarget[RADIO_BUTTONS_OFFSET] = 14;
+  rdtTarget[RADIO_BUTTONS_OFFSET + 1] = 4;
+  rdtTarget[RADIO_BUTTONS_OFFSET + 2] = 5;
+  rdtTarget[RADIO_BUTTONS_OFFSET + 3] = 23;
+  rdtTarget[BUTTON_DEFINITIONS_OFFSET] = 4;
 
   return out;
 }
@@ -1209,12 +1217,14 @@ export function createBlankCodeplugBytes(format: "bin" | "rdt" = "bin", model: "
 export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocument {
   validateInput(fileName, bytes);
 
+  const format = detectFormat(fileName);
   const layout = getPayloadLayout(fileName, bytes);
   const payload = bytes.subarray(layout.payloadOffset, layout.payloadOffset + layout.payloadLength);
+  const rdtSource = format === "rdt" ? bytes : payload;
 
   const model =
-    payload.byteLength >= BASIC_INFO_OFFSET + MODEL_NAME_OFFSET + MODEL_NAME_SIZE
-      ? readAscii(payload, BASIC_INFO_OFFSET + MODEL_NAME_OFFSET, MODEL_NAME_SIZE)
+    rdtSource.byteLength >= BASIC_INFO_OFFSET + MODEL_NAME_OFFSET + MODEL_NAME_SIZE
+      ? readAscii(rdtSource, BASIC_INFO_OFFSET + MODEL_NAME_OFFSET, MODEL_NAME_SIZE)
       : "";
 
   const contacts: Contact[] = [];
@@ -1653,10 +1663,10 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
   const radioButtons = [];
   for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
     const offset = RADIO_BUTTONS_OFFSET + index;
-    if (offset >= payload.byteLength) {
+    if (offset >= rdtSource.byteLength) {
       break;
     }
-    const actionCode = payload[offset];
+    const actionCode = rdtSource[offset];
     radioButtons.push({
       id: index + 1,
       name:
@@ -1672,8 +1682,8 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
   }
 
   const longPressDurationMs =
-    BUTTON_DEFINITIONS_OFFSET < payload.byteLength
-      ? Math.max(4, Math.min(15, payload[BUTTON_DEFINITIONS_OFFSET])) * 250
+    BUTTON_DEFINITIONS_OFFSET < rdtSource.byteLength
+      ? Math.max(4, Math.min(15, rdtSource[BUTTON_DEFINITIONS_OFFSET])) * 250
       : 1000;
 
   const textMessages = [];
@@ -1780,6 +1790,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
 export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uint8Array): Uint8Array {
   const out = new Uint8Array(originalBytes);
   const payload = out.subarray(document.payloadOffset, document.payloadOffset + document.payloadLength);
+  const rdtTarget = document.format === "rdt" ? out : payload;
 
   const settingsBase = GENERAL_SETTINGS_OFFSET;
 
@@ -1805,6 +1816,10 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   }
   if (GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET + RADIO_NAME_SIZE <= payload.byteLength) {
     writeUcs2String(payload, GENERAL_SETTINGS_OFFSET + RADIO_NAME_OFFSET, RADIO_NAME_SIZE, document.settings.radioName);
+  }
+
+  if (document.format === "rdt" && rdtTarget.byteLength >= BASIC_INFO_OFFSET + MODEL_NAME_OFFSET + MODEL_NAME_SIZE) {
+    writeAscii(rdtTarget, BASIC_INFO_OFFSET + MODEL_NAME_OFFSET, MODEL_NAME_SIZE, document.model);
   }
 
   if (settingsBase + 108 <= payload.byteLength) {
@@ -1878,17 +1893,34 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.passwordAndLock));
   }
 
-  if (BUTTON_DEFINITIONS_OFFSET < payload.byteLength) {
+  if (document.format === "rdt") {
+    for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
+      const offset = RADIO_BUTTONS_OFFSET + index;
+      if (offset >= rdtTarget.byteLength) {
+        break;
+      }
+      const assignment = document.radioButtons.find((item) => item.id === index + 1);
+      rdtTarget[offset] = assignment ? Math.max(0, Math.min(255, assignment.actionCode)) : 0;
+    }
+
+    if (BUTTON_DEFINITIONS_OFFSET < rdtTarget.byteLength) {
+      rdtTarget[BUTTON_DEFINITIONS_OFFSET] = Math.max(4, Math.min(15, Math.round(document.longPressDurationMs / 250)));
+    }
+  }
+
+  if (document.format !== "rdt" && BUTTON_DEFINITIONS_OFFSET < payload.byteLength) {
     payload[BUTTON_DEFINITIONS_OFFSET] = Math.max(4, Math.min(15, Math.round(document.longPressDurationMs / 250)));
   }
 
-  for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
-    const offset = RADIO_BUTTONS_OFFSET + index;
-    if (offset >= payload.byteLength) {
-      break;
+  if (document.format !== "rdt") {
+    for (let index = 0; index < RADIO_BUTTONS_MAX; index += 1) {
+      const offset = RADIO_BUTTONS_OFFSET + index;
+      if (offset >= payload.byteLength) {
+        break;
+      }
+      const assignment = document.radioButtons.find((item) => item.id === index + 1);
+      payload[offset] = assignment ? Math.max(0, Math.min(255, assignment.actionCode)) : 0;
     }
-    const assignment = document.radioButtons.find((item) => item.id === index + 1);
-    payload[offset] = assignment ? Math.max(0, Math.min(255, assignment.actionCode)) : 0;
   }
 
   const textMessagesOffset = resolveTextMessagesOffset(payload);
