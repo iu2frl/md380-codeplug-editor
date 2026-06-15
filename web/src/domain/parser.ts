@@ -149,6 +149,8 @@ const GROUP_LISTS_RECORD_SIZE = 96;
 const GROUP_LISTS_DELETED_OFFSET = 0;
 const GROUP_LIST_NAME_OFFSET = 0;
 const GROUP_LIST_NAME_SIZE = 32;
+const GROUP_LIST_CONTACTS_OFFSET = 32;
+const GROUP_LIST_CONTACTS_MAX = 32;
 
 const SCAN_LISTS_OFFSET = 100448;
 const SCAN_LISTS_MAX = 250;
@@ -845,7 +847,7 @@ function writeContacts(payload: Uint8Array, document: CodeplugDocument): Map<num
   return contactSlotById;
 }
 
-function writeGroupLists(payload: Uint8Array, document: CodeplugDocument): Map<number, number> {
+function writeGroupLists(payload: Uint8Array, document: CodeplugDocument, contactSlotById?: Map<number, number>): Map<number, number> {
   const groupListSlotById = resolveSlots(document.groupLists, GROUP_LISTS_MAX);
   const activeSlots = new Set<number>(groupListSlotById.values());
 
@@ -866,6 +868,13 @@ function writeGroupLists(payload: Uint8Array, document: CodeplugDocument): Map<n
     }
 
     writeUcs2String(payload, base + GROUP_LIST_NAME_OFFSET, GROUP_LIST_NAME_SIZE, groupList.name);
+    const contactIds = groupList.contactIds ?? [];
+    for (let memberIndex = 0; memberIndex < GROUP_LIST_CONTACTS_MAX; memberIndex += 1) {
+      const contactSlot = memberIndex < contactIds.length && contactSlotById
+        ? contactSlotById.get(contactIds[memberIndex]) ?? 0
+        : 0;
+      writeLittleInt(payload, base + GROUP_LIST_CONTACTS_OFFSET + memberIndex * 2, 2, contactSlot);
+    }
     if (payload[base + GROUP_LISTS_DELETED_OFFSET] === 0) {
       payload[base + GROUP_LISTS_DELETED_OFFSET] = 1;
     }
@@ -1209,6 +1218,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       : "";
 
   const contacts = [];
+  const contactSlotToLogicalId = new Map<number, number>();
   const channelSlotToLogicalId = new Map<number, number>();
   const channels = [];
   const zones = [];
@@ -1233,6 +1243,7 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       callId: readLittleInt(payload, base + CONTACT_CALL_ID_OFFSET, CONTACT_CALL_ID_SIZE),
       slot: index + 1,
     });
+    contactSlotToLogicalId.set(index + 1, contacts.length);
   }
 
   for (let index = 0; index < GROUP_LISTS_MAX; index += 1) {
@@ -1250,8 +1261,28 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     groupLists.push({
       id: groupLists.length + 1,
       name,
+      contactIds: [],
       slot: index + 1,
     });
+  }
+
+  for (const groupList of groupLists) {
+    if (!groupList.slot) {
+      continue;
+    }
+    const base = GROUP_LISTS_OFFSET + (groupList.slot - 1) * GROUP_LISTS_RECORD_SIZE;
+    const contactIds: number[] = [];
+    for (let memberIndex = 0; memberIndex < GROUP_LIST_CONTACTS_MAX; memberIndex += 1) {
+      const raw = readLittleInt(payload, base + GROUP_LIST_CONTACTS_OFFSET + memberIndex * 2, 2);
+      if (raw === 0) {
+        continue;
+      }
+      const mapped = contactSlotToLogicalId.get(raw);
+      if (mapped) {
+        contactIds.push(mapped);
+      }
+    }
+    groupList.contactIds = contactIds;
   }
 
   for (let index = 0; index < SCAN_LISTS_MAX; index += 1) {
@@ -1908,10 +1939,10 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     }
   }
 
-  const groupListSlotById = writeGroupLists(payload, document);
+  const contactSlotById = writeContacts(payload, document);
+  const groupListSlotById = writeGroupLists(payload, document, contactSlotById);
   const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
   const scanListSlotById = writeScanLists(payload, document, channelSlotById);
-  const contactSlotById = writeContacts(payload, document);
   const channelSlotById2 = writeChannels(payload, document, contactSlotById, scanListSlotById, groupListSlotById);
   writeZones(payload, document, channelSlotById2);
 

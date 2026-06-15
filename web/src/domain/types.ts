@@ -77,6 +77,7 @@ export interface Contact {
 export interface GroupList {
   id: number;
   name: string;
+  contactIds: number[];
   slot?: number;
 }
 

@@ -666,23 +666,100 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   }
 
   if (activeTab === "group-lists") {
+    const selectedGroupListId = uiState.selectedGroupListId;
+    const selectedGroupList = selectedGroupListId ? document.groupLists.find((item) => item.id === selectedGroupListId) : undefined;
+    const selectedGroupContactIds = selectedGroupList?.contactIds ?? [];
+
     return `
       <h2>Group Lists</h2>
-      <button class="button tiny" id="add-group-list">Add Group List</button>
-      <div class="rows">
-        ${document.groupLists.length === 0
-          ? `<p class="muted-text">No group lists found in this codeplug.</p>`
-          : document.groupLists
-              .map(
-                (groupList) => `
-                  <div class="row zone-row">
-                    <input value="${groupList.id}" disabled />
-                    <input data-group-list-name="${groupList.id}" value="${escapeHtml(groupList.name)}" maxlength="16" />
-                    <button class="button ghost tiny" data-group-list-delete="${groupList.id}">Delete</button>
-                  </div>
-                `,
-              )
-              .join("")}
+      <div class="two-pane-layout">
+        <div class="pane-left">
+          <button class="button tiny" id="add-group-list">Add Group List</button>
+          <div class="list">
+            ${document.groupLists.length === 0
+              ? `<p class="muted-text">No group lists found in this codeplug.</p>`
+              : document.groupLists
+                  .map(
+                    (groupList) => `
+                      <div class="list-item ${groupList.id === selectedGroupListId ? "selected" : ""}" data-group-list-select="${groupList.id}">
+                        <div class="list-item-name">${escapeHtml(groupList.name)}</div>
+                        <div class="list-item-meta">${(groupList.contactIds ?? []).length} contacts</div>
+                      </div>
+                    `,
+                  )
+                  .join("")}
+          </div>
+        </div>
+        <div class="pane-right">
+          ${selectedGroupList
+            ? `
+            <div class="form-group">
+              <label>
+                Group List Name
+                <input data-group-list-name="${selectedGroupList.id}" value="${escapeHtml(selectedGroupList.name)}" maxlength="16" />
+              </label>
+            </div>
+
+            <div class="zone-editor-meta">
+              <strong>${selectedGroupContactIds.length}/32 contacts selected</strong>
+              <small class="muted-text">Pick contacts on the left, then reorder on the right.</small>
+              <small id="group-list-editor-error" class="field-error"></small>
+            </div>
+
+            <div class="zone-editor-grid">
+              <section class="zone-editor-panel">
+                <h3>Available Contacts</h3>
+                <div class="zone-channel-pool">
+                  ${document.contacts.length === 0
+                    ? `<p class="muted-text">No contacts available.</p>`
+                    : document.contacts
+                        .map(
+                          (contact) => `
+                            <label class="zone-channel-toggle">
+                              <input
+                                type="checkbox"
+                                data-group-list-contact-toggle="${contact.id}"
+                                ${selectedGroupContactIds.includes(contact.id) ? "checked" : ""}
+                              />
+                              <span>#${contact.id} ${escapeHtml(contact.name)}</span>
+                            </label>
+                          `,
+                        )
+                        .join("")}
+                </div>
+              </section>
+
+              <section class="zone-editor-panel">
+                <h3>Selected Contact Order</h3>
+                <div class="zone-selected-list">
+                  ${selectedGroupContactIds.length === 0
+                    ? `<p class="muted-text">No contacts selected.</p>`
+                    : selectedGroupContactIds
+                        .map((contactId, index) => {
+                          const contact = document.contacts.find((item) => item.id === contactId);
+                          return `
+                            <div class="zone-selected-row" data-group-list-selected-row="${contactId}">
+                              <span class="zone-selected-name">${index + 1}. #${contactId} ${escapeHtml(contact?.name ?? "Unknown")}</span>
+                              <div class="zone-selected-actions">
+                                <button class="button ghost tiny zone-order-button" title="Move contact up" aria-label="Move contact up" data-group-list-contact-up="${contactId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="Move contact down" aria-label="Move contact down" data-group-list-contact-down="${contactId}" ${index === selectedGroupContactIds.length - 1 ? "disabled" : ""}>&darr;</button>
+                                <button class="button ghost tiny" data-group-list-contact-remove="${contactId}">Remove</button>
+                              </div>
+                            </div>
+                          `;
+                        })
+                        .join("")}
+                </div>
+              </section>
+            </div>
+
+            <div class="form-actions">
+              <button class="button tiny" id="group-list-editor-delete">Delete Group List</button>
+            </div>
+            `
+            : `<p class="muted-text">Select a group list to edit</p>`
+          }
+        </div>
       </div>
     `;
   }
@@ -1819,29 +1896,127 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#add-group-list")?.addEventListener("click", () => {
       store.addGroupList();
+      const updated = store.getState().document;
+      if (updated && updated.groupLists.length > 0) {
+        uiState.selectedGroupListId = updated.groupLists[updated.groupLists.length - 1].id;
+      }
+      store.notifySubscribers();
     });
 
-    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-group-list-name]")) {
-      input.addEventListener("change", () => {
-        const id = Number.parseInt(input.dataset.groupListName ?? "", 10);
-        if (Number.isNaN(id)) {
-          return;
+    for (const selectButton of panel.querySelectorAll<HTMLElement>("[data-group-list-select]")) {
+      selectButton.addEventListener("click", () => {
+        const id = Number.parseInt(selectButton.dataset.groupListSelect ?? "", 10);
+        if (!Number.isNaN(id)) {
+          uiState.selectedGroupListId = id;
+          store.notifySubscribers();
         }
-        store.updateGroupList(id, input.value);
       });
     }
 
-    for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-delete]")) {
-      deleteButton.addEventListener("click", async () => {
-        const id = Number.parseInt(deleteButton.dataset.groupListDelete ?? "", 10);
-        if (Number.isNaN(id)) {
+    const selectedGroupListId = uiState.selectedGroupListId;
+    const selectedGroupList = selectedGroupListId && state.document
+      ? state.document.groupLists.find((item) => item.id === selectedGroupListId)
+      : undefined;
+    const groupListError = panel.querySelector<HTMLElement>("#group-list-editor-error");
+
+    if (!selectedGroupList) {
+      return;
+    }
+
+    const updateGroupListContacts = (nextContactIds: number[]): void => {
+      store.updateGroupListContacts(selectedGroupList.id, nextContactIds);
+      if (groupListError) {
+        groupListError.textContent = "";
+      }
+    };
+
+    const nameInput = panel.querySelector<HTMLInputElement>(`[data-group-list-name="${selectedGroupList.id}"]`);
+    if (nameInput) {
+      nameInput.addEventListener("change", () => {
+        store.updateGroupListName(selectedGroupList.id, nameInput.value);
+      });
+    }
+
+    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-group-list-contact-toggle]")) {
+      toggle.addEventListener("change", () => {
+        const contactId = Number.parseInt(toggle.dataset.groupListContactToggle ?? "", 10);
+        if (Number.isNaN(contactId)) {
           return;
         }
 
-        const groupList = state.document?.groupLists.find((item) => item.id === id);
+        const next = [...(selectedGroupList.contactIds ?? [])];
+        const exists = next.includes(contactId);
+        if (toggle.checked && !exists) {
+          if (next.length >= 32) {
+            toggle.checked = false;
+            if (groupListError) {
+              groupListError.textContent = "A group list can contain at most 32 contacts.";
+            }
+            return;
+          }
+          updateGroupListContacts([...next, contactId]);
+          return;
+        }
+
+        if (!toggle.checked && exists) {
+          updateGroupListContacts(next.filter((id) => id !== contactId));
+          return;
+        }
+
+        if (groupListError) {
+          groupListError.textContent = "";
+        }
+      });
+    }
+
+    for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-contact-up]")) {
+      moveUp.addEventListener("click", () => {
+        const contactId = Number.parseInt(moveUp.dataset.groupListContactUp ?? "", 10);
+        if (Number.isNaN(contactId)) {
+          return;
+        }
+        const next = [...(selectedGroupList.contactIds ?? [])];
+        const index = next.indexOf(contactId);
+        if (index <= 0) {
+          return;
+        }
+        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+        updateGroupListContacts(next);
+      });
+    }
+
+    for (const moveDown of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-contact-down]")) {
+      moveDown.addEventListener("click", () => {
+        const contactId = Number.parseInt(moveDown.dataset.groupListContactDown ?? "", 10);
+        if (Number.isNaN(contactId)) {
+          return;
+        }
+        const next = [...(selectedGroupList.contactIds ?? [])];
+        const index = next.indexOf(contactId);
+        if (index < 0 || index >= next.length - 1) {
+          return;
+        }
+        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+        updateGroupListContacts(next);
+      });
+    }
+
+    for (const removeButton of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-contact-remove]")) {
+      removeButton.addEventListener("click", () => {
+        const contactId = Number.parseInt(removeButton.dataset.groupListContactRemove ?? "", 10);
+        if (Number.isNaN(contactId)) {
+          return;
+        }
+        updateGroupListContacts((selectedGroupList.contactIds ?? []).filter((id) => id !== contactId));
+      });
+    }
+
+    const deleteButton = panel.querySelector<HTMLButtonElement>("#group-list-editor-delete");
+    if (deleteButton) {
+      deleteButton.addEventListener("click", async () => {
         const confirmed = await showConfirm({
           title: "Delete Group List",
-          message: `Delete group list \"${groupList?.name ?? `#${id}`}\"?`,
+          message: `Delete group list \"${selectedGroupList.name}\"?`,
           confirmLabel: "Delete",
           danger: true,
         });
@@ -1849,7 +2024,8 @@ export function bindActiveTab(
           return;
         }
 
-        store.removeGroupList(id);
+        store.removeGroupList(selectedGroupList.id);
+        uiState.selectedGroupListId = null;
       });
     }
 

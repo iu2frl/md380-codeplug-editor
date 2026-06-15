@@ -289,6 +289,7 @@ export class EditorStore {
     this.state.document.groupLists.push({
       id,
       name: `Group List ${id}`,
+      contactIds: [],
     });
     this.refreshDirty();
   }
@@ -303,6 +304,32 @@ export class EditorStore {
     }
     this.beginMutation();
     groupList.name = name;
+    this.refreshDirty();
+  }
+
+  updateGroupListName(id: number, name: string): void {
+    if (!this.state.document) {
+      return;
+    }
+    const groupList = this.state.document.groupLists.find((item) => item.id === id);
+    if (!groupList) {
+      return;
+    }
+    this.beginMutation();
+    groupList.name = name;
+    this.refreshDirty();
+  }
+
+  updateGroupListContacts(id: number, contactIds: number[]): void {
+    if (!this.state.document) {
+      return;
+    }
+    const groupList = this.state.document.groupLists.find((item) => item.id === id);
+    if (!groupList) {
+      return;
+    }
+    this.beginMutation();
+    groupList.contactIds = contactIds;
     this.refreshDirty();
   }
 

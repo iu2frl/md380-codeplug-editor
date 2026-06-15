@@ -207,8 +207,8 @@ function makeDocument(): CodeplugDocument {
       { id: 2, name: "Zone Two", channelIds: [1] },
     ],
     contacts: [{ id: 1, name: "TG9", callId: 9 }],
-    groupLists: [{ id: 1, name: "North Group" }],
-    scanLists: [{ id: 1, name: "City Scan" }],
+    groupLists: [{ id: 1, name: "North Group", contactIds: [1] }],
+    scanLists: [{ id: 1, name: "City Scan", txDesignatedChannelMode: "Last Active Channel", signalingHoldTimeMs: 500, prioritySampleTimeMs: 2000, channelIds: [1] }],
   };
 }
 
@@ -536,7 +536,7 @@ describe("newly enabled tabs", () => {
   it("renders editable group and scan list tabs", () => {
     click(container, '[data-tab="group-lists"]');
     expect(container.querySelector("#add-group-list")).not.toBeNull();
-    expect(container.querySelector('[data-group-list-name="1"]')).not.toBeNull();
+    expect(container.querySelector('[data-group-list-select="1"]')).not.toBeNull();
 
     click(container, '[data-tab="scan-lists"]');
     expect(container.querySelector("#add-scan-list")).not.toBeNull();
@@ -551,6 +551,7 @@ describe("newly enabled tabs", () => {
     let snapshot = store.getState();
     expect(snapshot.document?.groupLists).toHaveLength(2);
 
+    click(container, '[data-group-list-select="2"]');
     const groupNameInput = container.querySelector<HTMLInputElement>('[data-group-list-name="2"]');
     if (!groupNameInput) throw new Error("group list input not found");
     groupNameInput.value = "Travel Group";
@@ -560,7 +561,8 @@ describe("newly enabled tabs", () => {
     expect(snapshot.document?.groupLists.find((item) => item.id === 2)?.name).toBe("Travel Group");
 
     const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
-    click(container, '[data-group-list-delete="1"]');
+    click(container, '[data-group-list-select="1"]');
+    click(container, '#group-list-editor-delete');
     await Promise.resolve();
     expect(confirmSpy).toHaveBeenCalledTimes(1);
     snapshot = store.getState();

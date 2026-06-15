@@ -39,6 +39,7 @@ export interface UiState {
   busy: boolean;
   activeGuideModal: ActiveGuideModal;
   selectedZoneId: number | null;
+  selectedGroupListId: number | null;
   selectedScanListId: number | null;
   selectedChannelId: number | null;
   channelsListScrollTop: number;
@@ -98,6 +99,7 @@ export function createInitialUiState(): UiState {
     busy: false,
     activeGuideModal: null,
     selectedZoneId: null,
+    selectedGroupListId: null,
     selectedScanListId: null,
     selectedChannelId: null,
     channelsListScrollTop: 0,
