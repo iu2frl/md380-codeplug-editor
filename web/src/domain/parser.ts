@@ -1,4 +1,4 @@
-import type { Channel, CodeplugDocument, RadioVariant } from "./types";
+import type { Channel, CodeplugDocument, Contact, GroupList, RadioVariant, ScanList, Zone } from "./types";
 
 const KNOWN_RDT_SIZE = 262709;
 const KNOWN_RAW_SIZE = 262144;
@@ -1217,13 +1217,13 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       ? readAscii(payload, BASIC_INFO_OFFSET + MODEL_NAME_OFFSET, MODEL_NAME_SIZE)
       : "";
 
-  const contacts = [];
+  const contacts: Contact[] = [];
   const contactSlotToLogicalId = new Map<number, number>();
   const channelSlotToLogicalId = new Map<number, number>();
-  const channels = [];
-  const zones = [];
-  const groupLists = [];
-  const scanLists = [];
+  const channels: Channel[] = [];
+  const zones: Zone[] = [];
+  const groupLists: GroupList[] = [];
+  const scanLists: ScanList[] = [];
 
   for (let index = 0; index < CONTACTS_MAX; index += 1) {
     const base = CONTACTS_OFFSET + index * CONTACTS_RECORD_SIZE;
