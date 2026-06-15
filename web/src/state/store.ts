@@ -329,6 +329,10 @@ export class EditorStore {
     this.state.document.scanLists.push({
       id,
       name: `Scan List ${id}`,
+      txDesignatedChannelMode: "Last Active Channel",
+      signalingHoldTimeMs: 500,
+      prioritySampleTimeMs: 2000,
+      channelIds: [],
     });
     this.refreshDirty();
   }
@@ -357,6 +361,116 @@ export class EditorStore {
         channel.scanListId = undefined;
       }
     }
+    this.refreshDirty();
+  }
+
+  updateScanListName(id: number, name: string): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.name = name;
+    this.refreshDirty();
+  }
+
+  updateScanListPriorityChannel1(id: number, channelId?: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.priorityChannel1Id = channelId;
+    if (!channelId) {
+      scanList.priorityChannel2Id = undefined;
+    }
+    this.refreshDirty();
+  }
+
+  updateScanListPriorityChannel2(id: number, channelId?: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.priorityChannel2Id = channelId;
+    this.refreshDirty();
+  }
+
+  updateScanListTxDesignatedChannelMode(id: number, mode: "Selected" | "Last Active Channel"): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.txDesignatedChannelMode = mode;
+    if (mode === "Last Active Channel") {
+      scanList.txDesignatedChannelId = undefined;
+    }
+    this.refreshDirty();
+  }
+
+  updateScanListTxDesignatedChannel(id: number, channelId?: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.txDesignatedChannelId = channelId;
+    this.refreshDirty();
+  }
+
+  updateScanListSignalingHoldTime(id: number, ms: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.signalingHoldTimeMs = Math.max(50, Math.min(6375, ms));
+    this.refreshDirty();
+  }
+
+  updateScanListPrioritySampleTime(id: number, ms: number): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.prioritySampleTimeMs = Math.max(750, Math.min(7750, ms));
+    this.refreshDirty();
+  }
+
+  updateScanListChannels(id: number, channelIds: number[]): void {
+    if (!this.state.document) {
+      return;
+    }
+    const scanList = this.state.document.scanLists.find((item) => item.id === id);
+    if (!scanList) {
+      return;
+    }
+    this.beginMutation();
+    scanList.channelIds = channelIds;
     this.refreshDirty();
   }
 

@@ -156,6 +156,12 @@ const SCAN_LISTS_RECORD_SIZE = 104;
 const SCAN_LISTS_DELETED_OFFSET = 0;
 const SCAN_LIST_NAME_OFFSET = 0;
 const SCAN_LIST_NAME_SIZE = 32;
+const SCAN_LIST_PRIORITY_CHANNEL1_OFFSET = 32;
+const SCAN_LIST_PRIORITY_CHANNEL2_OFFSET = 34;
+const SCAN_LIST_TX_DESIGNATED_CHANNEL_OFFSET = 36;
+const SCAN_LIST_SIGNALLING_HOLD_TIME_OFFSET = 39;
+const SCAN_LIST_PRIORITY_SAMPLE_TIME_OFFSET = 40;
+const SCAN_LIST_MEMBERS_OFFSET = 41;
 
 const BASIC_INFO_OFFSET = 0;
 const MODEL_NAME_OFFSET = 293;
@@ -868,7 +874,7 @@ function writeGroupLists(payload: Uint8Array, document: CodeplugDocument): Map<n
   return groupListSlotById;
 }
 
-function writeScanLists(payload: Uint8Array, document: CodeplugDocument): Map<number, number> {
+function writeScanLists(payload: Uint8Array, document: CodeplugDocument, channelSlotById?: Map<number, number>): Map<number, number> {
   const scanListSlotById = resolveSlots(document.scanLists, SCAN_LISTS_MAX);
   const activeSlots = new Set<number>(scanListSlotById.values());
 
@@ -889,6 +895,36 @@ function writeScanLists(payload: Uint8Array, document: CodeplugDocument): Map<nu
     }
 
     writeUcs2String(payload, base + SCAN_LIST_NAME_OFFSET, SCAN_LIST_NAME_SIZE, scanList.name);
+    
+    // Write Priority Channel 1
+    const priorityChannel1Slot = scanList.priorityChannel1Id && channelSlotById ? channelSlotById.get(scanList.priorityChannel1Id) ?? 0xFFFF : 0xFFFF;
+    writeLittleInt(payload, base + SCAN_LIST_PRIORITY_CHANNEL1_OFFSET, 2, priorityChannel1Slot);
+    
+    // Write Priority Channel 2
+    const priorityChannel2Slot = scanList.priorityChannel2Id && channelSlotById ? channelSlotById.get(scanList.priorityChannel2Id) ?? 0xFFFF : 0xFFFF;
+    writeLittleInt(payload, base + SCAN_LIST_PRIORITY_CHANNEL2_OFFSET, 2, priorityChannel2Slot);
+    
+    // Write Tx Designated Channel
+    const txDesignatedChannelSlot = scanList.txDesignatedChannelId && channelSlotById ? channelSlotById.get(scanList.txDesignatedChannelId) ?? 0 : (scanList.txDesignatedChannelMode === "Selected" ? 0 : 0xFFFF);
+    writeLittleInt(payload, base + SCAN_LIST_TX_DESIGNATED_CHANNEL_OFFSET, 2, txDesignatedChannelSlot);
+    
+    // Write Signalling Hold Time (convert from ms to raw value by dividing by 25)
+    const signalingHoldTimeRaw = Math.max(2, Math.min(255, Math.round((scanList.signalingHoldTimeMs ?? 500) / 25)));
+    payload[base + SCAN_LIST_SIGNALLING_HOLD_TIME_OFFSET] = signalingHoldTimeRaw;
+    
+    // Write Priority Sample Time (convert from ms to raw value by dividing by 250)
+    const prioritySampleTimeRaw = Math.max(3, Math.min(31, Math.round((scanList.prioritySampleTimeMs ?? 2000) / 250)));
+    payload[base + SCAN_LIST_PRIORITY_SAMPLE_TIME_OFFSET] = prioritySampleTimeRaw;
+    
+    // Write channel members (up to 31 channels)
+    const channelIds = scanList.channelIds ?? [];
+    for (let memberIndex = 0; memberIndex < 31; memberIndex += 1) {
+      const memberSlot = memberIndex < channelIds.length && channelSlotById
+        ? channelSlotById.get(channelIds[memberIndex]) ?? 0
+        : 0;
+      writeLittleInt(payload, base + SCAN_LIST_MEMBERS_OFFSET + memberIndex * 2, 2, memberSlot);
+    }
+    
     if (payload[base + SCAN_LISTS_DELETED_OFFSET] === 0) {
       payload[base + SCAN_LISTS_DELETED_OFFSET] = 1;
     }
@@ -1230,11 +1266,17 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     if (!name) {
       continue;
     }
+    // Store raw payload data for later parsing after channels are available
     scanLists.push({
       id: scanLists.length + 1,
       name,
+      txDesignatedChannelMode: "Last Active Channel",
+      signalingHoldTimeMs: 500,
+      prioritySampleTimeMs: 2000,
+      channelIds: [],
       slot: index + 1,
-    });
+      _rawPayloadBase: base, // Temporary field for second pass
+    } as any);
   }
 
   const groupListSlotToId = new Map<number, number>();
@@ -1366,6 +1408,50 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       channelIds,
       slot: index + 1,
     });
+  }
+
+  // Second pass: populate scan list members and behavior fields now that we have channelSlotToLogicalId
+  for (const scanList of scanLists) {
+    const rawBase = (scanList as any)._rawPayloadBase;
+    if (rawBase === undefined) continue;
+
+    const priorityChannel1Slot = readLittleInt(payload, rawBase + SCAN_LIST_PRIORITY_CHANNEL1_OFFSET, 2);
+    scanList.priorityChannel1Id = priorityChannel1Slot > 0 && priorityChannel1Slot <= 1000 ? channelSlotToLogicalId.get(priorityChannel1Slot) : undefined;
+
+    const priorityChannel2Slot = readLittleInt(payload, rawBase + SCAN_LIST_PRIORITY_CHANNEL2_OFFSET, 2);
+    scanList.priorityChannel2Id = priorityChannel2Slot > 0 && priorityChannel2Slot <= 1000 ? channelSlotToLogicalId.get(priorityChannel2Slot) : undefined;
+
+    const txDesignatedChannelSlot = readLittleInt(payload, rawBase + SCAN_LIST_TX_DESIGNATED_CHANNEL_OFFSET, 2);
+    scanList.txDesignatedChannelMode = txDesignatedChannelSlot === 0 ? "Selected" : "Last Active Channel";
+    if (txDesignatedChannelSlot > 0 && txDesignatedChannelSlot <= 1000) {
+      const channelId = channelSlotToLogicalId.get(txDesignatedChannelSlot);
+      if (channelId) {
+        scanList.txDesignatedChannelId = channelId;
+      }
+    }
+
+    const signalingHoldTimeRaw = payload[rawBase + SCAN_LIST_SIGNALLING_HOLD_TIME_OFFSET];
+    scanList.signalingHoldTimeMs = signalingHoldTimeRaw * 25;
+
+    const prioritySampleTimeRaw = payload[rawBase + SCAN_LIST_PRIORITY_SAMPLE_TIME_OFFSET];
+    scanList.prioritySampleTimeMs = prioritySampleTimeRaw * 250;
+
+    // Read channel members (up to 31 channels, each 2 bytes)
+    const channelIds: number[] = [];
+    for (let memberIndex = 0; memberIndex < 31; memberIndex += 1) {
+      const memberSlot = readLittleInt(payload, rawBase + SCAN_LIST_MEMBERS_OFFSET + memberIndex * 2, 2);
+      if (memberSlot === 0) {
+        continue;
+      }
+      const mapped = channelSlotToLogicalId.get(memberSlot);
+      if (mapped) {
+        channelIds.push(mapped);
+      }
+    }
+    scanList.channelIds = channelIds;
+
+    // Clean up temporary field
+    delete (scanList as any)._rawPayloadBase;
   }
 
   const settingsBase = GENERAL_SETTINGS_OFFSET;
@@ -1823,10 +1909,11 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   }
 
   const groupListSlotById = writeGroupLists(payload, document);
-  const scanListSlotById = writeScanLists(payload, document);
+  const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
+  const scanListSlotById = writeScanLists(payload, document, channelSlotById);
   const contactSlotById = writeContacts(payload, document);
-  const channelSlotById = writeChannels(payload, document, contactSlotById, scanListSlotById, groupListSlotById);
-  writeZones(payload, document, channelSlotById);
+  const channelSlotById2 = writeChannels(payload, document, contactSlotById, scanListSlotById, groupListSlotById);
+  writeZones(payload, document, channelSlotById2);
 
   return out;
 }

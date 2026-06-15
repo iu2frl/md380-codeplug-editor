@@ -540,7 +540,8 @@ describe("newly enabled tabs", () => {
 
     click(container, '[data-tab="scan-lists"]');
     expect(container.querySelector("#add-scan-list")).not.toBeNull();
-    expect(container.querySelector('[data-scan-list-name="1"]')).not.toBeNull();
+    // With the new UI, scan lists are shown as selectable items, so look for the selector
+    expect(container.querySelector('[data-scan-list-select="1"]')).not.toBeNull();
   });
 
   it("adds, updates, and removes group and scan lists", () => {
@@ -569,6 +570,9 @@ describe("newly enabled tabs", () => {
     snapshot = store.getState();
     expect(snapshot.document?.scanLists).toHaveLength(2);
 
+    // Select the newly added scan list
+    click(container, '[data-scan-list-select="2"]');
+
     const scanNameInput = container.querySelector<HTMLInputElement>('[data-scan-list-name="2"]');
     if (!scanNameInput) throw new Error("scan list input not found");
     scanNameInput.value = "Travel Scan";
@@ -577,7 +581,9 @@ describe("newly enabled tabs", () => {
     snapshot = store.getState();
     expect(snapshot.document?.scanLists.find((item) => item.id === 2)?.name).toBe("Travel Scan");
 
-    click(container, '[data-scan-list-delete="1"]');
+    // Delete requires selecting the scan list first
+    click(container, '[data-scan-list-select="1"]');
+    click(container, '#scan-list-editor-delete');
     snapshot = store.getState();
     expect(snapshot.document?.scanLists.some((item) => item.id === 1)).toBe(false);
     expect(snapshot.document?.channels.find((item) => item.id === 1)?.scanListId).toBeUndefined();

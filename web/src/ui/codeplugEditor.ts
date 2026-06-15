@@ -507,23 +507,115 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
 
   if (activeTab === "scan-lists") {
+    const selectedScanListId = uiState.selectedScanListId;
+    const selectedScanList = selectedScanListId ? document.scanLists.find((item) => item.id === selectedScanListId) : undefined;
+
     return `
       <h2>Scan Lists</h2>
       <button class="button tiny" id="add-scan-list">Add Scan List</button>
-      <div class="rows">
-        ${document.scanLists.length === 0
-          ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
-          : document.scanLists
-              .map(
-                (scanList) => `
-                  <div class="row zone-row">
-                    <input value="${scanList.id}" disabled />
-                    <input data-scan-list-name="${scanList.id}" value="${escapeHtml(scanList.name)}" maxlength="16" />
-                    <button class="button ghost tiny" data-scan-list-delete="${scanList.id}">Delete</button>
-                  </div>
-                `,
-              )
-              .join("")}
+      <div class="scan-list-container">
+        <div class="scan-list-selector">
+          <div class="rows">
+            ${document.scanLists.length === 0
+              ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
+              : document.scanLists
+                  .map(
+                    (scanList) => `
+                      <div class="row scan-list-row" data-scan-list-select="${scanList.id}" ${selectedScanListId === scanList.id ? 'style="background-color: rgba(0,0,0,0.1)"' : ""}>
+                        <span>#${scanList.id}</span>
+                        <span>${escapeHtml(scanList.name)}</span>
+                      </div>
+                    `,
+                  )
+                  .join("")}
+          </div>
+        </div>
+
+        <div class="scan-list-editor">
+          ${selectedScanList
+            ? `
+            <div class="form-section">
+              <h3>Scan List Details</h3>
+              
+              <div class="form-group">
+                <label>Name</label>
+                <input data-scan-list-name="${selectedScanList.id}" value="${escapeHtml(selectedScanList.name)}" maxlength="16" />
+              </div>
+
+              <div class="form-group">
+                <label>Signalling Hold Time (ms)</label>
+                <input type="number" data-scan-list-signalling-time="${selectedScanList.id}" value="${selectedScanList.signalingHoldTimeMs}" min="50" max="6375" step="25" />
+              </div>
+
+              <div class="form-group">
+                <label>Priority Sample Time (ms)</label>
+                <input type="number" data-scan-list-priority-sample-time="${selectedScanList.id}" value="${selectedScanList.prioritySampleTimeMs}" min="750" max="7750" step="250" />
+              </div>
+
+              <div class="form-group">
+                <label>Priority Channel 1</label>
+                <select data-scan-list-priority-channel-1="${selectedScanList.id}">
+                  <option value="">None</option>
+                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel1Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Priority Channel 2</label>
+                <select data-scan-list-priority-channel-2="${selectedScanList.id}" ${!selectedScanList.priorityChannel1Id ? "disabled" : ""}>
+                  <option value="">None</option>
+                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel2Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Tx Designated Channel</label>
+                <select data-scan-list-tx-mode="${selectedScanList.id}">
+                  <option value="Selected" ${selectedScanList.txDesignatedChannelMode === "Selected" ? "selected" : ""}>Selected</option>
+                  <option value="Last Active Channel" ${selectedScanList.txDesignatedChannelMode === "Last Active Channel" ? "selected" : ""}>Last Active Channel</option>
+                </select>
+              </div>
+
+              ${selectedScanList.txDesignatedChannelMode === "Selected"
+                ? `
+              <div class="form-group">
+                <label>Designated Channel</label>
+                <select data-scan-list-tx-channel="${selectedScanList.id}">
+                  <option value="">None</option>
+                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.txDesignatedChannelId === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                </select>
+              </div>
+                `
+                : ""}
+
+              <h3>Scan Channels</h3>
+              <div class="scan-list-channel-pool">
+                ${document.channels.length === 0
+                  ? `<p class="muted-text">No channels available.</p>`
+                  : document.channels
+                      .map(
+                        (channel) => `
+                          <label class="scan-list-channel-toggle">
+                            <input
+                              type="checkbox"
+                              data-scan-list-channel-toggle="${channel.id}"
+                              ${(selectedScanList.channelIds ?? []).includes(channel.id) ? "checked" : ""}
+                            />
+                            <span>#${channel.id} ${escapeHtml(channel.name)}</span>
+                          </label>
+                        `,
+                      )
+                      .join("")}
+              </div>
+
+              <div class="form-actions">
+                <button class="button tiny" id="scan-list-editor-delete">Delete Scan List</button>
+              </div>
+            </div>
+            `
+            : `<p class="muted-text">Select a scan list to edit</p>`
+          }
+        </div>
       </div>
     `;
   }
@@ -1713,27 +1805,142 @@ export function bindActiveTab(
       return;
     }
 
-    panel.querySelector<HTMLButtonElement>("#add-scan-list")?.addEventListener("click", () => {
-      store.addScanList();
-    });
-
-    for (const input of panel.querySelectorAll<HTMLInputElement>("[data-scan-list-name]")) {
-      input.addEventListener("change", () => {
-        const id = Number.parseInt(input.dataset.scanListName ?? "", 10);
-        if (Number.isNaN(id)) {
-          return;
+    // Handle scan list selection
+    for (const selectButton of panel.querySelectorAll<HTMLElement>("[data-scan-list-select]")) {
+      selectButton.addEventListener("click", () => {
+        const id = Number.parseInt(selectButton.dataset.scanListSelect ?? "", 10);
+        if (!Number.isNaN(id)) {
+          uiState.selectedScanListId = id;
+          store.notifySubscribers();
         }
-        store.updateScanList(id, input.value);
       });
     }
 
-    for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-delete]")) {
-      deleteButton.addEventListener("click", () => {
-        const id = Number.parseInt(deleteButton.dataset.scanListDelete ?? "", 10);
-        if (Number.isNaN(id)) {
+    // Handle add scan list
+    panel.querySelector<HTMLButtonElement>("#add-scan-list")?.addEventListener("click", () => {
+      store.addScanList();
+      // Select the newly added scan list
+      if (state.document) {
+        const maxId = Math.max(...state.document.scanLists.map((s) => s.id), 0);
+        uiState.selectedScanListId = maxId + 1;
+        store.notifySubscribers();
+      }
+    });
+
+    // Find selected scan list
+    const selectedScanListId = uiState.selectedScanListId;
+    const selectedScanList = selectedScanListId && state.document
+      ? state.document.scanLists.find((item) => item.id === selectedScanListId)
+      : undefined;
+
+    if (!selectedScanList) {
+      return;
+    }
+
+    // Handle name input
+    const nameInput = panel.querySelector<HTMLInputElement>(`[data-scan-list-name="${selectedScanList.id}"]`);
+    if (nameInput) {
+      nameInput.addEventListener("change", () => {
+        store.updateScanListName(selectedScanList.id, nameInput.value);
+      });
+    }
+
+    // Handle signalling hold time
+    const signalingInput = panel.querySelector<HTMLInputElement>(`[data-scan-list-signalling-time="${selectedScanList.id}"]`);
+    if (signalingInput) {
+      signalingInput.addEventListener("change", () => {
+        const ms = Number.parseInt(signalingInput.value, 10);
+        if (!Number.isNaN(ms)) {
+          store.updateScanListSignalingHoldTime(selectedScanList.id, ms);
+        }
+      });
+    }
+
+    // Handle priority sample time
+    const prioritySampleInput = panel.querySelector<HTMLInputElement>(`[data-scan-list-priority-sample-time="${selectedScanList.id}"]`);
+    if (prioritySampleInput) {
+      prioritySampleInput.addEventListener("change", () => {
+        const ms = Number.parseInt(prioritySampleInput.value, 10);
+        if (!Number.isNaN(ms)) {
+          store.updateScanListPrioritySampleTime(selectedScanList.id, ms);
+        }
+      });
+    }
+
+    // Handle priority channel 1
+    const priority1Select = panel.querySelector<HTMLSelectElement>(`[data-scan-list-priority-channel-1="${selectedScanList.id}"]`);
+    if (priority1Select) {
+      priority1Select.addEventListener("change", () => {
+        const channelId = priority1Select.value ? Number.parseInt(priority1Select.value, 10) : undefined;
+        if (!channelId || !Number.isNaN(channelId)) {
+          store.updateScanListPriorityChannel1(selectedScanList.id, channelId);
+          store.notifySubscribers();
+        }
+      });
+    }
+
+    // Handle priority channel 2
+    const priority2Select = panel.querySelector<HTMLSelectElement>(`[data-scan-list-priority-channel-2="${selectedScanList.id}"]`);
+    if (priority2Select) {
+      priority2Select.addEventListener("change", () => {
+        const channelId = priority2Select.value ? Number.parseInt(priority2Select.value, 10) : undefined;
+        if (!channelId || !Number.isNaN(channelId)) {
+          store.updateScanListPriorityChannel2(selectedScanList.id, channelId);
+        }
+      });
+    }
+
+    // Handle Tx mode
+    const txModeSelect = panel.querySelector<HTMLSelectElement>(`[data-scan-list-tx-mode="${selectedScanList.id}"]`);
+    if (txModeSelect) {
+      txModeSelect.addEventListener("change", () => {
+        const mode = txModeSelect.value as "Selected" | "Last Active Channel";
+        store.updateScanListTxDesignatedChannelMode(selectedScanList.id, mode);
+        store.notifySubscribers();
+      });
+    }
+
+    // Handle Tx channel (only shown if mode is "Selected")
+    const txChannelSelect = panel.querySelector<HTMLSelectElement>(`[data-scan-list-tx-channel="${selectedScanList.id}"]`);
+    if (txChannelSelect) {
+      txChannelSelect.addEventListener("change", () => {
+        const channelId = txChannelSelect.value ? Number.parseInt(txChannelSelect.value, 10) : undefined;
+        if (!channelId || !Number.isNaN(channelId)) {
+          store.updateScanListTxDesignatedChannel(selectedScanList.id, channelId);
+        }
+      });
+    }
+
+    // Handle channel toggles
+    const currentChannelIds = [...(selectedScanList.channelIds ?? [])];
+    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-scan-list-channel-toggle]")) {
+      toggle.addEventListener("change", () => {
+        const channelId = Number.parseInt(toggle.dataset.scanListChannelToggle ?? "", 10);
+        if (Number.isNaN(channelId)) {
           return;
         }
-        store.removeScanList(id);
+        const index = currentChannelIds.indexOf(channelId);
+        if (toggle.checked) {
+          if (index < 0) {
+            currentChannelIds.push(channelId);
+          }
+        } else {
+          if (index >= 0) {
+            currentChannelIds.splice(index, 1);
+          }
+        }
+        store.updateScanListChannels(selectedScanList.id, currentChannelIds);
+      });
+    }
+
+    // Handle delete
+    const deleteButton = panel.querySelector<HTMLButtonElement>("#scan-list-editor-delete");
+    if (deleteButton) {
+      deleteButton.addEventListener("click", () => {
+        if (selectedScanList) {
+          store.removeScanList(selectedScanList.id);
+          uiState.selectedScanListId = null;
+        }
       });
     }
 

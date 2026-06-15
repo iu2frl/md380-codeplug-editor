@@ -83,6 +83,13 @@ export interface GroupList {
 export interface ScanList {
   id: number;
   name: string;
+  priorityChannel1Id?: number;
+  priorityChannel2Id?: number;
+  txDesignatedChannelId?: number;
+  txDesignatedChannelMode: "Selected" | "Last Active Channel";
+  signalingHoldTimeMs: number;
+  prioritySampleTimeMs: number;
+  channelIds: number[];
   slot?: number;
 }
 
