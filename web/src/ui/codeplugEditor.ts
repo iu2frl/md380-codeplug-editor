@@ -263,7 +263,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
           return `
             <div class="row zone-row">
-              <input value="One Touch ${slot}" disabled />
+              <span>One Touch ${slot}</span>
 
               <select data-one-touch-mode="${slot}">
                 <option value="None" ${resolvedAction.mode === "None" ? "selected" : ""}>None</option>

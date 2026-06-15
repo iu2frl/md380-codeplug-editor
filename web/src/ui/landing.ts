@@ -83,8 +83,8 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
           <h2>Open Existing Codeplug</h2>
           <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.
-          <p>Preferred format is <strong>.rdt</strong>, which can be exported by some applications like <strong>G6AMU Codeplug Editor</strong>.<br>
-          <strong>Please note:</strong> the <strong>.bin</strong> format does not contain all device information (no custom headers), so some features may not be fully supported.</p>
+          <p>Preferred format is <code>.rdt</code>, which can be exported by some applications like <strong>G6AMU Codeplug Editor</strong>.<br>
+          <strong>Please note:</strong> the <code>.bin</code> format does not contain all device information (no custom headers), so some features may not be fully supported.</p>
           <button id="open-existing-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open .rdt/.bin</button>
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted && !uiState.busy ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
