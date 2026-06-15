@@ -1674,119 +1674,120 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
       ? readUcs2String(payload, settingsBase + INTRO_SCREEN_LINE2_OFFSET, INTRO_SCREEN_LINE_SIZE)
       : "";
 
+  const menuSource = format === "rdt" ? rdtSource : payload;
   const menuBase = MENU_SETTINGS_OFFSET;
   const menuSettings = {
     hangTime:
-      menuBase + 5 <= payload.byteLength
-        ? parseMenuHangTime(readBitField(payload, menuBase * 8 + MENU_HANG_TIME_BIT_OFFSET, 8))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseMenuHangTime(readBitField(menuSource, menuBase * 8 + MENU_HANG_TIME_BIT_OFFSET, 8))
         : "10",
     radioDisable:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1))
         : "Off",
     radioEnable:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1))
         : "Off",
     remoteMonitor:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1))
         : "Off",
     radioCheck:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1))
         : "Off",
     manualDial:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1))
         : "On",
     edit:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_EDIT_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_EDIT_BIT_OFFSET, 1))
         : "On",
     callAlert:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1))
         : "On",
     textMessage:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1))
         : "On",
     toneOrAlert:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1))
         : "On",
     talkaround:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_TALKAROUND_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_TALKAROUND_BIT_OFFSET, 1))
         : "On",
     outgoingRadio:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1))
         : "On",
     answered:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_ANSWERED_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_ANSWERED_BIT_OFFSET, 1))
         : "On",
     missed:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_MISSED_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_MISSED_BIT_OFFSET, 1))
         : "On",
     editList:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1))
         : "On",
     scan:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_SCAN_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_SCAN_BIT_OFFSET, 1))
         : "On",
     programKey:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1))
         : "On",
     vox:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_VOX_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_VOX_BIT_OFFSET, 1))
         : "Off",
     squelch:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_SQUELCH_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_SQUELCH_BIT_OFFSET, 1))
         : "On",
     ledIndicator:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1))
         : "On",
     keyboardLock:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1))
         : "On",
     introScreen:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1))
         : "On",
     backlight:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1))
         : "On",
     power:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_POWER_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_POWER_BIT_OFFSET, 1))
         : "On",
     gps:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_GPS_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_GPS_BIT_OFFSET, 1))
         : "Off",
     programRadio:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1))
         : "Off",
     displayMode:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1))
         : "On",
     passwordAndLock:
-      menuBase + 5 <= payload.byteLength
-        ? parseOffOnBit(readBitField(payload, menuBase * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1))
+      menuBase + 5 <= menuSource.byteLength
+        ? parseOffOnBit(readBitField(menuSource, menuBase * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1))
         : "On",
   };
 
@@ -2004,35 +2005,36 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
     writeBitField(payload, settingsBase * 8 + TIME_ZONE_BIT_OFFSET, 5, encodeTimeZone(document.settings.timeZone));
   }
 
-  if (MENU_SETTINGS_OFFSET + 5 <= payload.byteLength) {
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_HANG_TIME_BIT_OFFSET, 8, encodeMenuHangTime(document.menuSettings.hangTime));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioDisable));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioEnable));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.remoteMonitor));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioCheck));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.manualDial));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.edit));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.callAlert));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.textMessage));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.toneOrAlert));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_TALKAROUND_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.talkaround));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.outgoingRadio));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_ANSWERED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.answered));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_MISSED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.missed));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.editList));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_SCAN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.scan));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programKey));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_VOX_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.vox));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_SQUELCH_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.squelch));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.ledIndicator));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.keyboardLock));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.introScreen));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.backlight));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_POWER_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.power));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_GPS_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.gps));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programRadio));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.displayMode));
-    writeBitField(payload, MENU_SETTINGS_OFFSET * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.passwordAndLock));
+  const menuTarget = document.format === "rdt" ? rdtTarget : payload;
+  if (MENU_SETTINGS_OFFSET + 5 <= menuTarget.byteLength) {
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_HANG_TIME_BIT_OFFSET, 8, encodeMenuHangTime(document.menuSettings.hangTime));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_DISABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioDisable));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_ENABLE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioEnable));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_REMOTE_MONITOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.remoteMonitor));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_RADIO_CHECK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.radioCheck));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_MANUAL_DIAL_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.manualDial));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.edit));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_CALL_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.callAlert));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_TEXT_MESSAGE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.textMessage));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_TONE_OR_ALERT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.toneOrAlert));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_TALKAROUND_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.talkaround));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_OUTGOING_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.outgoingRadio));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_ANSWERED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.answered));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_MISSED_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.missed));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_EDIT_LIST_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.editList));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_SCAN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.scan));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_KEY_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programKey));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_VOX_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.vox));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_SQUELCH_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.squelch));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_LED_INDICATOR_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.ledIndicator));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_KEYBOARD_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.keyboardLock));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_INTRO_SCREEN_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.introScreen));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_BACKLIGHT_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.backlight));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_POWER_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.power));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_GPS_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.gps));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_PROGRAM_RADIO_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.programRadio));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_DISPLAY_MODE_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.displayMode));
+    writeBitField(menuTarget, MENU_SETTINGS_OFFSET * 8 + MENU_PASSWORD_AND_LOCK_BIT_OFFSET, 1, encodeOffOnBit(document.menuSettings.passwordAndLock));
   }
 
   if (document.format === "rdt") {
