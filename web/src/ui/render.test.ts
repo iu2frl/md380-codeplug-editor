@@ -710,7 +710,6 @@ describe("radio transfer progress", () => {
     document.body.innerHTML = "";
     const { container } = mountApp();
 
-    vi.spyOn(window, "alert").mockImplementation(() => undefined);
     vi.spyOn(browserRadio, "detectBrowserRadioCapabilities").mockReturnValue({
       isSecureContext: true,
       hasNavigatorUsb: true,
