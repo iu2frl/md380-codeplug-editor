@@ -63,6 +63,7 @@ export function renderLoadedLayout(state: AppState, uiState: UiState): string {
           ${renderTabButton("encryption", "Encryption", uiState.activeTab, false)}
           ${renderTabButton("digital-contacts", "Digital Contacts", uiState.activeTab, false)}
           ${renderTabButton("dtmf", "DTMF", uiState.activeTab, false)}
+          ${renderTabButton("one-touch", "One Touch", uiState.activeTab, false)}
           ${renderTabButton("zones", "Zones", uiState.activeTab, false)}
           ${renderTabButton("group-lists", "Group Lists", uiState.activeTab, false)}
           ${renderTabButton("scan-lists", "Scan Lists", uiState.activeTab, false)}
@@ -219,7 +220,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "dtmf") {
     return `
       <h2>DTMF</h2>
-      <p class="muted-text">Manage DTMF Number Keys (0-9) and One Touch actions.</p>
+      <p class="muted-text">Manage DTMF Number Keys (0-9).</p>
 
       <h3>Number Keys</h3>
       <div class="rows">
@@ -242,7 +243,13 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
         }).join("")}
       </div>
 
-      <h3>One Touch</h3>
+    `;
+  }
+
+  if (activeTab === "one-touch") {
+    return `
+      <h2>One Touch</h2>
+      <p class="muted-text">Configure side-button One Touch call and message actions.</p>
       <div class="rows">
         ${Array.from({ length: 6 }, (_, index) => {
           const slot = index + 1;
@@ -1360,6 +1367,7 @@ export function bindTabs(
         key === "encryption" ||
         key === "digital-contacts" ||
         key === "dtmf" ||
+        key === "one-touch" ||
         key === "zones" ||
         key === "group-lists" ||
         key === "scan-lists" ||
@@ -1688,6 +1696,15 @@ export function bindActiveTab(
         const contactId = Number.parseInt(select.value, 10);
         store.updateNumberKey(slot, Number.isNaN(contactId) ? undefined : contactId);
       });
+    }
+
+    return;
+  }
+
+  if (uiState.activeTab === "one-touch") {
+    const panel = target.querySelector<HTMLElement>("#active-tab-panel");
+    if (!panel) {
+      return;
     }
 
     for (const select of panel.querySelectorAll<HTMLSelectElement>("[data-one-touch-mode]")) {

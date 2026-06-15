@@ -25,6 +25,7 @@ export type ActiveTab =
   | "encryption"
   | "digital-contacts"
   | "dtmf"
+  | "one-touch"
   | "zones"
   | "group-lists"
   | "scan-lists"
