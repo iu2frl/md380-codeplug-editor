@@ -2042,8 +2042,17 @@ export function bindActiveTab(
     // Handle delete
     const deleteButton = panel.querySelector<HTMLButtonElement>("#scan-list-editor-delete");
     if (deleteButton) {
-      deleteButton.addEventListener("click", () => {
+      deleteButton.addEventListener("click", async () => {
         if (selectedScanList) {
+          const confirmed = await showConfirm({
+            title: "Delete Scan List",
+            message: `Delete scan list \"${selectedScanList.name}\"?`,
+            confirmLabel: "Delete",
+            danger: true,
+          });
+          if (!confirmed) {
+            return;
+          }
           store.removeScanList(selectedScanList.id);
           uiState.selectedScanListId = null;
         }

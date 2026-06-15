@@ -544,7 +544,7 @@ describe("newly enabled tabs", () => {
     expect(container.querySelector('[data-scan-list-select="1"]')).not.toBeNull();
   });
 
-  it("adds, updates, and removes group and scan lists", () => {
+  it("adds, updates, and removes group and scan lists", async () => {
     click(container, '[data-tab="group-lists"]');
 
     click(container, "#add-group-list");
@@ -582,8 +582,11 @@ describe("newly enabled tabs", () => {
     expect(snapshot.document?.scanLists.find((item) => item.id === 2)?.name).toBe("Travel Scan");
 
     // Delete requires selecting the scan list first
+    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
     click(container, '[data-scan-list-select="1"]');
     click(container, '#scan-list-editor-delete');
+    await Promise.resolve();
+    expect(confirmSpy).toHaveBeenCalled();
     snapshot = store.getState();
     expect(snapshot.document?.scanLists.some((item) => item.id === 1)).toBe(false);
     expect(snapshot.document?.channels.find((item) => item.id === 1)?.scanListId).toBeUndefined();
