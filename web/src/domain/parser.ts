@@ -1852,8 +1852,9 @@ export function parseCodeplug(fileName: string, bytes: Uint8Array): CodeplugDocu
     privacySettings.basicKeys.push(reverseHexByteOrder(readHexString(payload, offset, PRIVACY_BASIC_KEY_SIZE)));
   }
 
-  const numberKeys = parseNumberKeys(payload, contactSlotToLogicalId);
-  const oneTouchActions = parseOneTouchActions(payload, contactSlotToLogicalId, textMessages);
+  const oneTouchSource = format === "rdt" ? rdtSource : payload;
+  const numberKeys = parseNumberKeys(oneTouchSource, contactSlotToLogicalId);
+  const oneTouchActions = parseOneTouchActions(oneTouchSource, contactSlotToLogicalId, textMessages);
 
   const frequencyRangeIndex =
     BASIC_INFO_OFFSET + Math.floor(BASIC_FREQUENCY_RANGE_BIT_OFFSET / 8) < payload.byteLength
@@ -2113,8 +2114,9 @@ export function serializeCodeplug(document: CodeplugDocument, originalBytes: Uin
   }
 
   const contactSlotById = writeContacts(payload, document);
-  writeNumberKeys(payload, document.numberKeys ?? [], contactSlotById);
-  writeOneTouchActions(payload, document.oneTouchActions ?? [], contactSlotById, document.textMessages ?? []);
+  const oneTouchTarget = document.format === "rdt" ? rdtTarget : payload;
+  writeNumberKeys(oneTouchTarget, document.numberKeys ?? [], contactSlotById);
+  writeOneTouchActions(oneTouchTarget, document.oneTouchActions ?? [], contactSlotById, document.textMessages ?? []);
   const groupListSlotById = writeGroupLists(payload, document, contactSlotById);
   const channelSlotById = resolveSlots(document.channels, CHANNELS_MAX);
   const scanListSlotById = writeScanLists(payload, document, channelSlotById);

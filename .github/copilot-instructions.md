@@ -26,6 +26,10 @@ artifacts/                    # Generated artifacts with JSON manifests
 
 ## Architecture
 
+### Paylod details
+
+- BIN files and RDT files have a different header, so an initial offset should be considered base on the file content. See `HEADER_SIZE` in `parser.ts`.
+
 ### Domain Separation
 
 **Codeplug Domain** (`web/src/domain/parser.ts`, `validation.ts`):
