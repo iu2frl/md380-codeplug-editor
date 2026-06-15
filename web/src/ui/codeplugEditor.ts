@@ -420,7 +420,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           .map(
             (item) => `
               <div class="row zone-row">
-                <input value="${item.slot ?? item.id}" disabled />
+                <span>${item.slot ?? item.id}</span>
                 <input data-text-message="${item.id}" value="${escapeHtml(item.text)}" maxlength="144" />
                 <button class="button ghost tiny" data-text-message-delete="${item.id}">Delete</button>
               </div>
