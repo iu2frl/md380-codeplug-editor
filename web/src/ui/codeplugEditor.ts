@@ -1,5 +1,5 @@
 import type { AppState, EditorStore } from "../state/store";
-import { radioButtonActionLabel, radioButtonActionOptions } from "../domain/parser";
+import { createBlankCodeplugBytes, radioButtonActionLabel, radioButtonActionOptions } from "../domain/parser";
 import {
   createBrowserRadioTransport,
   detectBrowserRadioCapabilities,
@@ -25,6 +25,38 @@ type RenderStateFn = (
   channelState: ChannelPanelState,
   uiState: UiState,
 ) => void;
+
+const RDT_SIZE = 262709;
+const PAYLOAD_SIZE = 262144;
+const RDT_HEADER_SIZE = 549;
+
+function toRdtOutputName(fileName: string): string {
+  const trimmed = fileName.trim();
+  if (!trimmed) {
+    return "codeplug-export.rdt";
+  }
+  if (/\.rdt$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return trimmed.replace(/\.[^/.]+$/, "") + ".rdt";
+}
+
+function ensureRdtBytes(document: NonNullable<AppState["document"]>, bytes: Uint8Array): Uint8Array {
+  if (bytes.byteLength === RDT_SIZE && document.format === "rdt") {
+    return bytes;
+  }
+
+  // If we have raw payload bytes, wrap them in a valid RDT envelope.
+  if (bytes.byteLength === PAYLOAD_SIZE) {
+    const targetModel = document.model.toUpperCase().includes("390") ? "MD390" : "MD380";
+    const out = createBlankCodeplugBytes("rdt", targetModel);
+    out.set(bytes, RDT_HEADER_SIZE);
+    return out;
+  }
+
+  // Fallback for unexpected sizes: export original bytes unchanged.
+  return bytes;
+}
 
 export function renderLoadedLayout(state: AppState, uiState: UiState): string {
   const document = state.document;
@@ -1281,7 +1313,9 @@ export function bindTopActions(
     if (!bytes) {
       return;
     }
-    downloadBytes(snapshot.document.outputFileName, bytes);
+    const rdtBytes = ensureRdtBytes(snapshot.document, bytes);
+    const outputName = toRdtOutputName(snapshot.document.outputFileName || snapshot.document.fileName);
+    downloadBytes(outputName, rdtBytes);
   });
 
   target.querySelector<HTMLButtonElement>("#undo-btn")?.addEventListener("click", () => {
