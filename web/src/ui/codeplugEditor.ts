@@ -509,21 +509,22 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "scan-lists") {
     const selectedScanListId = uiState.selectedScanListId;
     const selectedScanList = selectedScanListId ? document.scanLists.find((item) => item.id === selectedScanListId) : undefined;
+    const selectedScanChannelIds = selectedScanList?.channelIds ?? [];
 
     return `
       <h2>Scan Lists</h2>
-      <button class="button tiny" id="add-scan-list">Add Scan List</button>
-      <div class="scan-list-container">
-        <div class="scan-list-selector">
-          <div class="rows">
+      <div class="two-pane-layout">
+        <div class="pane-left">
+          <button class="button tiny" id="add-scan-list">Add Scan List</button>
+          <div class="list">
             ${document.scanLists.length === 0
               ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
               : document.scanLists
                   .map(
                     (scanList) => `
-                      <div class="row scan-list-row" data-scan-list-select="${scanList.id}" ${selectedScanListId === scanList.id ? 'style="background-color: rgba(0,0,0,0.1)"' : ""}>
-                        <span>#${scanList.id}</span>
-                        <span>${escapeHtml(scanList.name)}</span>
+                      <div class="list-item ${scanList.id === selectedScanListId ? "selected" : ""}" data-scan-list-select="${scanList.id}">
+                        <div class="list-item-name">${escapeHtml(scanList.name)}</div>
+                        <div class="list-item-meta">${(scanList.channelIds ?? []).length} channels</div>
                       </div>
                     `,
                   )
@@ -531,87 +532,131 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           </div>
         </div>
 
-        <div class="scan-list-editor">
+        <div class="pane-right">
           ${selectedScanList
             ? `
-            <div class="form-section">
-              <h3>Scan List Details</h3>
-              
-              <div class="form-group">
-                <label>Name</label>
+            <div class="form-group">
+              <label>
+                Scan List Name
                 <input data-scan-list-name="${selectedScanList.id}" value="${escapeHtml(selectedScanList.name)}" maxlength="16" />
-              </div>
+              </label>
+            </div>
 
-              <div class="form-group">
-                <label>Signalling Hold Time (ms)</label>
-                <input type="number" data-scan-list-signalling-time="${selectedScanList.id}" value="${selectedScanList.signalingHoldTimeMs}" min="50" max="6375" step="25" />
-              </div>
+            <div class="zone-editor-meta">
+              <strong>${selectedScanChannelIds.length}/31 channels selected</strong>
+              <small class="muted-text">Pick channels on the left, then reorder on the right.</small>
+              <small id="scan-list-editor-error" class="field-error"></small>
+            </div>
 
-              <div class="form-group">
-                <label>Priority Sample Time (ms)</label>
-                <input type="number" data-scan-list-priority-sample-time="${selectedScanList.id}" value="${selectedScanList.prioritySampleTimeMs}" min="750" max="7750" step="250" />
-              </div>
+            <div class="zone-editor-grid">
+              <section class="zone-editor-panel">
+                <h3>Scan Behavior</h3>
+                <div class="form-group">
+                  <label>
+                    Signalling Hold Time (ms)
+                    <input type="number" data-scan-list-signalling-time="${selectedScanList.id}" value="${selectedScanList.signalingHoldTimeMs}" min="50" max="6375" step="25" />
+                  </label>
+                </div>
 
-              <div class="form-group">
-                <label>Priority Channel 1</label>
-                <select data-scan-list-priority-channel-1="${selectedScanList.id}">
-                  <option value="">None</option>
-                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel1Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
-                </select>
-              </div>
+                <div class="form-group">
+                  <label>
+                    Priority Sample Time (ms)
+                    <input type="number" data-scan-list-priority-sample-time="${selectedScanList.id}" value="${selectedScanList.prioritySampleTimeMs}" min="750" max="7750" step="250" />
+                  </label>
+                </div>
 
-              <div class="form-group">
-                <label>Priority Channel 2</label>
-                <select data-scan-list-priority-channel-2="${selectedScanList.id}" ${!selectedScanList.priorityChannel1Id ? "disabled" : ""}>
-                  <option value="">None</option>
-                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel2Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
-                </select>
-              </div>
+                <div class="form-group">
+                  <label>
+                    Priority Channel 1
+                    <select data-scan-list-priority-channel-1="${selectedScanList.id}">
+                      <option value="">None</option>
+                      ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel1Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                    </select>
+                  </label>
+                </div>
 
-              <div class="form-group">
-                <label>Tx Designated Channel</label>
-                <select data-scan-list-tx-mode="${selectedScanList.id}">
-                  <option value="Selected" ${selectedScanList.txDesignatedChannelMode === "Selected" ? "selected" : ""}>Selected</option>
-                  <option value="Last Active Channel" ${selectedScanList.txDesignatedChannelMode === "Last Active Channel" ? "selected" : ""}>Last Active Channel</option>
-                </select>
-              </div>
+                <div class="form-group">
+                  <label>
+                    Priority Channel 2
+                    <select data-scan-list-priority-channel-2="${selectedScanList.id}" ${!selectedScanList.priorityChannel1Id ? "disabled" : ""}>
+                      <option value="">None</option>
+                      ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel2Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                    </select>
+                  </label>
+                </div>
 
-              ${selectedScanList.txDesignatedChannelMode === "Selected"
-                ? `
-              <div class="form-group">
-                <label>Designated Channel</label>
-                <select data-scan-list-tx-channel="${selectedScanList.id}">
-                  <option value="">None</option>
-                  ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.txDesignatedChannelId === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
-                </select>
-              </div>
-                `
-                : ""}
+                <div class="form-group">
+                  <label>
+                    Tx Designated Channel
+                    <select data-scan-list-tx-mode="${selectedScanList.id}">
+                      <option value="Selected" ${selectedScanList.txDesignatedChannelMode === "Selected" ? "selected" : ""}>Selected</option>
+                      <option value="Last Active Channel" ${selectedScanList.txDesignatedChannelMode === "Last Active Channel" ? "selected" : ""}>Last Active Channel</option>
+                    </select>
+                  </label>
+                </div>
 
-              <h3>Scan Channels</h3>
-              <div class="scan-list-channel-pool">
-                ${document.channels.length === 0
-                  ? `<p class="muted-text">No channels available.</p>`
-                  : document.channels
-                      .map(
-                        (channel) => `
-                          <label class="scan-list-channel-toggle">
-                            <input
-                              type="checkbox"
-                              data-scan-list-channel-toggle="${channel.id}"
-                              ${(selectedScanList.channelIds ?? []).includes(channel.id) ? "checked" : ""}
-                            />
-                            <span>#${channel.id} ${escapeHtml(channel.name)}</span>
-                          </label>
-                        `,
-                      )
-                      .join("")}
-              </div>
+                ${selectedScanList.txDesignatedChannelMode === "Selected"
+                  ? `
+                <div class="form-group">
+                  <label>
+                    Designated Channel
+                    <select data-scan-list-tx-channel="${selectedScanList.id}">
+                      <option value="">None</option>
+                      ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.txDesignatedChannelId === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
+                    </select>
+                  </label>
+                </div>
+                  `
+                  : ""}
+              </section>
 
+              <section class="zone-editor-panel">
+                <h3>Available Channels</h3>
+                <div class="zone-channel-pool">
+                  ${document.channels.length === 0
+                    ? `<p class="muted-text">No channels available.</p>`
+                    : document.channels
+                        .map(
+                          (channel) => `
+                            <label class="zone-channel-toggle">
+                              <input
+                                type="checkbox"
+                                data-scan-list-channel-toggle="${channel.id}"
+                                ${selectedScanChannelIds.includes(channel.id) ? "checked" : ""}
+                              />
+                              <span>#${channel.id} ${escapeHtml(channel.name)}</span>
+                            </label>
+                          `,
+                        )
+                        .join("")}
+                </div>
+              </section>
+
+              <section class="zone-editor-panel">
+                <h3>Selected Channel Order</h3>
+                <div class="zone-selected-list">
+                  ${selectedScanChannelIds.length === 0
+                    ? `<p class="muted-text">No channels selected.</p>`
+                    : selectedScanChannelIds
+                        .map((channelId, index) => {
+                          const channel = document.channels.find((item) => item.id === channelId);
+                          return `
+                            <div class="zone-selected-row" data-scan-list-selected-row="${channelId}">
+                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
+                              <div class="zone-selected-actions">
+                                <button class="button ghost tiny zone-order-button" title="Move channel up" aria-label="Move channel up" data-scan-list-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="Move channel down" aria-label="Move channel down" data-scan-list-channel-down="${channelId}" ${index === selectedScanChannelIds.length - 1 ? "disabled" : ""}>&darr;</button>
+                                <button class="button ghost tiny" data-scan-list-channel-remove="${channelId}">Remove</button>
+                              </div>
+                            </div>
+                          `;
+                        })
+                        .join("")}
+                </div>
+              </div>
               <div class="form-actions">
                 <button class="button tiny" id="scan-list-editor-delete">Delete Scan List</button>
               </div>
-            </div>
             `
             : `<p class="muted-text">Select a scan list to edit</p>`
           }
@@ -1819,12 +1864,11 @@ export function bindActiveTab(
     // Handle add scan list
     panel.querySelector<HTMLButtonElement>("#add-scan-list")?.addEventListener("click", () => {
       store.addScanList();
-      // Select the newly added scan list
-      if (state.document) {
-        const maxId = Math.max(...state.document.scanLists.map((s) => s.id), 0);
-        uiState.selectedScanListId = maxId + 1;
-        store.notifySubscribers();
+      const updated = store.getState().document;
+      if (updated && updated.scanLists.length > 0) {
+        uiState.selectedScanListId = updated.scanLists[updated.scanLists.length - 1].id;
       }
+      store.notifySubscribers();
     });
 
     // Find selected scan list
@@ -1832,10 +1876,18 @@ export function bindActiveTab(
     const selectedScanList = selectedScanListId && state.document
       ? state.document.scanLists.find((item) => item.id === selectedScanListId)
       : undefined;
+    const scanListError = panel.querySelector<HTMLElement>("#scan-list-editor-error");
 
     if (!selectedScanList) {
       return;
     }
+
+    const updateScanListChannels = (nextChannelIds: number[]): void => {
+      store.updateScanListChannels(selectedScanList.id, nextChannelIds);
+      if (scanListError) {
+        scanListError.textContent = "";
+      }
+    };
 
     // Handle name input
     const nameInput = panel.querySelector<HTMLInputElement>(`[data-scan-list-name="${selectedScanList.id}"]`);
@@ -1919,17 +1971,71 @@ export function bindActiveTab(
         if (Number.isNaN(channelId)) {
           return;
         }
-        const index = currentChannelIds.indexOf(channelId);
-        if (toggle.checked) {
-          if (index < 0) {
-            currentChannelIds.push(channelId);
+
+        const next = [...(selectedScanList.channelIds ?? [])];
+        const exists = next.includes(channelId);
+        if (toggle.checked && !exists) {
+          if (next.length >= 31) {
+            toggle.checked = false;
+            if (scanListError) {
+              scanListError.textContent = "A scan list can contain at most 31 channels.";
+            }
+            return;
           }
-        } else {
-          if (index >= 0) {
-            currentChannelIds.splice(index, 1);
-          }
+          updateScanListChannels([...next, channelId]);
+          return;
         }
-        store.updateScanListChannels(selectedScanList.id, currentChannelIds);
+
+        if (!toggle.checked && exists) {
+          updateScanListChannels(next.filter((id) => id !== channelId));
+          return;
+        }
+
+        if (scanListError) {
+          scanListError.textContent = "";
+        }
+      });
+    }
+
+    for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-channel-up]")) {
+      moveUp.addEventListener("click", () => {
+        const channelId = Number.parseInt(moveUp.dataset.scanListChannelUp ?? "", 10);
+        if (Number.isNaN(channelId)) {
+          return;
+        }
+        const next = [...(selectedScanList.channelIds ?? [])];
+        const index = next.indexOf(channelId);
+        if (index <= 0) {
+          return;
+        }
+        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+        updateScanListChannels(next);
+      });
+    }
+
+    for (const moveDown of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-channel-down]")) {
+      moveDown.addEventListener("click", () => {
+        const channelId = Number.parseInt(moveDown.dataset.scanListChannelDown ?? "", 10);
+        if (Number.isNaN(channelId)) {
+          return;
+        }
+        const next = [...(selectedScanList.channelIds ?? [])];
+        const index = next.indexOf(channelId);
+        if (index < 0 || index >= next.length - 1) {
+          return;
+        }
+        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+        updateScanListChannels(next);
+      });
+    }
+
+    for (const removeButton of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-channel-remove]")) {
+      removeButton.addEventListener("click", () => {
+        const channelId = Number.parseInt(removeButton.dataset.scanListChannelRemove ?? "", 10);
+        if (Number.isNaN(channelId)) {
+          return;
+        }
+        updateScanListChannels((selectedScanList.channelIds ?? []).filter((id) => id !== channelId));
       });
     }
 
