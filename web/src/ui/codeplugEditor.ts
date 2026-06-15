@@ -1832,11 +1832,23 @@ export function bindActiveTab(
     }
 
     for (const deleteButton of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-delete]")) {
-      deleteButton.addEventListener("click", () => {
+      deleteButton.addEventListener("click", async () => {
         const id = Number.parseInt(deleteButton.dataset.groupListDelete ?? "", 10);
         if (Number.isNaN(id)) {
           return;
         }
+
+        const groupList = state.document?.groupLists.find((item) => item.id === id);
+        const confirmed = await showConfirm({
+          title: "Delete Group List",
+          message: `Delete group list \"${groupList?.name ?? `#${id}`}\"?`,
+          confirmLabel: "Delete",
+          danger: true,
+        });
+        if (!confirmed) {
+          return;
+        }
+
         store.removeGroupList(id);
       });
     }

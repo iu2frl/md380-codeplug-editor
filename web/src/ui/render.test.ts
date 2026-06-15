@@ -559,7 +559,10 @@ describe("newly enabled tabs", () => {
     snapshot = store.getState();
     expect(snapshot.document?.groupLists.find((item) => item.id === 2)?.name).toBe("Travel Group");
 
+    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
     click(container, '[data-group-list-delete="1"]');
+    await Promise.resolve();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
     snapshot = store.getState();
     expect(snapshot.document?.groupLists.some((item) => item.id === 1)).toBe(false);
     expect(snapshot.document?.channels.find((item) => item.id === 1)?.groupListId).toBeUndefined();
@@ -582,11 +585,10 @@ describe("newly enabled tabs", () => {
     expect(snapshot.document?.scanLists.find((item) => item.id === 2)?.name).toBe("Travel Scan");
 
     // Delete requires selecting the scan list first
-    const confirmSpy = vi.spyOn(dialog, "showConfirm").mockResolvedValue(true);
     click(container, '[data-scan-list-select="1"]');
     click(container, '#scan-list-editor-delete');
     await Promise.resolve();
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(confirmSpy).toHaveBeenCalledTimes(2);
     snapshot = store.getState();
     expect(snapshot.document?.scanLists.some((item) => item.id === 1)).toBe(false);
     expect(snapshot.document?.channels.find((item) => item.id === 1)?.scanListId).toBeUndefined();
