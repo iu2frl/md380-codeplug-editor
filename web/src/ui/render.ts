@@ -81,6 +81,28 @@ function renderState(
     }
   }
 
+  if (uiState.activeTab === "zones") {
+    const zonesList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (zonesList) {
+      uiState.zonesListScrollTop = zonesList.scrollTop;
+    }
+    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
+    if (channelPool) {
+      uiState.zonesChannelPoolScrollTop = channelPool.scrollTop;
+    }
+  }
+
+  if (uiState.activeTab === "scan-lists") {
+    const scanListsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (scanListsList) {
+      uiState.scanListsListScrollTop = scanListsList.scrollTop;
+    }
+    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
+    if (channelPool) {
+      uiState.scanListChannelPoolScrollTop = channelPool.scrollTop;
+    }
+  }
+
   target.innerHTML = `${renderLoadedLayout(state, uiState)}${renderGuideModal(uiState)}`;
   bindFileInputs(target, store);
   bindTopActions(target, store, state, channelState, uiState);
@@ -114,6 +136,28 @@ function renderState(
     const channelsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
     if (channelsList) {
       channelsList.scrollTop = uiState.channelsListScrollTop;
+    }
+  }
+
+  if (uiState.activeTab === "zones") {
+    const zonesList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (zonesList) {
+      zonesList.scrollTop = uiState.zonesListScrollTop;
+    }
+    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
+    if (channelPool) {
+      channelPool.scrollTop = uiState.zonesChannelPoolScrollTop;
+    }
+  }
+
+  if (uiState.activeTab === "scan-lists") {
+    const scanListsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
+    if (scanListsList) {
+      scanListsList.scrollTop = uiState.scanListsListScrollTop;
+    }
+    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
+    if (channelPool) {
+      channelPool.scrollTop = uiState.scanListChannelPoolScrollTop;
     }
   }
 }
