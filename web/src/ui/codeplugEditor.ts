@@ -294,7 +294,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           };
 
           return `
-            <div class="row zone-row">
+            <div class="row one-touch-row">
               <span>One Touch ${slot}</span>
 
               <select data-one-touch-mode="${slot}">
