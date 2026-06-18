@@ -18,6 +18,12 @@ export default defineConfig({
       },
       {
         test: {
+          include: ["src/state/**/*.test.ts"],
+          environment: "node",
+        },
+      },
+      {
+        test: {
           include: ["src/transport/**/*.test.ts"],
           environment: "node",
         },

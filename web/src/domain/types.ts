@@ -185,6 +185,8 @@ export interface BasicRadioInfo {
   uniqueDeviceId: string;
   frequencyRange: string;
   lastProgrammedTime: string;
+  /** Manufacturer reported by the radio over USB. Not stored in the codeplug. */
+  maker?: string;
 }
 
 export interface CodeplugDocument {

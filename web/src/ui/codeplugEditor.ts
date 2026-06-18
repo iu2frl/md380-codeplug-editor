@@ -132,7 +132,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
       <h2>Basic</h2>
       <dl>
         <div><dt>Model</dt><dd>${escapeHtml(document.model || "Unknown")}</dd></div>
-        <div><dt>Maker</dt><dd>${escapeHtml(inferMaker(document.model))}</dd></div>
+        <div><dt>Maker</dt><dd>${escapeHtml(basic.maker || inferMaker(document.model))}</dd></div>
         <div><dt>Firmware Version</dt><dd>${escapeHtml(basic.firmwareVersion || "Not stored in codeplug")}</dd></div>
         <div><dt>CPS Version</dt><dd>${escapeHtml(basic.cpsVersion || "Unknown")}</dd></div>
         <div><dt>MCU Version</dt><dd>${escapeHtml(basic.mcuVersion || "Not stored in codeplug")}</dd></div>
@@ -1875,6 +1875,20 @@ export function bindActiveTab(
         if (!loadedState.document) {
           throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
         }
+
+        // Codeplug payload does not contain device metadata (maker, MCU, unique
+        // device ID). Query the radio directly so the Basic tab can show it.
+        if (uiState.radioTransport.readDeviceInfo) {
+          uiState.radioProgressLabel = "Reading device information...";
+          syncRadioProgressUi(target, uiState);
+          try {
+            const deviceInfo = await uiState.radioTransport.readDeviceInfo();
+            store.applyRadioDeviceInfo(deviceInfo);
+          } catch (deviceInfoError) {
+            console.debug("Device info read failed: ", deviceInfoError);
+          }
+        }
+
         uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
         uiState.radioProgressPercent = 100;
         uiState.radioProgressLabel = "Read complete.";

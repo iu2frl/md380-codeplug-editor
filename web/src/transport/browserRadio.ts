@@ -35,12 +35,32 @@ export interface BrowserRtcSyncPayload {
   second: number;
 }
 
+/**
+ * Device information queried from the radio over USB after a codeplug read.
+ * None of these values are stored inside the codeplug payload, so they must be
+ * fetched directly from the transceiver. All fields are optional because the
+ * available data depends on the firmware (stock vs. patched) and the USB stack.
+ */
+export interface BrowserRadioDeviceInfo {
+  /** USB iManufacturer descriptor string (e.g. "AnyRoad Technology"). */
+  manufacturerName?: string;
+  /** USB iProduct descriptor string (radio model reported over USB). */
+  productName?: string;
+  /** USB iSerial descriptor string. */
+  serialNumber?: string;
+  /** STM32 96-bit unique device ID read from 0x1FFF7A10 (hex). Best effort. */
+  uniqueDeviceId?: string;
+  /** STM32 MCU device/revision derived from the DBGMCU IDCODE register. Best effort. */
+  mcuVersion?: string;
+}
+
 export interface BrowserRadioTransport {
   connect(): Promise<BrowserRadioDevice>;
   disconnect(): Promise<void>;
   isConnected(): boolean;
   getConnectedDevice(): BrowserRadioDevice | null;
   readCodeplug(onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
+  readDeviceInfo?(): Promise<BrowserRadioDeviceInfo>;
   writeCodeplug(data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void>;
   getSpiFlashSize(): Promise<number>;
   readSpiFlashRegion(address: number, size: number, onProgress?: (progress: BrowserTransferProgress) => void): Promise<Uint8Array>;
@@ -326,6 +346,66 @@ class WebUsbRadioTransport implements BrowserRadioTransport {
     }
 
     return out;
+  }
+
+  async readDeviceInfo(): Promise<BrowserRadioDeviceInfo> {
+    const device = this.requireConnectedDevice();
+
+    // The USB descriptor strings are captured at connect time and are always
+    // available regardless of the firmware. They are the most reliable source.
+    const info: BrowserRadioDeviceInfo = {
+      manufacturerName: nonEmpty(this.connectedDevice?.manufacturerName),
+      productName: nonEmpty(this.connectedDevice?.productName),
+      serialNumber: nonEmpty(this.connectedDevice?.serialNumber),
+    };
+
+    // Best-effort memory reads. These rely on the radio answering DFU memory
+    // uploads (works on patched md380tools firmware and STM32 bootloader mode).
+    // Any failure is swallowed so the codeplug read flow is never disrupted.
+    try {
+      await this.enterDfuIdle(device);
+      await this.md380Custom(device, 0x91, 0x01); // Programming mode.
+
+      // STM32F405 96-bit unique device ID lives at 0x1FFF7A10 (12 bytes).
+      try {
+        const id = await this.peek(device, 0x1fff7a10, 12);
+        if (id.byteLength === 12 && id.some((byte) => byte !== 0x00 && byte !== 0xff)) {
+          info.uniqueDeviceId = bytesToHex(id);
+        }
+      } catch (error) {
+        console.debug("Unique device ID read failed (expected on some firmwares): ", error);
+      }
+
+      // STM32 DBGMCU IDCODE register at 0xE0042000 holds the device + revision id.
+      try {
+        const idcode = await this.peek(device, 0xe0042000, 4);
+        if (idcode.byteLength === 4) {
+          const value = idcode[0] | (idcode[1] << 8) | (idcode[2] << 16) | (idcode[3] << 24);
+          const deviceId = value & 0x0fff;
+          const revisionId = (value >>> 16) & 0xffff;
+          if (deviceId !== 0 && deviceId !== 0x0fff) {
+            info.mcuVersion = `${describeStm32DeviceId(deviceId)} (rev 0x${revisionId.toString(16).toUpperCase()})`;
+          }
+        }
+      } catch (error) {
+        console.debug("MCU IDCODE read failed (expected on some firmwares): ", error);
+      }
+    } catch (error) {
+      console.debug("Device info query failed: ", error);
+    } finally {
+      try {
+        await this.enterDfuIdle(device);
+      } catch {
+        // Ignore cleanup errors; the read flow will reboot the radio next.
+      }
+    }
+
+    return info;
+  }
+
+  private async peek(device: UsbDeviceLike, address: number, size: number): Promise<Uint8Array> {
+    await this.setAddress(device, address);
+    return this.upload(device, 1, size);
   }
 
   async writeCodeplug(data: Uint8Array, onProgress?: (progress: BrowserTransferProgress) => void): Promise<void> {
@@ -893,6 +973,29 @@ function bcdByte(value: number): number {
   const tens = Math.floor(value / 10);
   const ones = value % 10;
   return ((tens & 0x0f) << 4) | (ones & 0x0f);
+}
+
+function nonEmpty(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0").toUpperCase()).join("");
+}
+
+function describeStm32DeviceId(deviceId: number): string {
+  // STM32 DBGMCU IDCODE device id values (DEV_ID field).
+  switch (deviceId) {
+    case 0x411:
+      return "STM32F2xx";
+    case 0x413:
+      return "STM32F405/407/415/417";
+    case 0x419:
+      return "STM32F42x/43x";
+    default:
+      return `STM32 (DEV_ID 0x${deviceId.toString(16).toUpperCase()})`;
+  }
 }
 
 function validateRtcPayload(payload: BrowserRtcSyncPayload): void {

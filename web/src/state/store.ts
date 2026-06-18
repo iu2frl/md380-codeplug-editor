@@ -2,6 +2,15 @@ import { createBlankCodeplugBytes, parseCodeplug, serializeCodeplug } from "../d
 import type { Channel, CodeplugDocument, ValidationIssue } from "../domain/types";
 import { validateDocument } from "../domain/validation";
 
+/** Device metadata fetched from the radio over USB (not part of the codeplug). */
+export interface RadioDeviceInfo {
+  manufacturerName?: string;
+  productName?: string;
+  serialNumber?: string;
+  uniqueDeviceId?: string;
+  mcuVersion?: string;
+}
+
 function syncChannelTxFrequency(channel: Channel): void {
   channel.txFrequencyMHz = Number((channel.rxFrequencyMHz + channel.txOffsetMHz).toFixed(5));
 }
@@ -94,6 +103,37 @@ export class EditorStore {
     const lowerModel = model.toLowerCase();
     const fileName = format === "rdt" ? `blank-${lowerModel}.rdt` : `blank-${lowerModel}.bin`;
     this.load(fileName, createBlankCodeplugBytes(format, model));
+  }
+
+  /**
+   * Apply device metadata queried directly from the radio (USB descriptors and
+   * best-effort MCU reads). These values are not part of the codeplug payload,
+   * so applying them does not mark the document dirty and is not undoable. The
+   * baseline is updated so a subsequent save still reports no changes.
+   */
+  applyRadioDeviceInfo(info: RadioDeviceInfo): void {
+    const document = this.state.document;
+    if (!document) {
+      return;
+    }
+
+    if (info.productName && document.model.trim().length === 0) {
+      document.model = info.productName;
+    }
+    if (info.manufacturerName) {
+      document.basicInfo.maker = info.manufacturerName;
+    }
+    if (info.mcuVersion) {
+      document.basicInfo.mcuVersion = info.mcuVersion;
+    }
+    const deviceId = info.uniqueDeviceId ?? info.serialNumber;
+    if (deviceId) {
+      document.basicInfo.uniqueDeviceId = deviceId;
+    }
+
+    this.baselineDocument = this.cloneDocument(document);
+    this.refreshDirty();
+    this.emit();
   }
 
   reset(importError?: string): void {

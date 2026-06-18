@@ -341,6 +341,20 @@ export function bindLandingActions(
       if (!loadedState.document) {
         throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
       }
+
+      // Codeplug payload does not contain device metadata (maker, MCU, unique
+      // device ID). Query the radio directly so the Basic tab can show it.
+      if (transport.readDeviceInfo) {
+        uiState.radioProgressLabel = "Reading device information...";
+        syncRadioProgressUi(target, uiState);
+        try {
+          const deviceInfo = await transport.readDeviceInfo();
+          store.applyRadioDeviceInfo(deviceInfo);
+        } catch (deviceInfoError) {
+          console.debug("Device info read failed: ", deviceInfoError);
+        }
+      }
+
       uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
       uiState.radioProgressPercent = 100;
       uiState.radioProgressLabel = "Read complete.";
