@@ -892,6 +892,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           ${
             selectedChannel
               ? `
+            <div class="channel-form">
+            <section class="channel-section">
+              <h3>Identity &amp; RF</h3>
+              <div class="channel-grid">
             <div class="form-group">
               <label>
                 Channel Name
@@ -960,6 +964,11 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 </select>
               </label>
             </div>
+              </div>
+            </section>
+            <section class="channel-section">
+              <h3>Contacts &amp; Lists</h3>
+              <div class="channel-grid">
             <div class="form-group">
               <label>
                 Contact
@@ -1022,6 +1031,11 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 </select>
               </label>
             </div>
+              </div>
+            </section>
+            <section class="channel-section">
+              <h3>Privacy &amp; Timers</h3>
+              <div class="channel-grid">
             <div class="form-group">
               <label>
                 Privacy
@@ -1064,6 +1078,11 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 <input id="channel-editor-emergency-system" type="number" min="0" max="32" step="1" value="${selectedChannel.emergencySystem}" />
               </label>
             </div>
+              </div>
+            </section>
+            <section class="channel-section">
+              <h3>Reference &amp; Signalling</h3>
+              <div class="channel-grid">
             <div class="form-group">
               <label>
                 RX Ref Frequency
@@ -1108,6 +1127,11 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 </select>
               </label>
             </div>
+              </div>
+            </section>
+            <section class="channel-section">
+              <h3>Tones (CTCSS/DCS)</h3>
+              <div class="channel-grid">
             <div class="form-group">
               <label>
                 CTCSS/DCS Decode
@@ -1140,6 +1164,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 </select>
               </label>
             </div>
+              </div>
+            </section>
+            <section class="channel-section">
+              <h3>Advanced Options</h3>
             <div class="disabled-grid">
               <label>RX Only<select id="channel-editor-rx-only"><option value="Off" ${selectedChannel.rxOnly === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.rxOnly === "On" ? "selected" : ""}>On</option></select></label>
               <label>Autoscan<select id="channel-editor-autoscan"><option value="Off" ${selectedChannel.autoscan === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.autoscan === "On" ? "selected" : ""}>On</option></select></label>
@@ -1166,6 +1194,8 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               <label>Decode 6<select id="channel-editor-decode6"><option value="Off" ${selectedChannel.decode6 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode6 === "On" ? "selected" : ""}>On</option></select></label>
               <label>Decode 7<select id="channel-editor-decode7"><option value="Off" ${selectedChannel.decode7 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode7 === "On" ? "selected" : ""}>On</option></select></label>
               <label>Decode 8<select id="channel-editor-decode8"><option value="Off" ${selectedChannel.decode8 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode8 === "On" ? "selected" : ""}>On</option></select></label>
+            </div>
+            </section>
             </div>
             <div class="form-actions">
               <button class="button tiny" id="channel-editor-delete">Delete Channel</button>

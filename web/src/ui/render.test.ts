@@ -369,6 +369,18 @@ describe("channels tab", () => {
     expect(container.querySelector("#channel-editor-rx")).not.toBeNull();
   });
 
+  it("groups channel editor fields into labeled grid sections", () => {
+    click(container, '[data-tab="channels"]');
+    click(container, '[data-channel-select="1"]');
+    const sections = container.querySelectorAll("#active-tab-panel .channel-section");
+    expect(sections.length).toBeGreaterThanOrEqual(5);
+    const headings = [...sections].map((section) => section.querySelector("h3")?.textContent);
+    expect(headings).toContain("Identity & RF");
+    expect(headings).toContain("Advanced Options");
+    // Every field still lives inside a responsive grid, not a flat stack.
+    expect(container.querySelector("#active-tab-panel .channel-grid")).not.toBeNull();
+  });
+
   it("selected channel editor name matches the channel name", () => {
     click(container, '[data-tab="channels"]');
     click(container, '[data-channel-select="1"]');
