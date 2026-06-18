@@ -642,6 +642,39 @@ describe("newly enabled tabs", () => {
     expect(snapshot.document?.channels.find((item) => item.id === 1)?.scanListId).toBeUndefined();
   });
 
+  it("opens the zone channel picker with a 16-channel limit", () => {
+    click(container, '[data-tab="zones"]');
+    click(container, '[data-zone-select="1"]');
+    click(container, "#zone-edit-channels");
+
+    const counter = document.body.querySelector<HTMLElement>(".picker-card .picker-counter");
+    expect(counter?.textContent).toContain("/16 channels selected");
+
+    document.body.querySelector<HTMLButtonElement>(".picker-cancel")?.click();
+  });
+
+  it("opens the scan list channel picker with a 31-channel limit", () => {
+    click(container, '[data-tab="scan-lists"]');
+    click(container, '[data-scan-list-select="1"]');
+    click(container, "#scan-list-edit-channels");
+
+    const counter = document.body.querySelector<HTMLElement>(".picker-card .picker-counter");
+    expect(counter?.textContent).toContain("/31 channels selected");
+
+    document.body.querySelector<HTMLButtonElement>(".picker-cancel")?.click();
+  });
+
+  it("opens the group list contact picker with a 32-contact limit", () => {
+    click(container, '[data-tab="group-lists"]');
+    click(container, '[data-group-list-select="1"]');
+    click(container, "#group-list-edit-contacts");
+
+    const counter = document.body.querySelector<HTMLElement>(".picker-card .picker-counter");
+    expect(counter?.textContent).toContain("/32 contacts selected");
+
+    document.body.querySelector<HTMLButtonElement>(".picker-cancel")?.click();
+  });
+
   it("renders radio transfer panel", () => {
     click(container, '[data-tab="radio-transfer"]');
     expect(container.querySelector("#radio-transfer-connect")).not.toBeNull();
