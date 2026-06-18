@@ -255,7 +255,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
       <p class="muted-text">Manage DTMF Number Keys (0-9).</p>
 
       <h3>Number Keys</h3>
-      <div class="rows">
+      <div class="rows dtmf-grid">
         ${Array.from({ length: 10 }, (_, digit) => {
           const entry = document.numberKeys.find((item) => item.slot === digit);
           return `

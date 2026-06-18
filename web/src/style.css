@@ -462,6 +462,15 @@ select {
   align-items: center;
 }
 
+.dtmf-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.dtmf-grid label {
+  margin-bottom: 0;
+}
+
 .channel-row {
   grid-template-columns: 1.4fr repeat(8, minmax(80px, 1fr)) auto;
 }
@@ -888,6 +897,10 @@ select {
   .zone-row,
   .one-touch-row,
   .text-message-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dtmf-grid {
     grid-template-columns: 1fr;
   }
 
