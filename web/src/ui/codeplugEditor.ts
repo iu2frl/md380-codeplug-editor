@@ -16,7 +16,7 @@ import {
   setRadioProgress,
   syncRadioProgressUi,
 } from "./uiHelpers";
-import { showToast, showConfirm } from "./dialog";
+import { showToast, showConfirm, showMembershipPicker } from "./dialog";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -555,7 +555,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
     const selectedZone = uiState.selectedZoneId ? document.zones.find((z) => z.id === uiState.selectedZoneId) : null;
     return `
       <h2>Zones</h2>
-      <div class="two-pane-layout">
+      <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
           <button class="button tiny" id="add-zone">Add Zone</button>
           <div class="list">
@@ -584,42 +584,22 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
             <div class="zone-editor-meta">
               <strong>${selectedZone.channelIds.length}/16 channels selected</strong>
-              <small class="muted-text">Pick channels on the left, then reorder on the right.</small>
+              <small class="muted-text">Use "Edit Channels" to add or remove, then reorder below.</small>
               <small id="zone-editor-error" class="field-error"></small>
             </div>
 
-            <div class="zone-editor-grid">
-              <section class="zone-editor-panel">
-                <h3>Available Channels</h3>
-                <div class="zone-channel-pool">
-                  ${document.channels.length === 0
-                    ? `<p class="muted-text">No channels available.</p>`
-                    : document.channels
-                        .map(
-                          (channel) => `
-                            <label class="zone-channel-toggle">
-                              <input
-                                type="checkbox"
-                                data-zone-channel-toggle="${channel.id}"
-                                ${selectedZone.channelIds.includes(channel.id) ? "checked" : ""}
-                              />
-                              <span>#${channel.id} ${escapeHtml(channel.name)}</span>
-                            </label>
-                          `,
-                        )
-                        .join("")}
-                </div>
-              </section>
-
-              <section class="zone-editor-panel">
+            <section class="zone-editor-panel">
+              <div class="zone-editor-panel-head">
                 <h3>Selected Channel Order</h3>
-                <div id="zone-selected-channels" class="zone-selected-list">
-                  ${selectedZone.channelIds.length === 0
-                    ? `<p class="muted-text">No channels selected.</p>`
-                    : selectedZone.channelIds
-                        .map((channelId, index) => {
-                          const channel = document.channels.find((item) => item.id === channelId);
-                          return `
+                <button class="button tiny" id="zone-edit-channels">Edit Channels</button>
+              </div>
+              <div id="zone-selected-channels" class="zone-selected-list">
+                ${selectedZone.channelIds.length === 0
+                  ? `<p class="muted-text">No channels selected.</p>`
+                  : selectedZone.channelIds
+                      .map((channelId, index) => {
+                        const channel = document.channels.find((item) => item.id === channelId);
+                        return `
                             <div class="zone-selected-row" data-zone-selected-row="${channelId}">
                               <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
                               <div class="zone-selected-actions">
@@ -629,11 +609,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                               </div>
                             </div>
                           `;
-                        })
-                        .join("")}
-                </div>
-              </section>
-            </div>
+                      })
+                      .join("")}
+              </div>
+            </section>
 
             <div class="form-actions">
               <button class="button tiny" id="zone-editor-delete">Delete Zone</button>
@@ -654,7 +633,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
     return `
       <h2>Scan Lists</h2>
-      <div class="two-pane-layout">
+      <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
           <button class="button tiny" id="add-scan-list">Add Scan List</button>
           <div class="list">
@@ -683,15 +662,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               </label>
             </div>
 
-            <div class="zone-editor-meta">
-              <strong>${selectedScanChannelIds.length}/31 channels selected</strong>
-              <small class="muted-text">Pick channels on the left, then reorder on the right.</small>
-              <small id="scan-list-editor-error" class="field-error"></small>
-            </div>
-
-            <div class="zone-editor-grid">
-              <section class="zone-editor-panel">
-                <h3>Scan Behavior</h3>
+            <section class="zone-editor-panel">
+              <h3>Scan Behavior</h3>
+              <div class="settings-grid">
                 <div class="form-group">
                   <label>
                     Signalling Hold Time (ms)
@@ -749,39 +722,27 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                 </div>
                   `
                   : ""}
-              </section>
+              </div>
+            </section>
 
-              <section class="zone-editor-panel">
-                <h3>Available Channels</h3>
-                <div class="zone-channel-pool">
-                  ${document.channels.length === 0
-                    ? `<p class="muted-text">No channels available.</p>`
-                    : document.channels
-                        .map(
-                          (channel) => `
-                            <label class="zone-channel-toggle">
-                              <input
-                                type="checkbox"
-                                data-scan-list-channel-toggle="${channel.id}"
-                                ${selectedScanChannelIds.includes(channel.id) ? "checked" : ""}
-                              />
-                              <span>#${channel.id} ${escapeHtml(channel.name)}</span>
-                            </label>
-                          `,
-                        )
-                        .join("")}
-                </div>
-              </section>
+            <div class="zone-editor-meta">
+              <strong>${selectedScanChannelIds.length}/31 channels selected</strong>
+              <small class="muted-text">Use "Edit Channels" to add or remove, then reorder below.</small>
+              <small id="scan-list-editor-error" class="field-error"></small>
+            </div>
 
-              <section class="zone-editor-panel">
+            <section class="zone-editor-panel">
+              <div class="zone-editor-panel-head">
                 <h3>Selected Channel Order</h3>
-                <div class="zone-selected-list">
-                  ${selectedScanChannelIds.length === 0
-                    ? `<p class="muted-text">No channels selected.</p>`
-                    : selectedScanChannelIds
-                        .map((channelId, index) => {
-                          const channel = document.channels.find((item) => item.id === channelId);
-                          return `
+                <button class="button tiny" id="scan-list-edit-channels">Edit Channels</button>
+              </div>
+              <div class="zone-selected-list">
+                ${selectedScanChannelIds.length === 0
+                  ? `<p class="muted-text">No channels selected.</p>`
+                  : selectedScanChannelIds
+                      .map((channelId, index) => {
+                        const channel = document.channels.find((item) => item.id === channelId);
+                        return `
                             <div class="zone-selected-row" data-scan-list-selected-row="${channelId}">
                               <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
                               <div class="zone-selected-actions">
@@ -791,13 +752,14 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                               </div>
                             </div>
                           `;
-                        })
-                        .join("")}
-                </div>
+                      })
+                      .join("")}
               </div>
-              <div class="form-actions">
-                <button class="button tiny" id="scan-list-editor-delete">Delete Scan List</button>
-              </div>
+            </section>
+
+            <div class="form-actions">
+              <button class="button tiny" id="scan-list-editor-delete">Delete Scan List</button>
+            </div>
             `
             : `<p class="muted-text">Select a scan list to edit</p>`
           }
@@ -813,7 +775,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
     return `
       <h2>Group Lists</h2>
-      <div class="two-pane-layout">
+      <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
           <button class="button tiny" id="add-group-list">Add Group List</button>
           <div class="list">
@@ -843,42 +805,22 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
             <div class="zone-editor-meta">
               <strong>${selectedGroupContactIds.length}/32 contacts selected</strong>
-              <small class="muted-text">Pick contacts on the left, then reorder on the right.</small>
+              <small class="muted-text">Use "Edit Contacts" to add or remove, then reorder below.</small>
               <small id="group-list-editor-error" class="field-error"></small>
             </div>
 
-            <div class="zone-editor-grid">
-              <section class="zone-editor-panel">
-                <h3>Available Contacts</h3>
-                <div class="zone-channel-pool">
-                  ${document.contacts.length === 0
-                    ? `<p class="muted-text">No contacts available.</p>`
-                    : document.contacts
-                        .map(
-                          (contact) => `
-                            <label class="zone-channel-toggle">
-                              <input
-                                type="checkbox"
-                                data-group-list-contact-toggle="${contact.id}"
-                                ${selectedGroupContactIds.includes(contact.id) ? "checked" : ""}
-                              />
-                              <span>#${contact.id} ${escapeHtml(contact.name)}</span>
-                            </label>
-                          `,
-                        )
-                        .join("")}
-                </div>
-              </section>
-
-              <section class="zone-editor-panel">
+            <section class="zone-editor-panel">
+              <div class="zone-editor-panel-head">
                 <h3>Selected Contact Order</h3>
-                <div class="zone-selected-list">
-                  ${selectedGroupContactIds.length === 0
-                    ? `<p class="muted-text">No contacts selected.</p>`
-                    : selectedGroupContactIds
-                        .map((contactId, index) => {
-                          const contact = document.contacts.find((item) => item.id === contactId);
-                          return `
+                <button class="button tiny" id="group-list-edit-contacts">Edit Contacts</button>
+              </div>
+              <div class="zone-selected-list">
+                ${selectedGroupContactIds.length === 0
+                  ? `<p class="muted-text">No contacts selected.</p>`
+                  : selectedGroupContactIds
+                      .map((contactId, index) => {
+                        const contact = document.contacts.find((item) => item.id === contactId);
+                        return `
                             <div class="zone-selected-row" data-group-list-selected-row="${contactId}">
                               <span class="zone-selected-name">${index + 1}. #${contactId} ${escapeHtml(contact?.name ?? "Unknown")}</span>
                               <div class="zone-selected-actions">
@@ -888,11 +830,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                               </div>
                             </div>
                           `;
-                        })
-                        .join("")}
-                </div>
-              </section>
-            </div>
+                      })
+                      .join("")}
+              </div>
+            </section>
 
             <div class="form-actions">
               <button class="button tiny" id="group-list-editor-delete">Delete Group List</button>
@@ -2014,7 +1955,6 @@ export function bindActiveTab(
     // Editor fields
     const nameInput = panel.querySelector<HTMLInputElement>("#zone-editor-name");
     const deleteButton = panel.querySelector<HTMLButtonElement>("#zone-editor-delete");
-    const zoneError = panel.querySelector<HTMLElement>("#zone-editor-error");
 
     const selectedZone = uiState.selectedZoneId
       ? state.document.zones.find((zone) => zone.id === uiState.selectedZoneId)
@@ -2036,38 +1976,22 @@ export function bindActiveTab(
       });
     }
 
-    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-zone-channel-toggle]")) {
-      toggle.addEventListener("change", () => {
-        const channelId = Number.parseInt(toggle.dataset.zoneChannelToggle ?? "", 10);
-        if (!selectedZone || Number.isNaN(channelId)) {
-          return;
-        }
-
-        const current = [...selectedZone.channelIds];
-        const exists = current.includes(channelId);
-
-        if (toggle.checked && !exists) {
-          if (current.length >= 16) {
-            toggle.checked = false;
-            if (zoneError) {
-              zoneError.textContent = "A zone can contain at most 16 channels.";
-            }
-            return;
-          }
-          updateZoneChannels([...current, channelId]);
-          return;
-        }
-
-        if (!toggle.checked && exists) {
-          updateZoneChannels(current.filter((id) => id !== channelId));
-          return;
-        }
-
-        if (zoneError) {
-          zoneError.textContent = "";
-        }
+    panel.querySelector<HTMLButtonElement>("#zone-edit-channels")?.addEventListener("click", async () => {
+      if (!selectedZone) {
+        return;
+      }
+      const result = await showMembershipPicker({
+        title: `Edit Channels — ${selectedZone.name}`,
+        items: (state.document?.channels ?? []).map((channel) => ({ id: channel.id, label: `#${channel.id} ${channel.name}` })),
+        selectedIds: selectedZone.channelIds,
+        maxSelection: 16,
+        itemNoun: "channels",
+        searchPlaceholder: "Search channels",
       });
-    }
+      if (result) {
+        updateZoneChannels(result);
+      }
+    });
 
     for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-zone-channel-up]")) {
       moveUp.addEventListener("click", () => {
@@ -2172,37 +2096,19 @@ export function bindActiveTab(
       });
     }
 
-    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-group-list-contact-toggle]")) {
-      toggle.addEventListener("change", () => {
-        const contactId = Number.parseInt(toggle.dataset.groupListContactToggle ?? "", 10);
-        if (Number.isNaN(contactId)) {
-          return;
-        }
-
-        const next = [...(selectedGroupList.contactIds ?? [])];
-        const exists = next.includes(contactId);
-        if (toggle.checked && !exists) {
-          if (next.length >= 32) {
-            toggle.checked = false;
-            if (groupListError) {
-              groupListError.textContent = "A group list can contain at most 32 contacts.";
-            }
-            return;
-          }
-          updateGroupListContacts([...next, contactId]);
-          return;
-        }
-
-        if (!toggle.checked && exists) {
-          updateGroupListContacts(next.filter((id) => id !== contactId));
-          return;
-        }
-
-        if (groupListError) {
-          groupListError.textContent = "";
-        }
+    panel.querySelector<HTMLButtonElement>("#group-list-edit-contacts")?.addEventListener("click", async () => {
+      const result = await showMembershipPicker({
+        title: `Edit Contacts — ${selectedGroupList.name}`,
+        items: (state.document?.contacts ?? []).map((contact) => ({ id: contact.id, label: `#${contact.id} ${contact.name}` })),
+        selectedIds: selectedGroupList.contactIds ?? [],
+        maxSelection: 32,
+        itemNoun: "contacts",
+        searchPlaceholder: "Search contacts",
       });
-    }
+      if (result) {
+        updateGroupListContacts(result);
+      }
+    });
 
     for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-group-list-contact-up]")) {
       moveUp.addEventListener("click", () => {
@@ -2386,39 +2292,20 @@ export function bindActiveTab(
       });
     }
 
-    // Handle channel toggles
-    const currentChannelIds = [...(selectedScanList.channelIds ?? [])];
-    for (const toggle of panel.querySelectorAll<HTMLInputElement>("[data-scan-list-channel-toggle]")) {
-      toggle.addEventListener("change", () => {
-        const channelId = Number.parseInt(toggle.dataset.scanListChannelToggle ?? "", 10);
-        if (Number.isNaN(channelId)) {
-          return;
-        }
-
-        const next = [...(selectedScanList.channelIds ?? [])];
-        const exists = next.includes(channelId);
-        if (toggle.checked && !exists) {
-          if (next.length >= 31) {
-            toggle.checked = false;
-            if (scanListError) {
-              scanListError.textContent = "A scan list can contain at most 31 channels.";
-            }
-            return;
-          }
-          updateScanListChannels([...next, channelId]);
-          return;
-        }
-
-        if (!toggle.checked && exists) {
-          updateScanListChannels(next.filter((id) => id !== channelId));
-          return;
-        }
-
-        if (scanListError) {
-          scanListError.textContent = "";
-        }
+    // Handle channel membership editing via modal picker
+    panel.querySelector<HTMLButtonElement>("#scan-list-edit-channels")?.addEventListener("click", async () => {
+      const result = await showMembershipPicker({
+        title: `Edit Channels — ${selectedScanList.name}`,
+        items: (state.document?.channels ?? []).map((channel) => ({ id: channel.id, label: `#${channel.id} ${channel.name}` })),
+        selectedIds: selectedScanList.channelIds ?? [],
+        maxSelection: 31,
+        itemNoun: "channels",
+        searchPlaceholder: "Search channels",
       });
-    }
+      if (result) {
+        updateScanListChannels(result);
+      }
+    });
 
     for (const moveUp of panel.querySelectorAll<HTMLButtonElement>("[data-scan-list-channel-up]")) {
       moveUp.addEventListener("click", () => {

@@ -279,7 +279,7 @@ describe("zones tab", () => {
     click(container, '[data-tab="zones"]');
     click(container, '[data-zone-select="1"]');
     expect(container.querySelector("#zone-editor-name")).not.toBeNull();
-    expect(container.querySelector("[data-zone-channel-toggle]")).not.toBeNull();
+    expect(container.querySelector("#zone-edit-channels")).not.toBeNull();
     expect(container.querySelector("#zone-selected-channels")).not.toBeNull();
   });
 
@@ -296,6 +296,44 @@ describe("zones tab", () => {
     expect(container.querySelector('[data-zone-channel-up="2"]')).not.toBeNull();
     expect(container.querySelector('[data-zone-channel-down="1"]')).not.toBeNull();
     expect(container.querySelector('[data-zone-channel-remove="1"]')).not.toBeNull();
+  });
+
+  it("edits zone channels through the membership picker and applies changes", async () => {
+    click(container, '[data-tab="zones"]');
+    click(container, '[data-zone-select="1"]');
+    click(container, "#zone-edit-channels");
+
+    const picker = document.body.querySelector<HTMLElement>(".picker-card");
+    expect(picker).not.toBeNull();
+
+    // Deselect channel #2, keep #1, then apply.
+    const toggle = picker?.querySelector<HTMLInputElement>('input[data-picker-id="2"]');
+    expect(toggle?.checked).toBe(true);
+    toggle!.checked = false;
+    toggle!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    picker?.querySelector<HTMLButtonElement>(".picker-apply")?.click();
+    await Promise.resolve();
+
+    const zone = store.getState().document?.zones.find((item) => item.id === 1);
+    expect(zone?.channelIds).toEqual([1]);
+  });
+
+  it("discards picker changes when cancelled", async () => {
+    click(container, '[data-tab="zones"]');
+    click(container, '[data-zone-select="1"]');
+    click(container, "#zone-edit-channels");
+
+    const picker = document.body.querySelector<HTMLElement>(".picker-card");
+    const toggle = picker?.querySelector<HTMLInputElement>('input[data-picker-id="2"]');
+    toggle!.checked = false;
+    toggle!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    picker?.querySelector<HTMLButtonElement>(".picker-cancel")?.click();
+    await Promise.resolve();
+
+    const zone = store.getState().document?.zones.find((item) => item.id === 1);
+    expect(zone?.channelIds).toEqual([1, 2]);
   });
 });
 
