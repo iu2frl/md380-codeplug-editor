@@ -1255,6 +1255,18 @@ select {
   margin: 0.5rem 0;
 }
 
+@media (max-width: 600px) {
+  /* On small screens the hero title wraps to multiple lines, so the absolutely
+     positioned selector would overlap it. Drop it into normal flow above the
+     title instead, right-aligned. */
+  .language-selector {
+    position: static;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+}
+
 @media (max-width: 480px) {
   .toast-container {
     top: auto;
