@@ -10,6 +10,26 @@
 // Only translate UI chrome. Never add keys for codeplug data (channel/zone/
 // contact names, frequencies) or device-stored radio text — those stay
 // byte-faithful and untranslated.
+//
+// Key naming convention (enforced by review + completeness.test.ts):
+//   - Lower camelCase segments joined by dots: "<area>.<thing>[.<detail>]".
+//   - First segment is the area/namespace:
+//       app.*        — global app shell (title, etc.)
+//       common.*     — generic reusable words (cancel, apply, close…)
+//       language.*   — language picker
+//       tab.*        — tab button labels
+//       channels.*   — channels editor
+//       zones.*      — zones editor
+//       scanLists.*  — scan lists editor
+//       groupLists.* — group lists editor
+//       contacts.*   — digital contacts editor
+//       general.*    — general settings
+//       radio.*      — radio transfer
+//       callsign.*   — callsign workflow
+//       dialog.*     — toasts / confirms / pickers
+//       validation.* — validation messages (keyed by issue code)
+//   - Interpolation uses {name}-style tokens; the SAME tokens must appear in
+//     every locale's translation of that key.
 export const en = {
   "app.title": "MD380 Codeplug Editor",
 
