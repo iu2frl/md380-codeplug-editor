@@ -61,4 +61,13 @@ describe("translation correctness", () => {
       .map(([key]) => key);
     expect(empty).toEqual([]);
   });
+
+  // Full-coverage gate for completed languages (M6: it, M7: fr).
+  const FULLY_TRANSLATED: Record<string, PartialDictionary> = { it };
+  for (const [locale, dict] of Object.entries(FULLY_TRANSLATED)) {
+    test(`locale "${locale}" translates every English key`, () => {
+      const missing = [...EN_KEYS].filter((key) => !(key in dict));
+      expect(missing).toEqual([]);
+    });
+  }
 });
