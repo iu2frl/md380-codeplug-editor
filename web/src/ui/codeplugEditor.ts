@@ -132,72 +132,72 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "basic") {
     const basic = document.basicInfo;
     return `
-      <h2>Basic</h2>
+      <h2>${t("tab.basic")}</h2>
       <dl>
-        <div><dt>Model</dt><dd>${escapeHtml(document.model || "Unknown")}</dd></div>
-        <div><dt>Maker</dt><dd>${escapeHtml(basic.maker || inferMaker(document.model))}</dd></div>
-        <div><dt>Firmware Version</dt><dd>${escapeHtml(basic.firmwareVersion || "Not stored in codeplug")}</dd></div>
-        <div><dt>CPS Version</dt><dd>${escapeHtml(basic.cpsVersion || "Unknown")}</dd></div>
-        <div><dt>MCU Version</dt><dd>${escapeHtml(basic.mcuVersion || "Not stored in codeplug")}</dd></div>
-        <div><dt>Unique Device ID</dt><dd>${escapeHtml(basic.uniqueDeviceId || "Not stored in codeplug")}</dd></div>
-        <div><dt>Frequency Range</dt><dd>${escapeHtml(basic.frequencyRange || "Unknown")}</dd></div>
-        <div><dt>Last Programmed</dt><dd>${escapeHtml(basic.lastProgrammedTime || "Unknown")}</dd></div>
-        <div><dt>Variant</dt><dd>${document.variant}</dd></div>
+        <div><dt>${t("editor.basic.model")}</dt><dd>${escapeHtml(document.model || t("editor.value.unknown"))}</dd></div>
+        <div><dt>${t("editor.basic.maker")}</dt><dd>${escapeHtml(basic.maker || inferMaker(document.model))}</dd></div>
+        <div><dt>${t("editor.basic.firmwareVersion")}</dt><dd>${escapeHtml(basic.firmwareVersion || t("editor.value.notStored"))}</dd></div>
+        <div><dt>${t("editor.basic.cpsVersion")}</dt><dd>${escapeHtml(basic.cpsVersion || t("editor.value.unknown"))}</dd></div>
+        <div><dt>${t("editor.basic.mcuVersion")}</dt><dd>${escapeHtml(basic.mcuVersion || t("editor.value.notStored"))}</dd></div>
+        <div><dt>${t("editor.basic.uniqueDeviceId")}</dt><dd>${escapeHtml(basic.uniqueDeviceId || t("editor.value.notStored"))}</dd></div>
+        <div><dt>${t("editor.basic.frequencyRange")}</dt><dd>${escapeHtml(basic.frequencyRange || t("editor.value.unknown"))}</dd></div>
+        <div><dt>${t("editor.basic.lastProgrammed")}</dt><dd>${escapeHtml(basic.lastProgrammedTime || t("editor.value.unknown"))}</dd></div>
+        <div><dt>${t("editor.basic.variant")}</dt><dd>${document.variant}</dd></div>
       </dl>
     `;
   }
 
   if (activeTab === "general") {
     return `
-      <h2>General</h2>
+      <h2>${t("tab.general")}</h2>
       <div class="general-grid">
         <section class="general-section">
-          <h3>Identity</h3>
+          <h3>${t("editor.general.identity")}</h3>
           <label>
-            Radio Name
+            ${t("editor.general.radioName")}
             <input id="radio-name" type="text" value="${escapeHtml(document.settings.radioName)}" maxlength="16" />
-            <small class="field-help">Max 16 characters.</small>
+            <small class="field-help">${t("editor.general.radioNameHelp")}</small>
             <small id="radio-name-error" class="field-error"></small>
           </label>
           <label>
-            DMR ID
+            ${t("editor.general.dmrId")}
             <input id="radio-id" type="number" value="${document.settings.radioId}" min="1" step="1" />
-            <small class="field-help">Valid range: 1 to 16,777,215.</small>
+            <small class="field-help">${t("editor.general.dmrIdHelp")}</small>
             <small id="radio-id-error" class="field-error"></small>
           </label>
           <label>
-            Boot Up Message Line 1
+            ${t("editor.general.bootLine1")}
             <input id="boot-line-1" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine1)}" />
-            <small class="field-help">Up to 10 characters.</small>
+            <small class="field-help">${t("editor.general.bootLineHelp")}</small>
             <small id="boot-line-1-error" class="field-error"></small>
           </label>
           <label>
-            Boot Up Message Line 2
+            ${t("editor.general.bootLine2")}
             <input id="boot-line-2" type="text" maxlength="10" value="${escapeHtml(document.settings.bootUpMessageLine2)}" />
-            <small class="field-help">Up to 10 characters.</small>
+            <small class="field-help">${t("editor.general.bootLineHelp")}</small>
             <small id="boot-line-2-error" class="field-error"></small>
           </label>
         </section>
 
         <section class="general-section disabled-grid">
-          <h3>Behavior</h3>
+          <h3>${t("editor.general.behavior")}</h3>
           <label>
-            VOX Sensitivity
+            ${t("editor.general.voxSensitivity")}
             <input id="vox-sensitivity" type="number" min="1" max="10" step="1" value="${document.settings.voxSensitivity}" />
             <small id="vox-sensitivity-error" class="field-error"></small>
           </label>
           <label>
-            TX Preamble Duration (ms)
+            ${t("editor.general.txPreamble")}
             <input id="tx-preamble-duration" type="number" min="0" max="8640" step="60" value="${document.settings.txPreambleDurationMs}" />
             <small id="tx-preamble-duration-error" class="field-error"></small>
           </label>
           <label>
-            RX Low Battery Alarm Interval (s)
+            ${t("editor.general.rxLowBattery")}
             <input id="rx-low-battery-interval" type="number" min="0" max="635" step="5" value="${document.settings.rxLowBatteryIntervalSec}" />
             <small id="rx-low-battery-interval-error" class="field-error"></small>
           </label>
         <label>
-          Backlight Timeout
+          ${t("editor.general.backlightTimeout")}
           <select id="backlight-timeout">
             <option value="Always" ${document.settings.backlightTimeoutSec === "Always" ? "selected" : ""}>Always</option>
             <option value="5" ${document.settings.backlightTimeoutSec === "5" ? "selected" : ""}>5</option>
@@ -206,7 +206,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           </select>
         </label>
         <label>
-          Keypad Auto Lock
+          ${t("editor.general.keypadAutoLock")}
           <select id="keypad-auto-lock">
             <option value="Manual" ${document.settings.keypadAutoLockSec === "Manual" ? "selected" : ""}>Manual</option>
             <option value="5" ${document.settings.keypadAutoLockSec === "5" ? "selected" : ""}>5</option>
@@ -215,14 +215,14 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
           </select>
         </label>
         <label>
-          Alert Tones
+          ${t("editor.general.alertTones")}
           <select id="alert-tones">
             <option value="On" ${document.settings.alertTones === "On" ? "selected" : ""}>On</option>
             <option value="Off" ${document.settings.alertTones === "Off" ? "selected" : ""}>Off</option>
           </select>
         </label>
         <label>
-          Time Zone
+          ${t("editor.general.timeZone")}
           <select id="time-zone">
             ${TIME_ZONE_OPTIONS.map((zone) => `<option value="${zone}" ${document.settings.timeZone === zone ? "selected" : ""}>${zone}</option>`).join("")}
           </select>
@@ -234,8 +234,8 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "digital-contacts") {
     return `
-      <h2>Digital Contacts</h2>
-      <button class="button tiny" id="add-contact">Add Contact</button>
+      <h2>${t("tab.digitalContacts")}</h2>
+      <button class="button tiny" id="add-contact">${t("editor.contacts.add")}</button>
       <div class="rows">
         ${document.contacts
           .map(
@@ -243,7 +243,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               <div class="row">
                 <input data-contact-name="${contact.id}" value="${escapeHtml(contact.name)}" maxlength="16" />
                 <input data-contact-call-id="${contact.id}" type="number" min="1" max="16777215" value="${contact.callId}" />
-                <button class="button ghost tiny" data-contact-delete="${contact.id}">Delete</button>
+                <button class="button ghost tiny" data-contact-delete="${contact.id}">${t("common.delete")}</button>
               </div>
             `,
           )
@@ -254,18 +254,18 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "dtmf") {
     return `
-      <h2>DTMF</h2>
-      <p class="muted-text">Manage DTMF Number Keys (0-9).</p>
+      <h2>${t("tab.dtmf")}</h2>
+      <p class="muted-text">${t("editor.dtmf.desc")}</p>
 
-      <h3>Number Keys</h3>
+      <h3>${t("editor.dtmf.numberKeys")}</h3>
       <div class="rows dtmf-grid">
         ${Array.from({ length: 10 }, (_, digit) => {
           const entry = document.numberKeys.find((item) => item.slot === digit);
           return `
             <label>
-              Key ${digit}
+              ${t("editor.dtmf.key", { digit })}
               <select data-number-key-slot="${digit}">
-                <option value="">None</option>
+                <option value="">${t("common.none")}</option>
                 ${document.contacts
                   .map(
                     (contact) =>
@@ -283,8 +283,8 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "one-touch") {
     return `
-      <h2>One Touch</h2>
-      <p class="muted-text">Configure side-button One Touch call and message actions.</p>
+      <h2>${t("tab.oneTouch")}</h2>
+      <p class="muted-text">${t("editor.oneTouch.desc")}</p>
       <div class="rows">
         ${Array.from({ length: 6 }, (_, index) => {
           const slot = index + 1;
@@ -298,7 +298,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
           return `
             <div class="row one-touch-row">
-              <span>One Touch ${slot}</span>
+              <span>${t("editor.oneTouch.slot", { slot })}</span>
 
               <select data-one-touch-mode="${slot}">
                 <option value="None" ${resolvedAction.mode === "None" ? "selected" : ""}>None</option>
@@ -316,7 +316,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                   ${resolvedAction.callType === "Text Message"
                     ? `
                       <select data-one-touch-text-message="${slot}">
-                        <option value="">None</option>
+                        <option value="">${t("common.none")}</option>
                         ${document.textMessages
                           .map(
                             (message) =>
@@ -327,7 +327,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                     `
                     : `
                       <select data-one-touch-contact="${slot}">
-                        <option value="">None</option>
+                        <option value="">${t("common.none")}</option>
                         ${document.contacts
                           .map(
                             (contact) =>
@@ -346,7 +346,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                       <option value="DTMF-4" ${resolvedAction.dtmfSystem === "DTMF-4" ? "selected" : ""}>DTMF-4</option>
                     </select>
                   `
-                  : `<span class="muted-text">No action configured.</span>`}
+                  : `<span class="muted-text">${t("editor.oneTouch.noAction")}</span>`}
             </div>
           `;
         }).join("")}
@@ -356,38 +356,38 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "menus") {
     const rows: Array<{ key: keyof typeof document.menuSettings; label: string }> = [
-      { key: "radioDisable", label: "Radio Disable" },
-      { key: "radioEnable", label: "Radio Enable" },
-      { key: "remoteMonitor", label: "Remote Monitor" },
-      { key: "radioCheck", label: "Radio Check" },
-      { key: "manualDial", label: "Manual Dial" },
-      { key: "edit", label: "Edit" },
-      { key: "callAlert", label: "Call Alert" },
-      { key: "textMessage", label: "Text Message" },
-      { key: "toneOrAlert", label: "Tone Or Alert" },
-      { key: "talkaround", label: "Talkaround" },
-      { key: "outgoingRadio", label: "Outgoing Radio" },
-      { key: "answered", label: "Answered" },
-      { key: "missed", label: "Missed" },
-      { key: "editList", label: "Edit List" },
-      { key: "scan", label: "Scan" },
-      { key: "programKey", label: "Program Key" },
-      { key: "vox", label: "VOX" },
-      { key: "squelch", label: "Squelch" },
-      { key: "ledIndicator", label: "LED Indicator" },
-      { key: "keyboardLock", label: "Keyboard Lock" },
-      { key: "introScreen", label: "Intro Screen" },
-      { key: "backlight", label: "Backlight" },
-      { key: "power", label: "Power" },
-      { key: "gps", label: "GPS" },
-      { key: "programRadio", label: "Program Radio" },
-      { key: "displayMode", label: "Display Mode" },
-      { key: "passwordAndLock", label: "Password And Lock" },
+      { key: "radioDisable", label: t("editor.menus.radioDisable") },
+      { key: "radioEnable", label: t("editor.menus.radioEnable") },
+      { key: "remoteMonitor", label: t("editor.menus.remoteMonitor") },
+      { key: "radioCheck", label: t("editor.menus.radioCheck") },
+      { key: "manualDial", label: t("editor.menus.manualDial") },
+      { key: "edit", label: t("editor.menus.edit") },
+      { key: "callAlert", label: t("editor.menus.callAlert") },
+      { key: "textMessage", label: t("editor.menus.textMessage") },
+      { key: "toneOrAlert", label: t("editor.menus.toneOrAlert") },
+      { key: "talkaround", label: t("editor.menus.talkaround") },
+      { key: "outgoingRadio", label: t("editor.menus.outgoingRadio") },
+      { key: "answered", label: t("editor.menus.answered") },
+      { key: "missed", label: t("editor.menus.missed") },
+      { key: "editList", label: t("editor.menus.editList") },
+      { key: "scan", label: t("editor.menus.scan") },
+      { key: "programKey", label: t("editor.menus.programKey") },
+      { key: "vox", label: t("editor.menus.vox") },
+      { key: "squelch", label: t("editor.menus.squelch") },
+      { key: "ledIndicator", label: t("editor.menus.ledIndicator") },
+      { key: "keyboardLock", label: t("editor.menus.keyboardLock") },
+      { key: "introScreen", label: t("editor.menus.introScreen") },
+      { key: "backlight", label: t("editor.menus.backlight") },
+      { key: "power", label: t("editor.menus.power") },
+      { key: "gps", label: t("editor.menus.gps") },
+      { key: "programRadio", label: t("editor.menus.programRadio") },
+      { key: "displayMode", label: t("editor.menus.displayMode") },
+      { key: "passwordAndLock", label: t("editor.menus.passwordAndLock") },
     ];
     return `
-      <h2>Menus</h2>
+      <h2>${t("tab.menus")}</h2>
       <label>
-        Hang Time
+        ${t("editor.menus.hangTime")}
         <select id="menu-hang-time">
           <option value="Hang" ${document.menuSettings.hangTime === "Hang" ? "selected" : ""}>Hang</option>
           ${Array.from({ length: 31 }, (_, i) => `<option value="${i}" ${document.menuSettings.hangTime === `${i}` ? "selected" : ""}>${i}</option>`).join("")}
@@ -414,9 +414,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "buttons") {
     const options = radioButtonActionOptions();
     return `
-      <h2>Buttons</h2>
+      <h2>${t("tab.buttons")}</h2>
       <label>
-        Long Press Duration (ms)
+        ${t("editor.buttons.longPress")}
         <input id="long-press-duration" type="number" min="1000" max="3750" step="250" value="${document.longPressDurationMs}" />
       </label>
       <div class="rows">
@@ -448,8 +448,8 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "digital-text") {
     return `
-      <h2>Digital Text Message</h2>
-      <button class="button tiny" id="add-text-message" ${document.textMessages.length >= 50 ? "disabled" : ""}>Add Message</button>
+      <h2>${t("tab.digitalText")}</h2>
+      <button class="button tiny" id="add-text-message" ${document.textMessages.length >= 50 ? "disabled" : ""}>${t("editor.text.add")}</button>
       <div class="rows">
         ${document.textMessages
           .map(
@@ -457,7 +457,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               <div class="row text-message-row">
                 <span>${item.slot ?? item.id}</span>
                 <input data-text-message="${item.id}" value="${escapeHtml(item.text)}" maxlength="144" />
-                <button class="button ghost tiny" data-text-message-delete="${item.id}">Delete</button>
+                <button class="button ghost tiny" data-text-message-delete="${item.id}">${t("common.delete")}</button>
               </div>
             `,
           )
@@ -468,28 +468,28 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
   if (activeTab === "encryption") {
     return `
-      <h2>Encryption</h2>
-      <p class="muted-text">Privacy keys from the codeplug library layout.</p>
-      <h3>Enhanced Keys (32 hex chars each)</h3>
+      <h2>${t("tab.encryption")}</h2>
+      <p class="muted-text">${t("editor.encryption.desc")}</p>
+      <h3>${t("editor.encryption.enhancedHeading")}</h3>
       <div class="rows">
         ${document.privacySettings.enhancedKeys
           .map(
             (key, index) => `
               <label>
-                Enhanced ${index + 1}
+                ${t("editor.encryption.enhanced", { index: index + 1 })}
                 <input data-enhanced-key="${index}" value="${escapeHtml(key)}" maxlength="32" />
               </label>
             `,
           )
           .join("")}
       </div>
-      <h3>Basic Keys (4 hex chars each)</h3>
+      <h3>${t("editor.encryption.basicHeading")}</h3>
       <div class="rows">
         ${document.privacySettings.basicKeys
           .map(
             (key, index) => `
               <label>
-                Basic ${index + 1}
+                ${t("editor.encryption.basic", { index: index + 1 })}
                 <input data-basic-key="${index}" value="${escapeHtml(key)}" maxlength="4" />
               </label>
             `,
@@ -502,52 +502,52 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "radio-transfer") {
     const capabilities = detectBrowserRadioCapabilities();
     const isConnected = uiState.radioTransport?.isConnected() ?? false;
-    const connectLabel = isConnected ? "Disconnect Device" : "Connect Device";
+    const connectLabel = isConnected ? t("editor.radio.disconnect") : t("editor.radio.connect");
     const readEnabled = isConnected && !uiState.radioBusy;
     const writeEnabled = isConnected && !uiState.radioBusy;
 
     return `
-      <h2>Radio Transfer</h2>
-      <p class="muted-text">Browser-native radio read/write using WebUSB.</p>
+      <h2>${t("tab.radioTransfer")}</h2>
+      <p class="muted-text">${t("editor.radio.desc")}</p>
 
       <div class="radio-transfer-grid">
         <section class="radio-transfer-card">
-          <h3>Environment Compatibility</h3>
+          <h3>${t("editor.radio.envCompat")}</h3>
           <ul class="radio-transfer-list">
-            <li>Secure Context: <strong>${capabilities.isSecureContext ? "Yes" : "No"}</strong></li>
-            <li>WebUSB API: <strong>${capabilities.hasNavigatorUsb && capabilities.hasRequestDevice ? "Available" : "Unavailable"}</strong></li>
-            <li>Browser: <strong>${escapeHtml(capabilities.userAgent)}</strong></li>
+            <li>${t("editor.radio.secureContext")}: <strong>${capabilities.isSecureContext ? t("common.yes") : t("common.no")}</strong></li>
+            <li>${t("editor.radio.webusbApi")}: <strong>${capabilities.hasNavigatorUsb && capabilities.hasRequestDevice ? t("editor.radio.available") : t("editor.radio.unavailable")}</strong></li>
+            <li>${t("editor.radio.browser")}: <strong>${escapeHtml(capabilities.userAgent)}</strong></li>
           </ul>
           ${
             capabilities.blockers.length > 0
               ? `<div class="radio-transfer-blocker">${capabilities.blockers.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
-              : `<p class="ok">This browser environment appears compatible with the upcoming WebUSB flow.</p>`
+              : `<p class="ok">${t("editor.radio.compatible")}</p>`
           }
           ${
             capabilities.warnings.length > 0
               ? `<div class="radio-transfer-warning">${capabilities.warnings.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
               : ""
           }
-          <button id="radio-transfer-setup-guide-btn" class="button ghost tiny">Open Full Setup Guide</button>
+          <button id="radio-transfer-setup-guide-btn" class="button ghost tiny">${t("editor.radio.openSetupGuide")}</button>
         </section>
 
         <section class="radio-transfer-card">
-          <h3>Browser Workflow</h3>
+          <h3>${t("editor.radio.workflow")}</h3>
           <ol class="radio-transfer-list">
-            <li>Connect radio over USB and grant browser permission.</li>
-            <li>Read codeplug directly into the editor.</li>
-            <li>Edit and validate in-browser.</li>
-            <li>Write codeplug back with explicit confirmation and backup options.</li>
+            <li>${t("editor.radio.step1")}</li>
+            <li>${t("editor.radio.step2")}</li>
+            <li>${t("editor.radio.step3")}</li>
+            <li>${t("editor.radio.step4")}</li>
           </ol>
-          <p class="muted-text" id="radio-transfer-status"><br>Status: ${escapeHtml(uiState.radioStatusMessage)}</p>
+          <p class="muted-text" id="radio-transfer-status"><br>${t("editor.radio.status", { message: escapeHtml(uiState.radioStatusMessage) })}</p>
           <div id="radio-transfer-progress-wrap" class="radio-transfer-progress ${uiState.radioProgressVisible ? "" : "hidden"}">
             <progress id="radio-transfer-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
             <p class="muted-text" id="radio-transfer-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
           </div>
           <div class="actions">
             <button id="radio-transfer-connect" class="button ghost" ${(capabilities.supported && !uiState.radioBusy) || isConnected ? "" : "disabled"}>${connectLabel}</button>
-            <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>Read From Radio</button>
-            <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>Write To Radio</button>
+            <button id="radio-transfer-read" class="button ghost" ${readEnabled ? "" : "disabled"}>${t("editor.radio.read")}</button>
+            <button id="radio-transfer-write" class="button ghost" ${writeEnabled ? "" : "disabled"}>${t("editor.radio.write")}</button>
           </div>
         </section>
       </div>
@@ -557,17 +557,17 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
   if (activeTab === "zones") {
     const selectedZone = uiState.selectedZoneId ? document.zones.find((z) => z.id === uiState.selectedZoneId) : null;
     return `
-      <h2>Zones</h2>
+      <h2>${t("tab.zones")}</h2>
       <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
-          <button class="button tiny" id="add-zone">Add Zone</button>
+          <button class="button tiny" id="add-zone">${t("editor.zones.add")}</button>
           <div class="list">
             ${document.zones
               .map(
                 (zone) => `
                   <div class="list-item ${zone.id === uiState.selectedZoneId ? "selected" : ""}" data-zone-select="${zone.id}">
                     <div class="list-item-name">${escapeHtml(zone.name)}</div>
-                    <div class="list-item-meta">${zone.channelIds.length} channels</div>
+                    <div class="list-item-meta">${t("editor.zones.channelsMeta", { count: zone.channelIds.length })}</div>
                   </div>
                 `,
               )
@@ -580,35 +580,35 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               ? `
             <div class="form-group">
               <label>
-                Zone Name
+                ${t("editor.zones.name")}
                 <input id="zone-editor-name" type="text" value="${escapeHtml(selectedZone.name)}" maxlength="16" />
               </label>
             </div>
 
             <div class="zone-editor-meta">
-              <strong>${selectedZone.channelIds.length}/16 channels selected</strong>
-              <small class="muted-text">Use "Edit Channels" to add or remove, then reorder below.</small>
+              <strong>${t("editor.zones.channelsSelected", { count: selectedZone.channelIds.length })}</strong>
+              <small class="muted-text">${t("editor.common.editChannelsHelp")}</small>
               <small id="zone-editor-error" class="field-error"></small>
             </div>
 
             <section class="zone-editor-panel">
               <div class="zone-editor-panel-head">
-                <h3>Selected Channel Order</h3>
-                <button class="button tiny" id="zone-edit-channels">Edit Channels</button>
+                <h3>${t("editor.common.selectedChannelOrder")}</h3>
+                <button class="button tiny" id="zone-edit-channels">${t("editor.common.editChannels")}</button>
               </div>
               <div id="zone-selected-channels" class="zone-selected-list">
                 ${selectedZone.channelIds.length === 0
-                  ? `<p class="muted-text">No channels selected.</p>`
+                  ? `<p class="muted-text">${t("editor.common.noChannelsSelected")}</p>`
                   : selectedZone.channelIds
                       .map((channelId, index) => {
                         const channel = document.channels.find((item) => item.id === channelId);
                         return `
                             <div class="zone-selected-row" data-zone-selected-row="${channelId}">
-                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
+                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? t("editor.value.unknown"))}</span>
                               <div class="zone-selected-actions">
-                                <button class="button ghost tiny zone-order-button" title="Move channel up" aria-label="Move channel up" data-zone-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
-                                <button class="button ghost tiny zone-order-button" title="Move channel down" aria-label="Move channel down" data-zone-channel-down="${channelId}" ${index === selectedZone.channelIds.length - 1 ? "disabled" : ""}>&darr;</button>
-                                <button class="button ghost tiny" data-zone-channel-remove="${channelId}">Remove</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.common.moveChannelUp")}" aria-label="${t("editor.common.moveChannelUp")}" data-zone-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.common.moveChannelDown")}" aria-label="${t("editor.common.moveChannelDown")}" data-zone-channel-down="${channelId}" ${index === selectedZone.channelIds.length - 1 ? "disabled" : ""}>&darr;</button>
+                                <button class="button ghost tiny" data-zone-channel-remove="${channelId}">${t("common.remove")}</button>
                               </div>
                             </div>
                           `;
@@ -618,10 +618,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </section>
 
             <div class="form-actions">
-              <button class="button tiny" id="zone-editor-delete">Delete Zone</button>
+              <button class="button tiny" id="zone-editor-delete">${t("editor.zones.delete")}</button>
             </div>
           `
-              : `<p class="muted-text">Select a zone to edit</p>`
+              : `<p class="muted-text">${t("editor.zones.selectToEdit")}</p>`
           }
         </div>
       </div>
@@ -635,19 +635,19 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
     const selectedScanChannelIds = selectedScanList?.channelIds ?? [];
 
     return `
-      <h2>Scan Lists</h2>
+      <h2>${t("tab.scanLists")}</h2>
       <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
-          <button class="button tiny" id="add-scan-list">Add Scan List</button>
+          <button class="button tiny" id="add-scan-list">${t("editor.scan.add")}</button>
           <div class="list">
             ${document.scanLists.length === 0
-              ? `<p class="muted-text">No scan lists found in this codeplug.</p>`
+              ? `<p class="muted-text">${t("editor.scan.empty")}</p>`
               : document.scanLists
                   .map(
                     (scanList) => `
                       <div class="list-item ${scanList.id === selectedScanListId ? "selected" : ""}" data-scan-list-select="${scanList.id}">
                         <div class="list-item-name">${escapeHtml(scanList.name)}</div>
-                        <div class="list-item-meta">${(scanList.channelIds ?? []).length} channels</div>
+                        <div class="list-item-meta">${t("editor.scan.channelsMeta", { count: (scanList.channelIds ?? []).length })}</div>
                       </div>
                     `,
                   )
@@ -660,33 +660,33 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             ? `
             <div class="form-group">
               <label>
-                Scan List Name
+                ${t("editor.scan.name")}
                 <input data-scan-list-name="${selectedScanList.id}" value="${escapeHtml(selectedScanList.name)}" maxlength="16" />
               </label>
             </div>
 
             <section class="zone-editor-panel">
-              <h3>Scan Behavior</h3>
+              <h3>${t("editor.scan.behavior")}</h3>
               <div class="settings-grid">
                 <div class="form-group">
                   <label>
-                    Signalling Hold Time (ms)
+                    ${t("editor.scan.signallingHold")}
                     <input type="number" data-scan-list-signalling-time="${selectedScanList.id}" value="${selectedScanList.signalingHoldTimeMs}" min="50" max="6375" step="25" />
                   </label>
                 </div>
 
                 <div class="form-group">
                   <label>
-                    Priority Sample Time (ms)
+                    ${t("editor.scan.prioritySample")}
                     <input type="number" data-scan-list-priority-sample-time="${selectedScanList.id}" value="${selectedScanList.prioritySampleTimeMs}" min="750" max="7750" step="250" />
                   </label>
                 </div>
 
                 <div class="form-group">
                   <label>
-                    Priority Channel 1
+                    ${t("editor.scan.priorityCh1")}
                     <select data-scan-list-priority-channel-1="${selectedScanList.id}">
-                      <option value="">None</option>
+                      <option value="">${t("common.none")}</option>
                       ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel1Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
                     </select>
                   </label>
@@ -694,9 +694,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
                 <div class="form-group">
                   <label>
-                    Priority Channel 2
+                    ${t("editor.scan.priorityCh2")}
                     <select data-scan-list-priority-channel-2="${selectedScanList.id}" ${!selectedScanList.priorityChannel1Id ? "disabled" : ""}>
-                      <option value="">None</option>
+                      <option value="">${t("common.none")}</option>
                       ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.priorityChannel2Id === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
                     </select>
                   </label>
@@ -704,7 +704,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
 
                 <div class="form-group">
                   <label>
-                    Tx Designated Channel
+                    ${t("editor.scan.txDesignated")}
                     <select data-scan-list-tx-mode="${selectedScanList.id}">
                       <option value="Selected" ${selectedScanList.txDesignatedChannelMode === "Selected" ? "selected" : ""}>Selected</option>
                       <option value="Last Active Channel" ${selectedScanList.txDesignatedChannelMode === "Last Active Channel" ? "selected" : ""}>Last Active Channel</option>
@@ -716,9 +716,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
                   ? `
                 <div class="form-group">
                   <label>
-                    Designated Channel
+                    ${t("editor.scan.designatedChannel")}
                     <select data-scan-list-tx-channel="${selectedScanList.id}">
-                      <option value="">None</option>
+                      <option value="">${t("common.none")}</option>
                       ${document.channels.map((ch) => `<option value="${ch.id}" ${selectedScanList.txDesignatedChannelId === ch.id ? "selected" : ""}>#${ch.id} ${escapeHtml(ch.name)}</option>`).join("")}
                     </select>
                   </label>
@@ -729,29 +729,29 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </section>
 
             <div class="zone-editor-meta">
-              <strong>${selectedScanChannelIds.length}/31 channels selected</strong>
-              <small class="muted-text">Use "Edit Channels" to add or remove, then reorder below.</small>
+              <strong>${t("editor.scan.channelsSelected", { count: selectedScanChannelIds.length })}</strong>
+              <small class="muted-text">${t("editor.common.editChannelsHelp")}</small>
               <small id="scan-list-editor-error" class="field-error"></small>
             </div>
 
             <section class="zone-editor-panel">
               <div class="zone-editor-panel-head">
-                <h3>Selected Channel Order</h3>
-                <button class="button tiny" id="scan-list-edit-channels">Edit Channels</button>
+                <h3>${t("editor.common.selectedChannelOrder")}</h3>
+                <button class="button tiny" id="scan-list-edit-channels">${t("editor.common.editChannels")}</button>
               </div>
               <div class="zone-selected-list">
                 ${selectedScanChannelIds.length === 0
-                  ? `<p class="muted-text">No channels selected.</p>`
+                  ? `<p class="muted-text">${t("editor.common.noChannelsSelected")}</p>`
                   : selectedScanChannelIds
                       .map((channelId, index) => {
                         const channel = document.channels.find((item) => item.id === channelId);
                         return `
                             <div class="zone-selected-row" data-scan-list-selected-row="${channelId}">
-                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? "Unknown")}</span>
+                              <span class="zone-selected-name">${index + 1}. #${channelId} ${escapeHtml(channel?.name ?? t("editor.value.unknown"))}</span>
                               <div class="zone-selected-actions">
-                                <button class="button ghost tiny zone-order-button" title="Move channel up" aria-label="Move channel up" data-scan-list-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
-                                <button class="button ghost tiny zone-order-button" title="Move channel down" aria-label="Move channel down" data-scan-list-channel-down="${channelId}" ${index === selectedScanChannelIds.length - 1 ? "disabled" : ""}>&darr;</button>
-                                <button class="button ghost tiny" data-scan-list-channel-remove="${channelId}">Remove</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.common.moveChannelUp")}" aria-label="${t("editor.common.moveChannelUp")}" data-scan-list-channel-up="${channelId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.common.moveChannelDown")}" aria-label="${t("editor.common.moveChannelDown")}" data-scan-list-channel-down="${channelId}" ${index === selectedScanChannelIds.length - 1 ? "disabled" : ""}>&darr;</button>
+                                <button class="button ghost tiny" data-scan-list-channel-remove="${channelId}">${t("common.remove")}</button>
                               </div>
                             </div>
                           `;
@@ -761,10 +761,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </section>
 
             <div class="form-actions">
-              <button class="button tiny" id="scan-list-editor-delete">Delete Scan List</button>
+              <button class="button tiny" id="scan-list-editor-delete">${t("editor.scan.delete")}</button>
             </div>
             `
-            : `<p class="muted-text">Select a scan list to edit</p>`
+            : `<p class="muted-text">${t("editor.scan.selectToEdit")}</p>`
           }
         </div>
       </div>
@@ -777,19 +777,19 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
     const selectedGroupContactIds = selectedGroupList?.contactIds ?? [];
 
     return `
-      <h2>Group Lists</h2>
+      <h2>${t("tab.groupLists")}</h2>
       <div class="two-pane-layout two-pane-even">
         <div class="pane-left">
-          <button class="button tiny" id="add-group-list">Add Group List</button>
+          <button class="button tiny" id="add-group-list">${t("editor.groups.add")}</button>
           <div class="list">
             ${document.groupLists.length === 0
-              ? `<p class="muted-text">No group lists found in this codeplug.</p>`
+              ? `<p class="muted-text">${t("editor.groups.empty")}</p>`
               : document.groupLists
                   .map(
                     (groupList) => `
                       <div class="list-item ${groupList.id === selectedGroupListId ? "selected" : ""}" data-group-list-select="${groupList.id}">
                         <div class="list-item-name">${escapeHtml(groupList.name)}</div>
-                        <div class="list-item-meta">${(groupList.contactIds ?? []).length} contacts</div>
+                        <div class="list-item-meta">${t("editor.groups.contactsMeta", { count: (groupList.contactIds ?? []).length })}</div>
                       </div>
                     `,
                   )
@@ -801,35 +801,35 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             ? `
             <div class="form-group">
               <label>
-                Group List Name
+                ${t("editor.groups.name")}
                 <input data-group-list-name="${selectedGroupList.id}" value="${escapeHtml(selectedGroupList.name)}" maxlength="16" />
               </label>
             </div>
 
             <div class="zone-editor-meta">
-              <strong>${selectedGroupContactIds.length}/32 contacts selected</strong>
-              <small class="muted-text">Use "Edit Contacts" to add or remove, then reorder below.</small>
+              <strong>${t("editor.groups.contactsSelected", { count: selectedGroupContactIds.length })}</strong>
+              <small class="muted-text">${t("editor.groups.editContactsHelp")}</small>
               <small id="group-list-editor-error" class="field-error"></small>
             </div>
 
             <section class="zone-editor-panel">
               <div class="zone-editor-panel-head">
-                <h3>Selected Contact Order</h3>
-                <button class="button tiny" id="group-list-edit-contacts">Edit Contacts</button>
+                <h3>${t("editor.groups.selectedContactOrder")}</h3>
+                <button class="button tiny" id="group-list-edit-contacts">${t("editor.groups.editContacts")}</button>
               </div>
               <div class="zone-selected-list">
                 ${selectedGroupContactIds.length === 0
-                  ? `<p class="muted-text">No contacts selected.</p>`
+                  ? `<p class="muted-text">${t("editor.groups.noContactsSelected")}</p>`
                   : selectedGroupContactIds
                       .map((contactId, index) => {
                         const contact = document.contacts.find((item) => item.id === contactId);
                         return `
                             <div class="zone-selected-row" data-group-list-selected-row="${contactId}">
-                              <span class="zone-selected-name">${index + 1}. #${contactId} ${escapeHtml(contact?.name ?? "Unknown")}</span>
+                              <span class="zone-selected-name">${index + 1}. #${contactId} ${escapeHtml(contact?.name ?? t("editor.value.unknown"))}</span>
                               <div class="zone-selected-actions">
-                                <button class="button ghost tiny zone-order-button" title="Move contact up" aria-label="Move contact up" data-group-list-contact-up="${contactId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
-                                <button class="button ghost tiny zone-order-button" title="Move contact down" aria-label="Move contact down" data-group-list-contact-down="${contactId}" ${index === selectedGroupContactIds.length - 1 ? "disabled" : ""}>&darr;</button>
-                                <button class="button ghost tiny" data-group-list-contact-remove="${contactId}">Remove</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.groups.moveContactUp")}" aria-label="${t("editor.groups.moveContactUp")}" data-group-list-contact-up="${contactId}" ${index === 0 ? "disabled" : ""}>&uarr;</button>
+                                <button class="button ghost tiny zone-order-button" title="${t("editor.groups.moveContactDown")}" aria-label="${t("editor.groups.moveContactDown")}" data-group-list-contact-down="${contactId}" ${index === selectedGroupContactIds.length - 1 ? "disabled" : ""}>&darr;</button>
+                                <button class="button ghost tiny" data-group-list-contact-remove="${contactId}">${t("common.remove")}</button>
                               </div>
                             </div>
                           `;
@@ -839,10 +839,10 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </section>
 
             <div class="form-actions">
-              <button class="button tiny" id="group-list-editor-delete">Delete Group List</button>
+              <button class="button tiny" id="group-list-editor-delete">${t("editor.groups.delete")}</button>
             </div>
             `
-            : `<p class="muted-text">Select a group list to edit</p>`
+            : `<p class="muted-text">${t("editor.groups.selectToEdit")}</p>`
           }
         </div>
       </div>
@@ -861,14 +861,14 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
     const selectedInFilterCount = channelState.bulkSelectionIds.filter((id) => filteredIds.has(id)).length;
 
     return `
-      <h2>Channels</h2>
+      <h2>${t("tab.channels")}</h2>
       <div class="two-pane-layout">
         <div class="pane-left">
           <div class="toolbar">
-            <button class="button tiny" id="add-channel">Add Channel</button>
-            <input id="channel-search" placeholder="Search" value="${escapeHtml(channelState.query)}" />
+            <button class="button tiny" id="add-channel">${t("editor.channels.add")}</button>
+            <input id="channel-search" placeholder="${t("editor.channels.search")}" value="${escapeHtml(channelState.query)}" />
             <select id="channel-mode-filter">
-              <option value="all" ${channelState.modeFilter === "all" ? "selected" : ""}>All Modes</option>
+              <option value="all" ${channelState.modeFilter === "all" ? "selected" : ""}>${t("editor.channels.allModes")}</option>
               <option value="Analog" ${channelState.modeFilter === "Analog" ? "selected" : ""}>Analog</option>
               <option value="Digital" ${channelState.modeFilter === "Digital" ? "selected" : ""}>Digital</option>
             </select>
@@ -878,7 +878,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               .map(
                 (channel) => `
                   <div class="list-item ${channel.id === uiState.selectedChannelId ? "selected" : ""}" data-channel-select="${channel.id}">
-                    <label class="channel-bulk-select" title="Select for bulk updates">
+                    <label class="channel-bulk-select" title="${t("editor.channels.bulkSelectTitle")}">
                       <input type="checkbox" data-channel-bulk-toggle="${channel.id}" ${channelState.bulkSelectionIds.includes(channel.id) ? "checked" : ""} />
                     </label>
                     <div class="list-item-content">
@@ -897,36 +897,36 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               ? `
             <div class="channel-form">
             <section class="channel-section">
-              <h3>Identity &amp; RF</h3>
+              <h3>${t("editor.channels.sectionIdentity")}</h3>
               <div class="channel-grid">
             <div class="form-group">
               <label>
-                Channel Name
+                ${t("editor.channels.name")}
                 <input id="channel-editor-name" type="text" value="${escapeHtml(selectedChannel.name)}" maxlength="16" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                RX Frequency (MHz)
+                ${t("editor.channels.rxFrequency")}
                 <input id="channel-editor-rx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.rxFrequencyMHz.toFixed(5)}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                TX Frequency (MHz)
+                ${t("editor.channels.txFrequency")}
                 <input id="channel-editor-tx" type="number" step="0.00001" min="100" max="1000" value="${selectedChannel.txFrequencyMHz.toFixed(5)}" readonly disabled/>
               </label>
-              <small class="muted-text">Calculated from RX Frequency + TX Offset.</small>
+              <small class="muted-text">${t("editor.channels.txFrequencyHelp")}</small>
             </div>
             <div class="form-group">
               <label>
-                TX Offset (MHz)
+                ${t("editor.channels.txOffset")}
                 <input id="channel-editor-tx-offset" type="number" step="0.00001" min="-100" max="100" value="${selectedChannel.txOffsetMHz.toFixed(5)}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                Mode
+                ${t("editor.channels.mode")}
                 <select id="channel-editor-mode">
                   <option value="Analog" ${selectedChannel.channelMode === "Analog" ? "selected" : ""}>Analog</option>
                   <option value="Digital" ${selectedChannel.channelMode === "Digital" ? "selected" : ""}>Digital</option>
@@ -935,13 +935,13 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Color Code
+                ${t("editor.channels.colorCode")}
                 <input id="channel-editor-color-code" type="number" min="0" max="15" step="1" value="${selectedChannel.colorCode}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                Time Slot
+                ${t("editor.channels.timeSlot")}
                 <select id="channel-editor-slot">
                   <option value="1" ${selectedChannel.repeaterSlot === 1 ? "selected" : ""}>TS1</option>
                   <option value="2" ${selectedChannel.repeaterSlot === 2 ? "selected" : ""}>TS2</option>
@@ -950,7 +950,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Bandwidth (kHz)
+                ${t("editor.channels.bandwidth")}
                 <select id="channel-editor-bandwidth">
                   <option value="12.5" ${selectedChannel.bandwidthKhz === "12.5" ? "selected" : ""}>12.5</option>
                   <option value="20" ${selectedChannel.bandwidthKhz === "20" ? "selected" : ""}>20</option>
@@ -960,7 +960,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Power
+                ${t("editor.channels.power")}
                 <select id="channel-editor-power">
                   <option value="Low" ${selectedChannel.power === "Low" ? "selected" : ""}>Low</option>
                   <option value="High" ${selectedChannel.power === "High" ? "selected" : ""}>High</option>
@@ -970,13 +970,13 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               </div>
             </section>
             <section class="channel-section">
-              <h3>Contacts &amp; Lists</h3>
+              <h3>${t("editor.channels.sectionContacts")}</h3>
               <div class="channel-grid">
             <div class="form-group">
               <label>
-                Contact
+                ${t("editor.channels.contact")}
                 <select id="channel-editor-contact-id">
-                  <option value="">No Contact</option>
+                  <option value="">${t("editor.channels.noContact")}</option>
                   ${document.contacts
                     .map(
                       (contact) =>
@@ -988,9 +988,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Scan List
+                ${t("editor.channels.scanList")}
                 <select id="channel-editor-scan-list-id">
-                  <option value="">None</option>
+                  <option value="">${t("common.none")}</option>
                   ${document.scanLists
                     .map(
                       (scanList) =>
@@ -1002,9 +1002,9 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                RX Group List
+                ${t("editor.channels.rxGroupList")}
                 <select id="channel-editor-group-list-id">
-                  <option value="">None</option>
+                  <option value="">${t("common.none")}</option>
                   ${document.groupLists
                     .map(
                       (groupList) =>
@@ -1016,7 +1016,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Admit Criteria
+                ${t("editor.channels.admitCriteria")}
                 <select id="channel-editor-admit-criteria">
                   <option value="Always" ${selectedChannel.admitCriteria === "Always" ? "selected" : ""}>Always</option>
                   <option value="Channel free" ${selectedChannel.admitCriteria === "Channel free" ? "selected" : ""}>Channel free</option>
@@ -1027,7 +1027,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                In-Call Criteria
+                ${t("editor.channels.inCallCriteria")}
                 <select id="channel-editor-in-call-criteria">
                   <option value="Always" ${selectedChannel.inCallCriteria === "Always" ? "selected" : ""}>Always</option>
                   <option value="Follow Admit Criteria" ${selectedChannel.inCallCriteria === "Follow Admit Criteria" ? "selected" : ""}>Follow Admit Criteria</option>
@@ -1037,11 +1037,11 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               </div>
             </section>
             <section class="channel-section">
-              <h3>Privacy &amp; Timers</h3>
+              <h3>${t("editor.channels.sectionPrivacy")}</h3>
               <div class="channel-grid">
             <div class="form-group">
               <label>
-                Privacy
+                ${t("editor.channels.privacy")}
                 <select id="channel-editor-privacy">
                   <option value="None" ${selectedChannel.privacy === "None" ? "selected" : ""}>None</option>
                   <option value="Basic" ${selectedChannel.privacy === "Basic" ? "selected" : ""}>Basic</option>
@@ -1051,13 +1051,13 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Privacy Number
+                ${t("editor.channels.privacyNumber")}
                 <input id="channel-editor-privacy-number" type="number" min="1" max="16" step="1" value="${selectedChannel.privacyNumber}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                TOT (s)
+                ${t("editor.channels.tot")}
                 <select id="channel-editor-tot">
                   <option value="Infinite" ${selectedChannel.totSec === "Infinite" ? "selected" : ""}>Infinite</option>
                   ${Array.from({ length: 37 }, (_, i) => i + 1)
@@ -1071,24 +1071,24 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                TOT Rekey Delay (s)
+                ${t("editor.channels.totRekey")}
                 <input id="channel-editor-tot-rekey" type="number" min="0" max="255" step="1" value="${selectedChannel.totRekeyDelaySec}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                Emergency System
+                ${t("editor.channels.emergencySystem")}
                 <input id="channel-editor-emergency-system" type="number" min="0" max="32" step="1" value="${selectedChannel.emergencySystem}" />
               </label>
             </div>
               </div>
             </section>
             <section class="channel-section">
-              <h3>Reference &amp; Signalling</h3>
+              <h3>${t("editor.channels.sectionReference")}</h3>
               <div class="channel-grid">
             <div class="form-group">
               <label>
-                RX Ref Frequency
+                ${t("editor.channels.rxRefFrequency")}
                 <select id="channel-editor-rx-ref-frequency">
                   <option value="Low" ${selectedChannel.rxRefFrequency === "Low" ? "selected" : ""}>Low</option>
                   <option value="Medium" ${selectedChannel.rxRefFrequency === "Medium" ? "selected" : ""}>Medium</option>
@@ -1098,7 +1098,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                TX Ref Frequency
+                ${t("editor.channels.txRefFrequency")}
                 <select id="channel-editor-tx-ref-frequency">
                   <option value="Low" ${selectedChannel.txRefFrequency === "Low" ? "selected" : ""}>Low</option>
                   <option value="Medium" ${selectedChannel.txRefFrequency === "Medium" ? "selected" : ""}>Medium</option>
@@ -1108,7 +1108,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                RX Signalling
+                ${t("editor.channels.rxSignalling")}
                 <select id="channel-editor-rx-signalling">
                   <option value="Off" ${selectedChannel.rxSignallingSystem === "Off" ? "selected" : ""}>Off</option>
                   <option value="DTMF-1" ${selectedChannel.rxSignallingSystem === "DTMF-1" ? "selected" : ""}>DTMF-1</option>
@@ -1120,7 +1120,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                TX Signalling
+                ${t("editor.channels.txSignalling")}
                 <select id="channel-editor-tx-signalling">
                   <option value="Off" ${selectedChannel.txSignallingSystem === "Off" ? "selected" : ""}>Off</option>
                   <option value="DTMF-1" ${selectedChannel.txSignallingSystem === "DTMF-1" ? "selected" : ""}>DTMF-1</option>
@@ -1133,23 +1133,23 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               </div>
             </section>
             <section class="channel-section">
-              <h3>Tones (CTCSS/DCS)</h3>
+              <h3>${t("editor.channels.sectionTones")}</h3>
               <div class="channel-grid">
             <div class="form-group">
               <label>
-                CTCSS/DCS Decode
-                <input id="channel-editor-ctcss-decode" type="text" value="${escapeHtml(selectedChannel.ctcssDecode)}" placeholder="None / 67.0 / D023N" />
+                ${t("editor.channels.ctcssDecode")}
+                <input id="channel-editor-ctcss-decode" type="text" value="${escapeHtml(selectedChannel.ctcssDecode)}" placeholder="${t("editor.channels.ctcssPlaceholder")}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                CTCSS/DCS Encode
-                <input id="channel-editor-ctcss-encode" type="text" value="${escapeHtml(selectedChannel.ctcssEncode)}" placeholder="None / 67.0 / D023N" />
+                ${t("editor.channels.ctcssEncode")}
+                <input id="channel-editor-ctcss-encode" type="text" value="${escapeHtml(selectedChannel.ctcssEncode)}" placeholder="${t("editor.channels.ctcssPlaceholder")}" />
               </label>
             </div>
             <div class="form-group">
               <label>
-                QT Reverse
+                ${t("editor.channels.qtReverse")}
                 <select id="channel-editor-qt-reverse">
                   <option value="180" ${selectedChannel.qtReverse === "180" ? "selected" : ""}>180</option>
                   <option value="120" ${selectedChannel.qtReverse === "120" ? "selected" : ""}>120</option>
@@ -1158,7 +1158,7 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
             </div>
             <div class="form-group">
               <label>
-                Non-QT/DQT Turn-off Freq
+                ${t("editor.channels.dqtTurnoff")}
                 <select id="channel-editor-dqt-turnoff">
                   <option value="None" ${selectedChannel.nonQtDqtTurnoffFreq === "None" ? "selected" : ""}>None</option>
                   <option value="Raw-1" ${selectedChannel.nonQtDqtTurnoffFreq === "Raw-1" ? "selected" : ""}>Unknown (raw 1)</option>
@@ -1170,91 +1170,91 @@ export function renderActiveTab(document: NonNullable<AppState["document"]>, act
               </div>
             </section>
             <section class="channel-section">
-              <h3>Advanced Options</h3>
+              <h3>${t("editor.channels.sectionAdvanced")}</h3>
             <div class="disabled-grid">
-              <label>RX Only<select id="channel-editor-rx-only"><option value="Off" ${selectedChannel.rxOnly === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.rxOnly === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Autoscan<select id="channel-editor-autoscan"><option value="Off" ${selectedChannel.autoscan === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.autoscan === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Lone Worker<select id="channel-editor-lone-worker"><option value="Off" ${selectedChannel.loneWorker === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.loneWorker === "On" ? "selected" : ""}>On</option></select></label>
-              <label>VOX<select id="channel-editor-vox"><option value="Off" ${selectedChannel.vox === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.vox === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Allow Talkaround<select id="channel-editor-allow-talkaround"><option value="Off" ${selectedChannel.allowTalkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowTalkaround === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Talkaround<select id="channel-editor-talkaround"><option value="Off" ${selectedChannel.talkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.talkaround === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Private Call Confirmed<select id="channel-editor-private-confirmed"><option value="Off" ${selectedChannel.privateCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.privateCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Data Call Confirmed<select id="channel-editor-data-confirmed"><option value="Off" ${selectedChannel.dataCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dataCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Emergency Alarm Ack<select id="channel-editor-emergency-ack"><option value="Off" ${selectedChannel.emergencyAlarmAck === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.emergencyAlarmAck === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Compressed UDP Header<select id="channel-editor-compressed-udp"><option value="Off" ${selectedChannel.compressedUdpDataHeader === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.compressedUdpDataHeader === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Display PTT ID<select id="channel-editor-display-ptt"><option value="Off" ${selectedChannel.displayPttId === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.displayPttId === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Receive GPS Info<select id="channel-editor-receive-gps"><option value="Off" ${selectedChannel.receiveGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.receiveGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Send GPS Info<select id="channel-editor-send-gps"><option value="Off" ${selectedChannel.sendGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.sendGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Reverse Burst<select id="channel-editor-reverse-burst"><option value="Off" ${selectedChannel.reverseBurst === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.reverseBurst === "On" ? "selected" : ""}>On</option></select></label>
-              <label>DCDM Switch<select id="channel-editor-dcdm"><option value="Off" ${selectedChannel.dcdmSwitch === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dcdmSwitch === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Leader/MS<select id="channel-editor-leader-ms"><option value="Off" ${selectedChannel.leaderMs === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.leaderMs === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Allow Interrupt<select id="channel-editor-allow-interrupt"><option value="Off" ${selectedChannel.allowInterrupt === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowInterrupt === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 1<select id="channel-editor-decode1"><option value="Off" ${selectedChannel.decode1 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode1 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 2<select id="channel-editor-decode2"><option value="Off" ${selectedChannel.decode2 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode2 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 3<select id="channel-editor-decode3"><option value="Off" ${selectedChannel.decode3 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode3 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 4<select id="channel-editor-decode4"><option value="Off" ${selectedChannel.decode4 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode4 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 5<select id="channel-editor-decode5"><option value="Off" ${selectedChannel.decode5 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode5 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 6<select id="channel-editor-decode6"><option value="Off" ${selectedChannel.decode6 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode6 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 7<select id="channel-editor-decode7"><option value="Off" ${selectedChannel.decode7 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode7 === "On" ? "selected" : ""}>On</option></select></label>
-              <label>Decode 8<select id="channel-editor-decode8"><option value="Off" ${selectedChannel.decode8 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode8 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.rxOnly")}<select id="channel-editor-rx-only"><option value="Off" ${selectedChannel.rxOnly === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.rxOnly === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.autoscan")}<select id="channel-editor-autoscan"><option value="Off" ${selectedChannel.autoscan === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.autoscan === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.loneWorker")}<select id="channel-editor-lone-worker"><option value="Off" ${selectedChannel.loneWorker === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.loneWorker === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.vox")}<select id="channel-editor-vox"><option value="Off" ${selectedChannel.vox === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.vox === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.allowTalkaround")}<select id="channel-editor-allow-talkaround"><option value="Off" ${selectedChannel.allowTalkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowTalkaround === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.talkaround")}<select id="channel-editor-talkaround"><option value="Off" ${selectedChannel.talkaround === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.talkaround === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.privateCallConfirmed")}<select id="channel-editor-private-confirmed"><option value="Off" ${selectedChannel.privateCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.privateCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.dataCallConfirmed")}<select id="channel-editor-data-confirmed"><option value="Off" ${selectedChannel.dataCallConfirmed === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dataCallConfirmed === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.emergencyAlarmAck")}<select id="channel-editor-emergency-ack"><option value="Off" ${selectedChannel.emergencyAlarmAck === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.emergencyAlarmAck === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.compressedUdp")}<select id="channel-editor-compressed-udp"><option value="Off" ${selectedChannel.compressedUdpDataHeader === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.compressedUdpDataHeader === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.displayPttId")}<select id="channel-editor-display-ptt"><option value="Off" ${selectedChannel.displayPttId === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.displayPttId === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.receiveGps")}<select id="channel-editor-receive-gps"><option value="Off" ${selectedChannel.receiveGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.receiveGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.sendGps")}<select id="channel-editor-send-gps"><option value="Off" ${selectedChannel.sendGpsInfo === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.sendGpsInfo === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.reverseBurst")}<select id="channel-editor-reverse-burst"><option value="Off" ${selectedChannel.reverseBurst === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.reverseBurst === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.dcdmSwitch")}<select id="channel-editor-dcdm"><option value="Off" ${selectedChannel.dcdmSwitch === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.dcdmSwitch === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.leaderMs")}<select id="channel-editor-leader-ms"><option value="Off" ${selectedChannel.leaderMs === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.leaderMs === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.allowInterrupt")}<select id="channel-editor-allow-interrupt"><option value="Off" ${selectedChannel.allowInterrupt === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.allowInterrupt === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 1 })}<select id="channel-editor-decode1"><option value="Off" ${selectedChannel.decode1 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode1 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 2 })}<select id="channel-editor-decode2"><option value="Off" ${selectedChannel.decode2 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode2 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 3 })}<select id="channel-editor-decode3"><option value="Off" ${selectedChannel.decode3 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode3 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 4 })}<select id="channel-editor-decode4"><option value="Off" ${selectedChannel.decode4 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode4 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 5 })}<select id="channel-editor-decode5"><option value="Off" ${selectedChannel.decode5 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode5 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 6 })}<select id="channel-editor-decode6"><option value="Off" ${selectedChannel.decode6 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode6 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 7 })}<select id="channel-editor-decode7"><option value="Off" ${selectedChannel.decode7 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode7 === "On" ? "selected" : ""}>On</option></select></label>
+              <label>${t("editor.channels.decode", { n: 8 })}<select id="channel-editor-decode8"><option value="Off" ${selectedChannel.decode8 === "Off" ? "selected" : ""}>Off</option><option value="On" ${selectedChannel.decode8 === "On" ? "selected" : ""}>On</option></select></label>
             </div>
             </section>
             </div>
             <div class="form-actions">
-              <button class="button tiny" id="channel-editor-delete">Delete Channel</button>
+              <button class="button tiny" id="channel-editor-delete">${t("editor.channels.delete")}</button>
             </div>
           `
-              : `<p class="muted-text">Select a channel to edit</p>`
+              : `<p class="muted-text">${t("editor.channels.selectToEdit")}</p>`
           }
         </div>
       </div>
       <section class="bulk-card">
         <details id="bulk-editor-card" ${channelState.bulkExpanded ? "open" : ""}>
           <summary>
-            <span>Bulk Channel Update</span>
-            <span class="muted-text">Filtered: ${filteredChannels.length} | Selected: ${channelState.bulkSelectionIds.length}</span>
+            <span>${t("editor.channels.bulkHeading")}</span>
+            <span class="muted-text">${t("editor.channels.bulkSummary", { filtered: filteredChannels.length, selected: channelState.bulkSelectionIds.length })}</span>
           </summary>
           <div class="bulkbar">
             <select id="bulk-target">
-              <option value="filtered" ${channelState.bulkTarget === "filtered" ? "selected" : ""}>Filtered (${filteredChannels.length})</option>
-              <option value="selected" ${channelState.bulkTarget === "selected" ? "selected" : ""}>Selected (${channelState.bulkSelectionIds.length})</option>
+              <option value="filtered" ${channelState.bulkTarget === "filtered" ? "selected" : ""}>${t("editor.channels.bulkFiltered", { count: filteredChannels.length })}</option>
+              <option value="selected" ${channelState.bulkTarget === "selected" ? "selected" : ""}>${t("editor.channels.bulkSelected", { count: channelState.bulkSelectionIds.length })}</option>
             </select>
-            <button class="button ghost tiny" id="bulk-select-filtered">Select Filtered (${filteredChannels.length})</button>
-            <button class="button ghost tiny" id="bulk-clear-selection" ${channelState.bulkSelectionIds.length === 0 ? "disabled" : ""}>Clear Selected</button>
+            <button class="button ghost tiny" id="bulk-select-filtered">${t("editor.channels.bulkSelectFiltered", { count: filteredChannels.length })}</button>
+            <button class="button ghost tiny" id="bulk-clear-selection" ${channelState.bulkSelectionIds.length === 0 ? "disabled" : ""}>${t("editor.channels.bulkClearSelected")}</button>
             <select id="bulk-mode">
-              <option value="">Mode (unchanged)</option>
+              <option value="">${t("editor.channels.bulkModeUnchanged")}</option>
               <option value="Analog" ${channelState.bulkMode === "Analog" ? "selected" : ""}>Analog</option>
               <option value="Digital" ${channelState.bulkMode === "Digital" ? "selected" : ""}>Digital</option>
             </select>
             <select id="bulk-power">
-              <option value="">Power (unchanged)</option>
+              <option value="">${t("editor.channels.bulkPowerUnchanged")}</option>
               <option value="Low" ${channelState.bulkPower === "Low" ? "selected" : ""}>Low</option>
               <option value="High" ${channelState.bulkPower === "High" ? "selected" : ""}>High</option>
             </select>
             <select id="bulk-bandwidth">
-              <option value="">Bandwidth (unchanged)</option>
+              <option value="">${t("editor.channels.bulkBandwidthUnchanged")}</option>
               <option value="12.5" ${channelState.bulkBandwidth === "12.5" ? "selected" : ""}>12.5 kHz</option>
               <option value="20" ${channelState.bulkBandwidth === "20" ? "selected" : ""}>20 kHz</option>
               <option value="25" ${channelState.bulkBandwidth === "25" ? "selected" : ""}>25 kHz</option>
             </select>
             <select id="bulk-slot">
-              <option value="">Time Slot (unchanged)</option>
+              <option value="">${t("editor.channels.bulkSlotUnchanged")}</option>
               <option value="1" ${channelState.bulkRepeaterSlot === "1" ? "selected" : ""}>TS1</option>
               <option value="2" ${channelState.bulkRepeaterSlot === "2" ? "selected" : ""}>TS2</option>
             </select>
-            <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="Color Code (unchanged)" value="${escapeHtml(channelState.bulkColorCode)}" />
-            <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="RX MHz (unchanged)" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
-            <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="Shift MHz (unchanged)" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
-            <button class="button tiny" id="apply-bulk">Apply</button>
-            <small class="muted-text">TX Frequency is derived from RX Frequency + Shift.</small>
-            <small class="muted-text">${selectedInFilterCount} of ${filteredChannels.length} filtered channels are selected.</small>
+            <input id="bulk-color-code" type="number" min="0" max="15" step="1" placeholder="${t("editor.channels.bulkColorCodePlaceholder")}" value="${escapeHtml(channelState.bulkColorCode)}" />
+            <input id="bulk-rx-frequency" type="number" min="100" max="1000" step="0.00001" placeholder="${t("editor.channels.bulkRxPlaceholder")}" value="${escapeHtml(channelState.bulkRxFrequencyMHz)}" />
+            <input id="bulk-tx-offset" type="number" min="-100" max="100" step="0.00001" placeholder="${t("editor.channels.bulkShiftPlaceholder")}" value="${escapeHtml(channelState.bulkTxOffsetMHz)}" />
+            <button class="button tiny" id="apply-bulk">${t("common.apply")}</button>
+            <small class="muted-text">${t("editor.channels.bulkApplyHelp")}</small>
+            <small class="muted-text">${t("editor.channels.bulkSelectedCount", { selected: selectedInFilterCount, total: filteredChannels.length })}</small>
           </div>
         </details>
       </section>
     `;
   }
 
-  return `<p class="muted-text">Tab is not available in this build.</p>`;
+  return `<p class="muted-text">${t("editor.tabUnavailable")}</p>`;
 }
 
 export function bindFileInputs(target: HTMLElement, store: EditorStore): void {
