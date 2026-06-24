@@ -31,6 +31,7 @@ import {
   renderActiveTab,
   renderLoadedLayout,
 } from "./codeplugEditor";
+import { bindLanguageSelector } from "./languageSelector";
 
 export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = createInitialChannelPanelState();
@@ -131,6 +132,7 @@ function renderState(
       bindLandingActions(target, store, state, channelState, uiState, renderState);
     }
     bindGuideModalActions(target, store, state, channelState, uiState, renderState);
+    bindLanguageSelector(target, store, state, channelState, uiState, renderState);
     return;
   }
 
@@ -145,6 +147,7 @@ function renderState(
   bindTopActions(target, store, state, channelState, uiState);
   bindTabs(target, uiState, state, store, channelState, renderState);
   bindGuideModalActions(target, store, state, channelState, uiState, renderState);
+  bindLanguageSelector(target, store, state, channelState, uiState, renderState);
 
   const activeTab = target.querySelector<HTMLElement>("#active-tab-panel");
   const validation = target.querySelector<HTMLElement>("#validation");

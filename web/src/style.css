@@ -56,6 +56,31 @@ body {
   margin: 0.5rem 0 0;
 }
 
+.language-selector {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 1;
+}
+
+.language-selector-label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.language-selector select {
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--line, #ccc);
+  background: var(--surface, #fff);
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .actions {
   margin-top: 1rem;
   display: flex;

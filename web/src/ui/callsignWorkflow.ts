@@ -16,6 +16,7 @@ import {
   formatCallsignDate,
 } from "./uiHelpers";
 import { showToast, showConfirm } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
@@ -37,6 +38,7 @@ export function renderCallsignWorkflow(uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>Callsign Database Workflow</h1>
         <p>This flow is separate from codeplug editing and follows a strict sequence: configure, build, then flash.</p>
         <div class="actions">

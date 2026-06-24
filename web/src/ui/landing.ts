@@ -12,6 +12,7 @@ import {
   formatCallsignDate,
 } from "./uiHelpers";
 import { showToast } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -25,6 +26,7 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>IU2FRL MD380 Codeplug Editor</h1>
         <p>A simple web application to interact with your MD380 codeplug, where everything is done in the browser.</p>
       </section>

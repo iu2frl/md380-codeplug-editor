@@ -8,6 +8,7 @@ import {
 import type { ChannelPanelState, UiState } from "./uiTypes";
 import { escapeHtml, TIME_ZONE_OPTIONS } from "./uiHelpers";
 import { showToast } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -24,6 +25,7 @@ export function renderTimeSyncWorkflow(uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>Transceiver Date / Time Sync</h1>
         <p>Sync radio date, time, and selected timezone to match your current machine clock.</p>
         <div class="actions">

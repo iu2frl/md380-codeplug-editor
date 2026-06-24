@@ -17,6 +17,7 @@ import {
   syncRadioProgressUi,
 } from "./uiHelpers";
 import { showToast, showConfirm, showMembershipPicker } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -67,6 +68,7 @@ export function renderLoadedLayout(state: AppState, uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>IU2FRL MD380 Codeplug Editor</h1>
         <p>Loaded: ${escapeHtml(document.fileName)} (${document.format.toUpperCase()})</p>
         <p class="status-line">

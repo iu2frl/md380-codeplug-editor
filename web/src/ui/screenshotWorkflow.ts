@@ -8,6 +8,7 @@ import {
 import type { ChannelPanelState, UiState } from "./uiTypes";
 import { escapeHtml } from "./uiHelpers";
 import { showToast } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -24,6 +25,7 @@ export function renderScreenshotWorkflow(uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>Radio Screenshot</h1>
         <p>Capture the current LCD display of your radio as a PNG image. Requires patched firmware.</p>
         <div class="actions">

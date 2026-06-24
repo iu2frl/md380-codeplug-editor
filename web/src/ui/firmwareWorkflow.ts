@@ -8,6 +8,7 @@ import {
 import type { ChannelPanelState, UiState } from "./uiTypes";
 import { escapeHtml, downloadBytes, utcStamp } from "./uiHelpers";
 import { showToast } from "./dialog";
+import { renderLanguageSelector } from "./languageSelector";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -23,6 +24,7 @@ export function renderFirmwareWorkflow(uiState: UiState): string {
   return `
     <main class="layout">
       <section class="hero card">
+        ${renderLanguageSelector(uiState)}
         <h1>Firmware Backup</h1>
         <p>Create a backup of your radio's firmware. This is a read-only operation and does not modify the radio.</p>
         <div class="actions">
