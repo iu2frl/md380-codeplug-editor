@@ -12,6 +12,12 @@ export default defineConfig({
       },
       {
         test: {
+          include: ["src/i18n/**/*.test.ts"],
+          environment: "happy-dom",
+        },
+      },
+      {
+        test: {
           include: ["src/domain/**/*.test.ts"],
           environment: "node",
         },

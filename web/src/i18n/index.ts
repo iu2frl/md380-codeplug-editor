@@ -1,0 +1,66 @@
+import { en, type MessageKey } from "./en";
+import { it } from "./it";
+import { fr } from "./fr";
+
+export type { MessageKey } from "./en";
+
+export type Locale = "en" | "it" | "fr";
+
+export const SUPPORTED_LOCALES: readonly Locale[] = ["en", "it", "fr"];
+
+// Key used to persist the user's language choice across reloads.
+export const LOCALE_STORAGE_KEY = "md380.locale";
+
+const DICTIONARIES: Record<Locale, Record<MessageKey, string>> = { en, it, fr };
+
+let currentLocale: Locale = "en";
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
+export function getLocale(): Locale {
+  return currentLocale;
+}
+
+export function setLocale(locale: Locale): void {
+  currentLocale = locale;
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    // localStorage may be unavailable (private mode, restricted contexts); ignore.
+  }
+}
+
+// Resolve the initial locale: saved choice -> browser language -> English.
+export function initLocale(): Locale {
+  let detected: Locale = "en";
+  try {
+    const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (isLocale(saved)) {
+      detected = saved;
+    } else if (typeof navigator !== "undefined") {
+      const browserLang = navigator.language?.slice(0, 2).toLowerCase();
+      if (isLocale(browserLang)) {
+        detected = browserLang;
+      }
+    }
+  } catch {
+    // Ignore detection failures and keep the English default.
+  }
+  currentLocale = detected;
+  return detected;
+}
+
+// Translate a key for the active locale.
+// Resolution order: active locale -> English -> the raw key (so a missing
+// string is visible but never crashes). Supports {var} interpolation.
+export function t(key: MessageKey, vars?: Record<string, string | number>): string {
+  const template = DICTIONARIES[currentLocale][key] ?? DICTIONARIES.en[key] ?? key;
+  if (!vars) {
+    return template;
+  }
+  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+    name in vars ? String(vars[name]) : match,
+  );
+}

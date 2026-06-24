@@ -1,6 +1,10 @@
 import "./style.css";
 import { EditorStore } from "./state/store";
 import { renderApp } from "./ui/render";
+import { initLocale } from "./i18n";
+
+// Resolve the active UI language before the first render.
+initLocale();
 
 const googleVerificationCode = String(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION ?? "fu6LDPfebphULUc-nfObEg9oKMJVEl-4lQevJ9FSYlA").trim();
 if (googleVerificationCode.length > 0) {

@@ -1,5 +1,6 @@
 import type { BrowserRadioTransport } from "../transport/browserRadio";
 import type { CallsignFormat, CallsignProfile } from "../domain/callsign";
+import { getLocale, type Locale } from "../i18n";
 
 export interface ChannelPanelState {
   query: string;
@@ -45,6 +46,7 @@ export interface UiState {
   selectedScanListId: number | null;
   selectedChannelId: number | null;
   lastRenderedTab: ActiveTab | null;
+  locale: Locale;
   radioTransport: BrowserRadioTransport | null;
   radioStatusMessage: string;
   radioBusy: boolean;
@@ -105,6 +107,7 @@ export function createInitialUiState(): UiState {
     selectedScanListId: null,
     selectedChannelId: null,
     lastRenderedTab: null,
+    locale: getLocale(),
     radioTransport: null,
     radioStatusMessage: "Not connected.",
     radioBusy: false,
