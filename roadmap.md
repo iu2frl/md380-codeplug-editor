@@ -277,3 +277,14 @@ Exit criteria:
 - Keep helper-based transfer stable as fallback.
 - Expand callsign sync/build/flash capabilities with safeguards.
 - Promote browser-native transport after compatibility and safety targets are met.
+
+## Internationalization (Delivered)
+- Dependency-free `t()` translation engine in `web/src/i18n/` (English source of
+  truth; Italian and French fully translated).
+- In-app language picker; choice persisted in `localStorage` and detected from
+  the browser on first load.
+- `<html lang>` reflects the active locale; `Intl` used for locale-aware date
+  formatting.
+- `completeness.test.ts` enforces full key coverage for Italian and French so CI
+  fails if a translation is missing.
+

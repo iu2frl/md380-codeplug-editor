@@ -1,5 +1,6 @@
 import type { BrowserTransferProgress } from "../transport/browserRadio";
 import type { UiState } from "./uiTypes";
+import { getLocale, t } from "../i18n";
 
 export const TIME_ZONE_OPTIONS = [
   "UTC-12:00",
@@ -32,7 +33,17 @@ export const TIME_ZONE_OPTIONS = [
 export function formatCallsignDate(isoDate: string): string {
   try {
     const date = new Date(isoDate);
-    return date.toISOString().split('T')[0]; // Return only the date part in YYYY-MM-DD format
+    if (Number.isNaN(date.getTime())) {
+      return isoDate;
+    }
+    // Locale-aware, timezone-stable date (UTC) so the bundled "last updated"
+    // stamp reads naturally in the active language.
+    return new Intl.DateTimeFormat(getLocale(), {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(date);
   } catch {
     return isoDate;
   }
@@ -53,13 +64,21 @@ export function downloadBytes(fileName: string, bytes: Uint8Array): void {
 export function setRadioProgress(uiState: UiState, progress: BrowserTransferProgress): void {
   uiState.radioProgressVisible = true;
   uiState.radioProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
-  uiState.radioProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.radioProgressPercent}%).`;
+  uiState.radioProgressLabel = t(progress.direction === "read" ? "progress.reading" : "progress.writing", {
+    done: progress.completedBlocks,
+    total: progress.totalBlocks,
+    percent: uiState.radioProgressPercent,
+  });
 }
 
 export function setCallsignProgress(uiState: UiState, progress: BrowserTransferProgress): void {
   uiState.callsignProgressVisible = true;
   uiState.callsignProgressPercent = Math.min(100, Math.round((progress.completedBlocks / progress.totalBlocks) * 100));
-  uiState.callsignProgressLabel = `${progress.direction === "read" ? "Reading" : "Writing"} ${progress.completedBlocks}/${progress.totalBlocks} blocks (${uiState.callsignProgressPercent}%).`;
+  uiState.callsignProgressLabel = t(progress.direction === "read" ? "progress.reading" : "progress.writing", {
+    done: progress.completedBlocks,
+    total: progress.totalBlocks,
+    percent: uiState.callsignProgressPercent,
+  });
 }
 
 export function utcStamp(): string {

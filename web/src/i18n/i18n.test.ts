@@ -76,3 +76,21 @@ describe("locale detection", () => {
     expect(SUPPORTED_LOCALES).toContain(detected);
   });
 });
+
+describe("document language attribute", () => {
+  test("setLocale reflects the active locale on <html lang>", () => {
+    setLocale("it");
+    expect(document.documentElement.lang).toBe("it");
+    setLocale("fr");
+    expect(document.documentElement.lang).toBe("fr");
+    setLocale("en");
+    expect(document.documentElement.lang).toBe("en");
+  });
+
+  test("initLocale sets <html lang> from the restored choice", () => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, "fr");
+    initLocale();
+    expect(document.documentElement.lang).toBe("fr");
+  });
+});
+

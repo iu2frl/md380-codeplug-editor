@@ -21,12 +21,25 @@ export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
+// Reflect the active locale on the document root so assistive tech, the browser,
+// and CSS `:lang()` selectors all see the correct language.
+function applyDocumentLang(locale: Locale): void {
+  try {
+    if (typeof document !== "undefined" && document.documentElement) {
+      document.documentElement.lang = locale;
+    }
+  } catch {
+    // Non-DOM environments (tests, SSR) can safely ignore this.
+  }
+}
+
 export function getLocale(): Locale {
   return currentLocale;
 }
 
 export function setLocale(locale: Locale): void {
   currentLocale = locale;
+  applyDocumentLang(locale);
   try {
     localStorage.setItem(LOCALE_STORAGE_KEY, locale);
   } catch {
@@ -51,6 +64,7 @@ export function initLocale(): Locale {
     // Ignore detection failures and keep the English default.
   }
   currentLocale = detected;
+  applyDocumentLang(detected);
   return detected;
 }
 

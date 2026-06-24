@@ -340,6 +340,10 @@ export const it: Record<MessageKey, string> = {
   "radio.status.connected": "Collegato: {label}.",
   "radio.status.usbRadio": "Radio USB",
 
+  // ─── M8: block transfer progress labels (radio + callsign) ───
+  "progress.reading": "Lettura {done}/{total} blocchi ({percent}%).",
+  "progress.writing": "Scrittura {done}/{total} blocchi ({percent}%).",
+
   // ─── M5: dialog component (dialog.ts) ───
   "dialog.confirm": "Conferma",
   "dialog.dismiss": "Chiudi",

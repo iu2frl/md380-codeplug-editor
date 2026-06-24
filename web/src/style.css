@@ -142,6 +142,8 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
+  /* Allow longer translated labels (it/fr) to wrap instead of overflowing. */
+  overflow-wrap: break-word;
 }
 
 .button.tiny {
@@ -933,6 +935,7 @@ select {
   .tile .actions > .button,
   .tile .actions > label.button {
     width: 100%;
+    min-width: 0;
     align-self: stretch;
   }
 

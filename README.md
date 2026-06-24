@@ -15,6 +15,7 @@ Beta.
 - Web editor for importing, editing, validating, and exporting codeplug files (`.rdt` and `.bin`).
 - Browser WebUSB radio transfer flow (connect/read/write) in the UI.
 - Browser callsign database update workflow.
+- Multi-language interface (English, Italian, French) with an in-app language picker.
 
 ## Supported Radios
 

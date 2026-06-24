@@ -366,6 +366,10 @@ export const en = {
   "radio.status.connected": "Connected: {label}.",
   "radio.status.usbRadio": "USB radio",
 
+  // ─── M8: block transfer progress labels (radio + callsign) ───
+  "progress.reading": "Reading {done}/{total} blocks ({percent}%).",
+  "progress.writing": "Writing {done}/{total} blocks ({percent}%).",
+
   // ─── M5: dialog component (dialog.ts) ───
   "dialog.confirm": "Confirm",
   "dialog.dismiss": "Dismiss",
