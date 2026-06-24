@@ -32,7 +32,8 @@ import {
   renderLoadedLayout,
 } from "./codeplugEditor";
 import { bindLanguageSelector } from "./languageSelector";
-import { t } from "../i18n";
+import { t, type MessageKey } from "../i18n";
+import { escapeHtml } from "./uiHelpers";
 
 export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = createInitialChannelPanelState();
@@ -166,7 +167,7 @@ function renderState(
       state.validationIssues.length === 0
         ? `<p class="ok">${t("validation.none")}</p>`
         : `<ul>${state.validationIssues
-            .map((issue) => `<li class="${issue.level}">[${issue.code}] ${issue.message}</li>`)
+            .map((issue) => `<li class="${issue.level}">[${issue.code}] ${escapeHtml(t(`validation.${issue.code}` as MessageKey, issue.params))}</li>`)
             .join("")}</ul>`
     }
   `;

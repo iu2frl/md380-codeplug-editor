@@ -1307,9 +1307,9 @@ export function bindTopActions(
   target.querySelector<HTMLButtonElement>("#callsign-back-home-btn")?.addEventListener("click", async () => {
     if (state.isDirty) {
       const confirmed = await showConfirm({
-        title: "Discard Unsaved Changes?",
-        message: "You have unsaved codeplug changes. Going back to homepage will discard them.",
-        confirmLabel: "Discard And Go Home",
+        title: t("editor.confirm.discardTitle"),
+        message: t("editor.confirm.discardMessage"),
+        confirmLabel: t("editor.confirm.discardConfirm"),
         danger: true,
       });
       if (!confirmed) {
@@ -1332,10 +1332,10 @@ export function bindTopActions(
     uiState.selectedChannelId = null;
     uiState.lastRenderedTab = null;
     uiState.radioTransport = null;
-    uiState.radioStatusMessage = "Not connected.";
+    uiState.radioStatusMessage = t("editor.status.notConnected");
     uiState.radioBusy = false;
     uiState.radioProgressPercent = 0;
-    uiState.radioProgressLabel = "No transfer in progress.";
+    uiState.radioProgressLabel = t("editor.progress.noTransfer");
     uiState.radioProgressVisible = false;
 
     channelState.query = "";
@@ -1788,12 +1788,12 @@ export function bindActiveTab(
     const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
       const capabilities = detectBrowserRadioCapabilities();
       if (!capabilities.supported) {
-        throw new Error(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+        throw new Error(t("radio.error.webusbNotReady", { blockers: capabilities.blockers.join("\n") }));
       }
 
       const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
       if (!transport) {
-        throw new Error("Unable to initialize WebUSB transport in this browser.");
+        throw new Error(t("radio.error.initFailed"));
       }
 
       uiState.radioTransport = transport;
@@ -1803,9 +1803,11 @@ export function bindActiveTab(
           .filter((item) => Boolean(item))
           .join(" ")
           .trim();
-        uiState.radioStatusMessage = `Connected: ${label || "USB radio"} (VID: 0x${device.vendorId
-          .toString(16)
-          .padStart(4, "0")}, PID: 0x${device.productId.toString(16).padStart(4, "0")}).`;
+        uiState.radioStatusMessage = t("editor.status.connectedDetail", {
+          label: label || t("radio.status.usbRadio"),
+          vid: device.vendorId.toString(16).padStart(4, "0"),
+          pid: device.productId.toString(16).padStart(4, "0"),
+        });
       }
 
       return transport;
@@ -1825,10 +1827,10 @@ export function bindActiveTab(
         renderState(target, store, store.getState(), channelState, uiState);
         try {
           await uiState.radioTransport.disconnect();
-          uiState.radioStatusMessage = "Disconnected.";
+          uiState.radioStatusMessage = t("editor.status.disconnected");
         } catch (error) {
           const message = error instanceof Error ? error.message : "Disconnect failed.";
-          uiState.radioStatusMessage = `Disconnect failed: ${message}`;
+          uiState.radioStatusMessage = t("editor.status.disconnectFailed", { message });
         } finally {
           uiState.radioBusy = false;
           renderState(target, store, store.getState(), channelState, uiState);
@@ -1843,12 +1845,12 @@ export function bindActiveTab(
         const transport = await ensureRadioTransport();
         showToast({
           type: "success",
-          message: `Connected to ${uiState.radioStatusMessage.split(": ")[1] || "USB radio"}.`,
+          message: t("editor.toast.connected", { device: uiState.radioStatusMessage.split(": ")[1] || t("radio.status.usbRadio") }),
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "WebUSB connection failed.";
-        uiState.radioStatusMessage = `Connect failed: ${message}`;
-        showToast({ type: "error", message: `Connect failed: ${message}` });
+        uiState.radioStatusMessage = t("editor.status.connectFailed", { message });
+        showToast({ type: "error", message: t("editor.status.connectFailed", { message }) });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -1857,7 +1859,7 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-read")?.addEventListener("click", async () => {
       if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
-        showToast({ type: "warning", message: "Connect a radio first." });
+        showToast({ type: "warning", message: t("editor.toast.connectFirst") });
         return;
       }
 
@@ -1869,20 +1871,20 @@ export function bindActiveTab(
       uiState.radioBusy = true;
       uiState.radioProgressVisible = true;
       uiState.radioProgressPercent = 0;
-      uiState.radioProgressLabel = "Starting radio read...";
+      uiState.radioProgressLabel = t("editor.progress.startingRead");
       renderState(target, store, store.getState(), channelState, uiState);
       try {
         const bytes = await uiState.radioTransport.readCodeplug(applyProgress);
         store.load("radio-read.bin", bytes);
         const loadedState = store.getState();
         if (!loadedState.document) {
-          throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
+          throw new Error(loadedState.importError ?? t("editor.error.readParseFailed"));
         }
 
         // Codeplug payload does not contain device metadata (maker, MCU, unique
         // device ID). Query the radio directly so the Basic tab can show it.
         if (uiState.radioTransport.readDeviceInfo) {
-          uiState.radioProgressLabel = "Reading device information...";
+          uiState.radioProgressLabel = t("editor.progress.readingDeviceInfo");
           syncRadioProgressUi(target, uiState);
           try {
             const deviceInfo = await uiState.radioTransport.readDeviceInfo();
@@ -1892,18 +1894,18 @@ export function bindActiveTab(
           }
         }
 
-        uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
+        uiState.radioStatusMessage = t("editor.msg.readComplete", { bytes: bytes.byteLength });
         uiState.radioProgressPercent = 100;
-        uiState.radioProgressLabel = "Read complete.";
-        showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
+        uiState.radioProgressLabel = t("editor.progress.readComplete");
+        showToast({ type: "success", message: t("editor.msg.readComplete", { bytes: bytes.byteLength }) });
         await safeRebootRadio(uiState.radioTransport);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Read failed.";
-        uiState.radioStatusMessage = `Read failed: ${message}`;
+        uiState.radioStatusMessage = t("editor.msg.readFailed", { message });
         uiState.radioProgressVisible = false;
         uiState.radioProgressPercent = 0;
         uiState.radioProgressLabel = "";
-        showToast({ type: "error", message: `Read failed: ${message}` });
+        showToast({ type: "error", message: t("editor.msg.readFailed", { message }) });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -1912,7 +1914,7 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#radio-transfer-write")?.addEventListener("click", async () => {
       if (!uiState.radioTransport || !uiState.radioTransport.isConnected()) {
-        showToast({ type: "warning", message: "Connect a radio first." });
+        showToast({ type: "warning", message: t("editor.toast.connectFirst") });
         return;
       }
 
@@ -1923,9 +1925,9 @@ export function bindActiveTab(
       const codeplugModel = normalizeModelToken(state.document?.model);
       if (connectedModel && codeplugModel && connectedModel !== codeplugModel) {
         const confirmed = await showConfirm({
-          title: "Model Mismatch Detected",
-          message: `Connected radio appears to be ${connectedModel}, but loaded codeplug is ${codeplugModel}.\n\nCross-flashing may still work, but it is risky. Continue write?`,
-          confirmLabel: "Continue Anyway",
+          title: t("editor.confirm.modelMismatchTitle"),
+          message: t("editor.confirm.modelMismatchMessage", { connected: connectedModel, codeplug: codeplugModel }),
+          confirmLabel: t("editor.confirm.modelMismatchConfirm"),
           danger: true,
         });
         if (!confirmed) {
@@ -1935,7 +1937,7 @@ export function bindActiveTab(
 
       const bytes = store.exportBytes();
       if (!bytes) {
-        showToast({ type: "warning", message: "Nothing to write. Load or edit a codeplug first." });
+        showToast({ type: "warning", message: t("editor.toast.nothingToWrite") });
         return;
       }
 
@@ -1947,22 +1949,22 @@ export function bindActiveTab(
       uiState.radioBusy = true;
       uiState.radioProgressVisible = true;
       uiState.radioProgressPercent = 0;
-      uiState.radioProgressLabel = "Starting radio write...";
+      uiState.radioProgressLabel = t("editor.progress.startingWrite");
       renderState(target, store, store.getState(), channelState, uiState);
       try {
         await uiState.radioTransport.writeCodeplug(bytes, applyProgress);
-        uiState.radioStatusMessage = `Write complete: ${bytes.byteLength} bytes sent.`;
+        uiState.radioStatusMessage = t("editor.msg.writeComplete", { bytes: bytes.byteLength });
         uiState.radioProgressPercent = 100;
-        uiState.radioProgressLabel = "Write complete.";
-        showToast({ type: "success", message: `Write complete: ${bytes.byteLength} bytes sent.` });
+        uiState.radioProgressLabel = t("editor.progress.writeComplete");
+        showToast({ type: "success", message: t("editor.msg.writeComplete", { bytes: bytes.byteLength }) });
         await safeRebootRadio(uiState.radioTransport);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Write failed.";
-        uiState.radioStatusMessage = `Write failed: ${message}`;
+        uiState.radioStatusMessage = t("editor.msg.writeFailed", { message });
         uiState.radioProgressVisible = false;
         uiState.radioProgressPercent = 0;
         uiState.radioProgressLabel = "";
-        showToast({ type: "error", message: `Write failed: ${message}` });
+        showToast({ type: "error", message: t("editor.msg.writeFailed", { message }) });
       } finally {
         uiState.radioBusy = false;
         renderState(target, store, store.getState(), channelState, uiState);
@@ -2028,12 +2030,12 @@ export function bindActiveTab(
         return;
       }
       const result = await showMembershipPicker({
-        title: `Edit Channels — ${selectedZone.name}`,
+        title: t("editor.picker.editChannelsTitle", { name: selectedZone.name }),
         items: (state.document?.channels ?? []).map((channel) => ({ id: channel.id, label: `#${channel.id} ${channel.name}` })),
         selectedIds: selectedZone.channelIds,
         maxSelection: 16,
-        itemNoun: "channels",
-        searchPlaceholder: "Search channels",
+        itemNoun: t("dialog.noun.channels"),
+        searchPlaceholder: t("editor.picker.searchChannels"),
       });
       if (result) {
         updateZoneChannels(result);
@@ -2145,12 +2147,12 @@ export function bindActiveTab(
 
     panel.querySelector<HTMLButtonElement>("#group-list-edit-contacts")?.addEventListener("click", async () => {
       const result = await showMembershipPicker({
-        title: `Edit Contacts — ${selectedGroupList.name}`,
+        title: t("editor.picker.editContactsTitle", { name: selectedGroupList.name }),
         items: (state.document?.contacts ?? []).map((contact) => ({ id: contact.id, label: `#${contact.id} ${contact.name}` })),
         selectedIds: selectedGroupList.contactIds ?? [],
         maxSelection: 32,
-        itemNoun: "contacts",
-        searchPlaceholder: "Search contacts",
+        itemNoun: t("dialog.noun.contacts"),
+        searchPlaceholder: t("editor.picker.searchContacts"),
       });
       if (result) {
         updateGroupListContacts(result);
@@ -2342,12 +2344,12 @@ export function bindActiveTab(
     // Handle channel membership editing via modal picker
     panel.querySelector<HTMLButtonElement>("#scan-list-edit-channels")?.addEventListener("click", async () => {
       const result = await showMembershipPicker({
-        title: `Edit Channels — ${selectedScanList.name}`,
+        title: t("editor.picker.editChannelsTitle", { name: selectedScanList.name }),
         items: (state.document?.channels ?? []).map((channel) => ({ id: channel.id, label: `#${channel.id} ${channel.name}` })),
         selectedIds: selectedScanList.channelIds ?? [],
         maxSelection: 31,
-        itemNoun: "channels",
-        searchPlaceholder: "Search channels",
+        itemNoun: t("dialog.noun.channels"),
+        searchPlaceholder: t("editor.picker.searchChannels"),
       });
       if (result) {
         updateScanListChannels(result);

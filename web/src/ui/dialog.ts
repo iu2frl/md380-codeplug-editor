@@ -2,6 +2,7 @@
  * Custom dialog system for notifications and confirmations.
  * Replaces browser-native alert() and confirm() with styled UI components.
  */
+import { t } from "../i18n";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
@@ -69,7 +70,7 @@ export function showToast(options: ToastOptions): void {
   toast.innerHTML = `
     <span class="toast-icon">${icon}</span>
     <span class="toast-message">${escapeHtml(options.message)}</span>
-    <button class="toast-close" aria-label="Dismiss">&times;</button>
+    <button class="toast-close" aria-label="${escapeHtml(t("dialog.dismiss"))}">&times;</button>
   `;
 
   container.appendChild(toast);
@@ -135,8 +136,8 @@ export function showConfirm(options: ConfirmOptions): Promise<boolean> {
       <h2 id="dialog-title" class="dialog-title">${escapeHtml(options.title)}</h2>
       <p id="dialog-message" class="dialog-message">${escapeHtml(options.message)}</p>
       <div class="dialog-actions">
-        <button class="button ghost dialog-cancel">${escapeHtml(options.cancelLabel ?? "Cancel")}</button>
-        <button class="${confirmClass}">${escapeHtml(options.confirmLabel ?? "Confirm")}</button>
+        <button class="button ghost dialog-cancel">${escapeHtml(options.cancelLabel ?? t("common.cancel"))}</button>
+        <button class="${confirmClass}">${escapeHtml(options.confirmLabel ?? t("dialog.confirm"))}</button>
       </div>
     `;
 
@@ -196,7 +197,7 @@ export function showConfirm(options: ConfirmOptions): Promise<boolean> {
  */
 export function showMembershipPicker(options: MembershipPickerOptions): Promise<number[] | null> {
   return new Promise((resolve) => {
-    const noun = options.itemNoun ?? "items";
+    const noun = options.itemNoun ?? t("dialog.itemsNoun");
     const max = options.maxSelection;
 
     // Buffered selection state (cancel discards, apply commits).
@@ -214,14 +215,14 @@ export function showMembershipPicker(options: MembershipPickerOptions): Promise<
     dialog.innerHTML = `
       <h2 id="picker-title" class="dialog-title">${escapeHtml(options.title)}</h2>
       <div class="picker-toolbar">
-        <input class="picker-search" type="search" placeholder="${escapeHtml(options.searchPlaceholder ?? "Search")}" aria-label="Filter ${escapeHtml(noun)}" />
+        <input class="picker-search" type="search" placeholder="${escapeHtml(options.searchPlaceholder ?? t("dialog.search"))}" aria-label="${escapeHtml(t("dialog.filterAria", { noun }))}" />
         <span class="picker-counter" aria-live="polite"></span>
       </div>
-      <div class="picker-list" role="group" aria-label="Available ${escapeHtml(noun)}"></div>
-      <p class="picker-empty muted-text" hidden>${escapeHtml(options.emptyMessage ?? `No ${noun} available.`)}</p>
+      <div class="picker-list" role="group" aria-label="${escapeHtml(t("dialog.availableAria", { noun }))}"></div>
+      <p class="picker-empty muted-text" hidden>${escapeHtml(options.emptyMessage ?? t("dialog.empty", { noun }))}</p>
       <div class="dialog-actions">
-        <button class="button ghost picker-cancel">${escapeHtml(options.cancelLabel ?? "Cancel")}</button>
-        <button class="button picker-apply">${escapeHtml(options.confirmLabel ?? "Apply")}</button>
+        <button class="button ghost picker-cancel">${escapeHtml(options.cancelLabel ?? t("common.cancel"))}</button>
+        <button class="button picker-apply">${escapeHtml(options.confirmLabel ?? t("common.apply"))}</button>
       </div>
     `;
 
@@ -237,7 +238,7 @@ export function showMembershipPicker(options: MembershipPickerOptions): Promise<
 
     const updateCounter = (): void => {
       if (counterEl) {
-        counterEl.textContent = `${draft.size}/${max} ${noun} selected`;
+        counterEl.textContent = t("dialog.counter", { count: draft.size, max, noun });
         counterEl.classList.toggle("picker-counter-full", draft.size >= max);
       }
     };
@@ -269,7 +270,7 @@ export function showMembershipPicker(options: MembershipPickerOptions): Promise<
           emptyEl.hidden = true;
         }
         listEl.innerHTML = visible.length === 0
-          ? `<p class="muted-text picker-no-match">No ${escapeHtml(noun)} match "${escapeHtml(query)}".</p>`
+          ? `<p class="muted-text picker-no-match">${t("dialog.noMatch", { noun: escapeHtml(noun), query: escapeHtml(query) })}</p>`
           : visible
               .map(
                 (item) => `

@@ -218,4 +218,5 @@ export interface ValidationIssue {
   level: "error" | "warning";
   code: string;
   message: string;
+  params?: Record<string, string | number>;
 }

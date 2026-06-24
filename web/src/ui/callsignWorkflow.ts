@@ -17,6 +17,7 @@ import {
 } from "./uiHelpers";
 import { showToast, showConfirm } from "./dialog";
 import { renderLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 const CALLSIGN_FLASH_ADDRESS = 0x100000;
 const CALLSIGN_RECOMMENDED_MIN_FLASH = 16 * 1024 * 1024;
@@ -39,58 +40,58 @@ export function renderCallsignWorkflow(uiState: UiState): string {
     <main class="layout">
       <section class="hero card">
         ${renderLanguageSelector(uiState)}
-        <h1>Callsign Database Workflow</h1>
-        <p>This flow is separate from codeplug editing and follows a strict sequence: configure, build, then flash.</p>
+        <h1>${t("callsign.title")}</h1>
+        <p>${t("callsign.intro")}</p>
         <div class="actions">
-          <button id="callsign-back-home-btn" class="button ghost">Back To Homepage</button>
+          <button id="callsign-back-home-btn" class="button ghost">${t("common.backHome")}</button>
         </div>
       </section>
 
       <section class="card">
-        <h2>1. Select Options</h2>
-        ${uiState.callsignLastUpdated ? `<p class="muted-text">Bundled database last updated: <strong>${escapeHtml(formatCallsignDate(uiState.callsignLastUpdated))}</strong>. Database is automatically updated once a week.</p>` : ""}
+        <h2>${t("callsign.step1.heading")}</h2>
+        ${uiState.callsignLastUpdated ? `<p class="muted-text">${t("callsign.lastUpdated", { date: escapeHtml(formatCallsignDate(uiState.callsignLastUpdated)) })}</p>` : ""}
         <div class="grid">
           <label>
-            Database Format
+            ${t("callsign.format.label")}
             <select id="callsign-workflow-format" ${canBuild ? "" : "disabled"}>
-              <option value="linear" ${uiState.callsignFormat === "linear" ? "selected" : ""}>Linear</option>
-              <option value="indexed" ${uiState.callsignFormat === "indexed" ? "selected" : ""}>Indexed (preferred)</option>
+              <option value="linear" ${uiState.callsignFormat === "linear" ? "selected" : ""}>${t("callsign.format.linear")}</option>
+              <option value="indexed" ${uiState.callsignFormat === "indexed" ? "selected" : ""}>${t("callsign.format.indexed")}</option>
             </select>
           </label>
           <label>
-            Privacy Profile
+            ${t("callsign.profile.label")}
             <select id="callsign-workflow-profile" ${canBuild ? "" : "disabled"}>
-              <option value="global" ${uiState.callsignProfile === "global" ? "selected" : ""}>Global</option>
-              <option value="eu" ${uiState.callsignProfile === "eu" ? "selected" : ""}>EU (privacy-aware)</option>
+              <option value="global" ${uiState.callsignProfile === "global" ? "selected" : ""}>${t("callsign.profile.global")}</option>
+              <option value="eu" ${uiState.callsignProfile === "eu" ? "selected" : ""}>${t("callsign.profile.eu")}</option>
             </select>
           </label>
         </div>
       </section>
 
       <section class="card">
-        <h2>2. Download And Build</h2>
-        <p class="muted-text">Download source CSV, normalize it, then build the selected callsign DB format.</p>
-        <button id="callsign-workflow-build-btn" class="button callsign-action-btn" ${canBuild ? "" : "disabled"}>Download + Build DB</button>
+        <h2>${t("callsign.step2.heading")}</h2>
+        <p class="muted-text">${t("callsign.step2.desc")}</p>
+        <button id="callsign-workflow-build-btn" class="button callsign-action-btn" ${canBuild ? "" : "disabled"}>${t("callsign.step2.button")}</button>
         ${
           uiState.callsignPayload
-            ? `<p class="muted-text"><br>Payload ready: ${escapeHtml(uiState.callsignPayloadName)} (${uiState.callsignPayload.byteLength} bytes).</p>`
+            ? `<p class="muted-text"><br>${t("callsign.payloadReady", { name: escapeHtml(uiState.callsignPayloadName), bytes: uiState.callsignPayload.byteLength })}</p>`
             : ""
         }
       </section>
 
       <section class="card">
-        <h2>3. Write To Transceiver</h2>
-        <p class="muted-text">Enabled only after a successful build.</p>
+        <h2>${t("callsign.step3.heading")}</h2>
+        <p class="muted-text">${t("callsign.step3.desc")}</p>
         <label class="perform-db-backup">
           <input id="perform-db-backup" type="checkbox" ${performDatabaseBackup ? "checked" : ""} ${canFlash? "" : "disabled"}/>
-          Perform a backup of the callsigns database before writing the new entries.
+          ${t("callsign.backupLabel")}
         </label>
-        <button id="callsign-workflow-flash-btn" class="button callsign-action-btn" ${canFlash ? "" : "disabled"}>Write Callsign DB To Radio</button>
+        <button id="callsign-workflow-flash-btn" class="button callsign-action-btn" ${canFlash ? "" : "disabled"}>${t("callsign.step3.button")}</button>
       </section>
 
       <section class="card">
-        <h2>Operation Status</h2>
-        <p class="muted-text" id="callsign-status">Status: ${escapeHtml(uiState.callsignStatusMessage)}</p>
+        <h2>${t("workflow.statusHeading")}</h2>
+        <p class="muted-text" id="callsign-status">${t("workflow.statusLine", { message: escapeHtml(uiState.callsignStatusMessage) })}</p>
         <div id="callsign-progress-wrap" class="radio-transfer-progress ${uiState.callsignProgressVisible ? "" : "hidden"}">
           <progress id="callsign-progress" max="100" value="${uiState.callsignProgressPercent}"></progress>
           <p class="muted-text" id="callsign-progress-label">${escapeHtml(uiState.callsignProgressLabel)}</p>
@@ -131,19 +132,19 @@ export function bindCallsignWorkflowActions(
   const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
-      throw new Error(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+      throw new Error(t("radio.error.webusbNotReady", { blockers: capabilities.blockers.join("\n") }));
     }
 
     const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
     if (!transport) {
-      throw new Error("Unable to initialize WebUSB transport in this browser.");
+      throw new Error(t("radio.error.initFailed"));
     }
 
     uiState.radioTransport = transport;
     if (!transport.isConnected()) {
       const device = await transport.connect();
       const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
-      uiState.callsignStatusMessage = `Connected: ${label || "USB radio"}.`;
+      uiState.callsignStatusMessage = t("radio.status.connected", { label: label || t("radio.status.usbRadio") });
     }
 
     return transport;
@@ -166,33 +167,33 @@ export function bindCallsignWorkflowActions(
     uiState.callsignBusy = true;
     uiState.callsignProgressVisible = true;
     uiState.callsignProgressPercent = 0;
-    uiState.callsignProgressLabel = "Downloading callsign CSV...";
-    uiState.callsignStatusMessage = "Downloading callsign CSV...";
+    uiState.callsignProgressLabel = t("callsign.progress.downloadingCsv");
+    uiState.callsignStatusMessage = t("callsign.status.downloadingCsv");
     renderState(target, store, store.getState(), channelState, uiState);
 
     try {
       const response = await fetch(source, { cache: "no-store" });
       if (!response.ok) {
         console.error("Failed to download CSV from ${source}. HTTP status: ", response.status);
-        throw new Error(`Download failed with HTTP ${response.status}.`);
+        throw new Error(t("callsign.error.downloadFailed", { status: response.status }));
       }
       const rawCsv = await response.text();
 
       if (!rawCsv || rawCsv.trim() === "" || rawCsv.trim().length < 10) {
         console.error("Downloaded CSV is empty or too short. Content starts with:", rawCsv.slice(0, 200));
-        throw new Error("Downloaded CSV is empty. Check the console for details and contact support if the issue persists.");
+        throw new Error(t("callsign.error.csvEmpty"));
       }
 
       const firstLine = rawCsv.split("\n", 1)[0].trim();
       if (firstLine != "RADIO_ID,CALLSIGN,FIRST_NAME,LAST_NAME,CITY,STATE,COUNTRY")
       {
         console.error("Unexpected CSV format. First line:", firstLine);
-        throw new Error("CSV format is invalid or unexpected. Check the console for details and contact support if the issue persists.");
+        throw new Error(t("callsign.error.csvFormat"));
       }
 
       uiState.callsignProgressPercent = 30;
-      uiState.callsignProgressLabel = "Building database...";
-      uiState.callsignStatusMessage = "Building callsign database...";
+      uiState.callsignProgressLabel = t("callsign.progress.building");
+      uiState.callsignStatusMessage = t("callsign.status.building");
       renderState(target, store, store.getState(), channelState, uiState);
 
       // Yield to browser so progress UI updates before heavy computation
@@ -203,14 +204,14 @@ export function bindCallsignWorkflowActions(
       uiState.callsignPayload = built.payload;
       uiState.callsignPayloadName = `callsign-${uiState.callsignFormat}-${stamp}.bin`;
       uiState.callsignProgressPercent = 100;
-      uiState.callsignProgressLabel = "Build complete.";
-      uiState.callsignStatusMessage = `Build complete: ${built.payload.byteLength} bytes (${uiState.callsignFormat}, ${uiState.callsignProfile}).`;
-      showToast({ type: "success", message: `Callsign build complete: ${built.payload.byteLength} bytes ready to flash.` });
+      uiState.callsignProgressLabel = t("callsign.progress.buildComplete");
+      uiState.callsignStatusMessage = t("callsign.status.buildComplete", { bytes: built.payload.byteLength, format: uiState.callsignFormat, profile: uiState.callsignProfile });
+      showToast({ type: "success", message: t("callsign.toast.buildComplete", { bytes: built.payload.byteLength }) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Callsign build failed.";
-      uiState.callsignStatusMessage = `Build failed: ${message}`;
+      uiState.callsignStatusMessage = t("callsign.status.buildFailed", { message });
       uiState.callsignProgressVisible = false;
-      showToast({ type: "error", message: `Build failed: ${message}` });
+      showToast({ type: "error", message: t("callsign.toast.buildFailed", { message }) });
     } finally {
       uiState.callsignBusy = false;
       renderState(target, store, store.getState(), channelState, uiState);
@@ -222,14 +223,14 @@ export function bindCallsignWorkflowActions(
       return;
     }
     if (!uiState.callsignPayload) {
-      showToast({ type: "warning", message: "Build the callsign database first." });
+      showToast({ type: "warning", message: t("callsign.toast.buildFirst") });
       return;
     }
 
     const confirmed = await showConfirm({
-      title: "Flash Callsign Database",
-      message: `Flash ${uiState.callsignPayload.byteLength} bytes to 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}?.`,
-      confirmLabel: "Flash",
+      title: t("callsign.confirm.flashTitle"),
+      message: t("callsign.confirm.flashMessage", { bytes: uiState.callsignPayload.byteLength, address: CALLSIGN_FLASH_ADDRESS.toString(16) }),
+      confirmLabel: t("callsign.confirm.flashConfirm"),
       danger: true,
     });
     if (!confirmed) {
@@ -239,8 +240,8 @@ export function bindCallsignWorkflowActions(
     uiState.callsignBusy = true;
     uiState.callsignProgressVisible = true;
     uiState.callsignProgressPercent = 0;
-    uiState.callsignProgressLabel = "Preparing flash...";
-    uiState.callsignStatusMessage = "Preparing SPI callsign flash...";
+    uiState.callsignProgressLabel = t("callsign.progress.preparingFlash");
+    uiState.callsignStatusMessage = t("callsign.status.preparingFlash");
     renderState(target, store, store.getState(), channelState, uiState);
 
     const applyProgress = (progress: BrowserTransferProgress): void => {
@@ -258,10 +259,10 @@ export function bindCallsignWorkflowActions(
       const transport = await ensureRadioTransport();
       const flashSize = await transport.getSpiFlashSize();
       if (flashSize < CALLSIGN_RECOMMENDED_MIN_FLASH) {
-        throw new Error(`Unsupported flash size ${flashSize} bytes; expected at least ${CALLSIGN_RECOMMENDED_MIN_FLASH}.`);
+        throw new Error(t("callsign.error.flashSize", { size: flashSize, min: CALLSIGN_RECOMMENDED_MIN_FLASH }));
       }
       if (CALLSIGN_FLASH_ADDRESS + uiState.callsignPayload.byteLength > flashSize) {
-        throw new Error(`Payload exceeds flash bounds (${flashSize} bytes total).`);
+        throw new Error(t("callsign.error.flashBounds", { total: flashSize }));
       }
 
       // TODO: not sure what to do with the backup, maybe we should implement a restore feature?
@@ -270,7 +271,7 @@ export function bindCallsignWorkflowActions(
       {
         uiState.callsignProgressVisible = true;
         uiState.callsignProgressPercent = 0;
-        uiState.callsignProgressLabel = "Reading rollback backup...";
+        uiState.callsignProgressLabel = t("callsign.progress.readingRollback");
         renderState(target, store, store.getState(), channelState, uiState);
         const backup = await transport.readSpiFlashRegion(CALLSIGN_FLASH_ADDRESS, uiState.callsignPayload.byteLength, applyProgress);
         rollbackName = `callsign-backup-${utcStamp()}.bin`;
@@ -280,27 +281,27 @@ export function bindCallsignWorkflowActions(
       // TODO: the original code was deleting the flash before writing the new DB
       uiState.callsignProgressVisible = true;
       uiState.callsignProgressPercent = 0;
-      uiState.callsignProgressLabel = "Preparing for callsign database flash operation. Please be patient...";
+      uiState.callsignProgressLabel = t("callsign.progress.preparingDbFlash");
       renderState(target, store, store.getState(), channelState, uiState);
       await transport.writeSpiFlashRegion(CALLSIGN_FLASH_ADDRESS, uiState.callsignPayload, applyProgress);
-      uiState.callsignStatusMessage = `Flash complete: ${uiState.callsignPayload.byteLength} bytes written at 0x${CALLSIGN_FLASH_ADDRESS.toString(16)}.`;
+      uiState.callsignStatusMessage = t("callsign.status.flashComplete", { bytes: uiState.callsignPayload.byteLength, address: CALLSIGN_FLASH_ADDRESS.toString(16) });
       uiState.callsignProgressPercent = 100;
-      uiState.callsignProgressLabel = "Flash complete.";
+      uiState.callsignProgressLabel = t("callsign.progress.flashComplete");
       renderState(target, store, store.getState(), channelState, uiState);
       if (performDatabaseBackup)
       {
-        showToast({ type: "success", message: `Flash complete. Rollback backup downloaded as ${rollbackName}.` });
+        showToast({ type: "success", message: t("callsign.toast.flashCompleteBackup", { name: rollbackName }) });
       }
       else
       {
-        showToast({ type: "success", message: `Flash complete.` });
+        showToast({ type: "success", message: t("callsign.toast.flashComplete") });
       }
       await safeRebootRadio(transport);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Flash failed.";
-      uiState.callsignStatusMessage = `Flash failed: ${message}`;
+      uiState.callsignStatusMessage = t("callsign.status.flashFailed", { message });
       uiState.callsignProgressVisible = false;
-      showToast({ type: "error", message: `Flash failed: ${message}` });
+      showToast({ type: "error", message: t("callsign.toast.flashFailed", { message }) });
     } finally {
       uiState.callsignBusy = false;
       renderState(target, store, store.getState(), channelState, uiState);

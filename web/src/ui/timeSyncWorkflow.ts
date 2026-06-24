@@ -9,6 +9,7 @@ import type { ChannelPanelState, UiState } from "./uiTypes";
 import { escapeHtml, TIME_ZONE_OPTIONS } from "./uiHelpers";
 import { showToast } from "./dialog";
 import { renderLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -26,18 +27,18 @@ export function renderTimeSyncWorkflow(uiState: UiState): string {
     <main class="layout">
       <section class="hero card">
         ${renderLanguageSelector(uiState)}
-        <h1>Transceiver Date / Time Sync</h1>
-        <p>Sync radio date, time, and selected timezone to match your current machine clock.</p>
+        <h1>${t("timeSync.title")}</h1>
+        <p>${t("timeSync.intro")}</p>
         <div class="actions">
-          <button id="time-sync-back-home-btn" class="button ghost">Back To Homepage</button>
+          <button id="time-sync-back-home-btn" class="button ghost">${t("common.backHome")}</button>
         </div>
       </section>
 
       <section class="card">
-        <h2>1. Select Timezone</h2>
-        <p class="muted-text">Timezone defaults to your current client timezone and can be changed before sync.</p>
+        <h2>${t("timeSync.step1.heading")}</h2>
+        <p class="muted-text">${t("timeSync.step1.desc")}</p>
         <label>
-          Timezone
+          ${t("timeSync.timezone.label")}
           <select id="time-sync-workflow-timezone" ${canSync ? "" : "disabled"}>
             ${TIME_ZONE_OPTIONS.map((zone) => `<option value="${zone}" ${uiState.timeSyncTimeZone === zone ? "selected" : ""}>${zone}</option>`).join("")}
           </select>
@@ -45,14 +46,14 @@ export function renderTimeSyncWorkflow(uiState: UiState): string {
       </section>
 
       <section class="card">
-        <h2>2. Sync Date And Time</h2>
-        <p class="muted-text">Connect to your radio and apply the current date/time computed for the selected timezone.</p>
-        <button id="time-sync-workflow-apply-btn" class="button callsign-action-btn" ${canSync ? "" : "disabled"}>Sync Date / Time To Radio</button>
+        <h2>${t("timeSync.step2.heading")}</h2>
+        <p class="muted-text">${t("timeSync.step2.desc")}</p>
+        <button id="time-sync-workflow-apply-btn" class="button callsign-action-btn" ${canSync ? "" : "disabled"}>${t("timeSync.step2.button")}</button>
       </section>
 
       <section class="card">
-        <h2>Operation Status</h2>
-        <p class="muted-text" id="time-sync-status">Status: ${escapeHtml(uiState.timeSyncStatusMessage)}</p>
+        <h2>${t("workflow.statusHeading")}</h2>
+        <p class="muted-text" id="time-sync-status">${t("workflow.statusLine", { message: escapeHtml(uiState.timeSyncStatusMessage) })}</p>
       </section>
     </main>
   `;
@@ -81,19 +82,19 @@ export function bindTimeSyncWorkflowActions(
   const ensureRadioTransport = async (): Promise<BrowserRadioTransport> => {
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
-      throw new Error(`WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}`);
+      throw new Error(t("radio.error.webusbNotReady", { blockers: capabilities.blockers.join("\n") }));
     }
 
     const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
     if (!transport) {
-      throw new Error("Unable to initialize WebUSB transport in this browser.");
+      throw new Error(t("radio.error.initFailed"));
     }
 
     uiState.radioTransport = transport;
     if (!transport.isConnected()) {
       const device = await transport.connect();
       const label = [device.manufacturerName, device.productName].filter((item) => Boolean(item)).join(" ").trim();
-      uiState.timeSyncStatusMessage = `Connected: ${label || "USB radio"}.`;
+      uiState.timeSyncStatusMessage = t("radio.status.connected", { label: label || t("radio.status.usbRadio") });
     }
 
     return transport;
@@ -105,25 +106,25 @@ export function bindTimeSyncWorkflowActions(
     }
 
     uiState.timeSyncBusy = true;
-    uiState.timeSyncStatusMessage = "Preparing date/time sync...";
+    uiState.timeSyncStatusMessage = t("timeSync.status.preparing");
     renderState(target, store, store.getState(), channelState, uiState);
 
     try {
       const transport = await ensureRadioTransport();
       if (typeof transport.syncRtcClock !== "function") {
-        throw new Error("This browser transport build does not support RTC sync.");
+        throw new Error(t("timeSync.error.noRtc"));
       }
 
       const timestamp = buildRtcTimestampForZone(uiState.timeSyncTimeZone);
       await transport.syncRtcClock(timestamp.payload);
       await safeRebootRadio(transport);
 
-      uiState.timeSyncStatusMessage = `Sync complete: ${timestamp.label} (${uiState.timeSyncTimeZone}).`;
-      showToast({ type: "success", message: `Date/time sync complete (${uiState.timeSyncTimeZone}).` });
+      uiState.timeSyncStatusMessage = t("timeSync.status.complete", { label: timestamp.label, zone: uiState.timeSyncTimeZone });
+      showToast({ type: "success", message: t("timeSync.toast.complete", { zone: uiState.timeSyncTimeZone }) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Date/time sync failed.";
-      uiState.timeSyncStatusMessage = `Sync failed: ${message}`;
-      showToast({ type: "error", message: `Date/time sync failed: ${message}` });
+      uiState.timeSyncStatusMessage = t("timeSync.status.failed", { message });
+      showToast({ type: "error", message: t("timeSync.toast.failed", { message }) });
     } finally {
       uiState.timeSyncBusy = false;
       renderState(target, store, store.getState(), channelState, uiState);

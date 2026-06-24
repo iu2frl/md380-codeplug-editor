@@ -9,6 +9,7 @@ import type { ChannelPanelState, UiState } from "./uiTypes";
 import { escapeHtml } from "./uiHelpers";
 import { showToast } from "./dialog";
 import { renderLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -26,37 +27,37 @@ export function renderScreenshotWorkflow(uiState: UiState): string {
     <main class="layout">
       <section class="hero card">
         ${renderLanguageSelector(uiState)}
-        <h1>Radio Screenshot</h1>
-        <p>Capture the current LCD display of your radio as a PNG image. Requires patched firmware.</p>
+        <h1>${t("screenshot.title")}</h1>
+        <p>${t("screenshot.intro")}</p>
         <div class="actions">
-          <button id="screenshot-back-home-btn" class="button ghost">Back To Homepage</button>
+          <button id="screenshot-back-home-btn" class="button ghost">${t("common.backHome")}</button>
         </div>
       </section>
 
       <section class="card">
-        <h2>1. Capture</h2>
-        <p class="muted-text">Connect your radio in programming mode, then capture the current display (160×128 pixels, ~5 seconds).</p>
-        <button id="screenshot-capture-btn" class="button callsign-action-btn" ${canCapture ? "" : "disabled"}>Capture Screenshot</button>
+        <h2>${t("screenshot.step1.heading")}</h2>
+        <p class="muted-text">${t("screenshot.step1.desc")}</p>
+        <button id="screenshot-capture-btn" class="button callsign-action-btn" ${canCapture ? "" : "disabled"}>${t("screenshot.step1.button")}</button>
       </section>
 
       ${uiState.screenshotImageData ? `
       <section class="card">
-        <h2>2. Preview &amp; Save</h2>
-        <p class="muted-text">Screenshot captured successfully. Click <strong>Save PNG</strong> to download.</p>
+        <h2>${t("screenshot.step2.heading")}</h2>
+        <p class="muted-text">${t("screenshot.step2.desc")}</p>
         <canvas id="screenshot-canvas" width="${SCREENSHOT_WIDTH}" height="${SCREENSHOT_HEIGHT}" style="display:block;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated;width:${SCREENSHOT_WIDTH * 3}px;height:${SCREENSHOT_HEIGHT * 3}px;"></canvas>
         <div class="actions" style="margin-top:0.75rem;">
-          <button id="screenshot-save-btn" class="button">Save PNG</button>
-          <button id="screenshot-clear-btn" class="button ghost">Clear</button>
+          <button id="screenshot-save-btn" class="button">${t("screenshot.save")}</button>
+          <button id="screenshot-clear-btn" class="button ghost">${t("screenshot.clear")}</button>
         </div>
       </section>
       ` : ""}
 
       <section class="card">
-        <h2>Operation Status</h2>
-        <p class="muted-text" id="screenshot-status">Status: ${escapeHtml(uiState.screenshotStatusMessage)}</p>
+        <h2>${t("workflow.statusHeading")}</h2>
+        <p class="muted-text" id="screenshot-status">${t("workflow.statusLine", { message: escapeHtml(uiState.screenshotStatusMessage) })}</p>
         <div id="screenshot-progress-wrap" class="radio-transfer-progress ${uiState.screenshotProgressVisible ? "" : "hidden"}">
           <progress id="screenshot-progress" max="100" value="${progressPercent}"></progress>
-          <p class="muted-text" id="screenshot-progress-label">Reading line ${uiState.screenshotProgressLine} / ${SCREENSHOT_HEIGHT}…</p>
+          <p class="muted-text" id="screenshot-progress-label">${t("screenshot.progress.line", { line: uiState.screenshotProgressLine, total: SCREENSHOT_HEIGHT })}</p>
         </div>
       </section>
     </main>
@@ -83,17 +84,17 @@ export function bindScreenshotWorkflowActions(
 
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
-      showToast({ type: "error", message: `WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}` });
+      showToast({ type: "error", message: t("radio.error.webusbNotReady", { blockers: capabilities.blockers.join("\n") }) });
       return;
     }
 
     const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
     if (!transport) {
-      showToast({ type: "error", message: "Unable to initialize WebUSB transport in this browser." });
+      showToast({ type: "error", message: t("radio.error.initFailed") });
       return;
     }
     if (typeof transport.captureScreenshot !== "function") {
-      showToast({ type: "error", message: "Screenshot capture requires patched firmware on the radio." });
+      showToast({ type: "error", message: t("screenshot.error.notSupported") });
       return;
     }
 
@@ -101,7 +102,7 @@ export function bindScreenshotWorkflowActions(
     uiState.screenshotBusy = true;
     uiState.screenshotProgressLine = 0;
     uiState.screenshotProgressVisible = true;
-    uiState.screenshotStatusMessage = "Connecting to radio…";
+    uiState.screenshotStatusMessage = t("screenshot.status.connecting");
     uiState.screenshotImageData = null;
     renderState(target, store, store.getState(), channelState, uiState);
 
@@ -111,7 +112,7 @@ export function bindScreenshotWorkflowActions(
         await transport.connect();
       }
       connected = true;
-      uiState.screenshotStatusMessage = "Capturing display, please wait…";
+      uiState.screenshotStatusMessage = t("screenshot.status.capturing");
       renderState(target, store, store.getState(), channelState, uiState);
 
       const pixels = await transport.captureScreenshot((line, total) => {
@@ -121,20 +122,20 @@ export function bindScreenshotWorkflowActions(
         const label = target.querySelector<HTMLElement>("#screenshot-progress-label");
         const status = target.querySelector<HTMLElement>("#screenshot-status");
         if (bar) bar.value = Math.round((line / total) * 100);
-        if (label) label.textContent = `Reading line ${line} / ${total}…`;
-        if (status) status.textContent = `Status: Capturing display, please wait…`;
+        if (label) label.textContent = t("screenshot.progress.line", { line, total });
+        if (status) status.textContent = t("workflow.statusLine", { message: t("screenshot.status.capturing") });
         if (wrap) wrap.classList.remove("hidden");
       });
 
       uiState.screenshotImageData = pixels;
-      uiState.screenshotStatusMessage = `Capture complete: ${SCREENSHOT_WIDTH}×${SCREENSHOT_HEIGHT} pixels.`;
+      uiState.screenshotStatusMessage = t("screenshot.status.complete", { width: SCREENSHOT_WIDTH, height: SCREENSHOT_HEIGHT });
       uiState.screenshotProgressVisible = false;
-      showToast({ type: "success", message: "Screenshot captured successfully." });
+      showToast({ type: "success", message: t("screenshot.toast.complete") });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Capture failed.";
-      uiState.screenshotStatusMessage = `Capture failed: ${message}`;
+      uiState.screenshotStatusMessage = t("screenshot.status.failed", { message });
       uiState.screenshotProgressVisible = false;
-      showToast({ type: "error", message: `Capture failed: ${message}` });
+      showToast({ type: "error", message: t("screenshot.toast.failed", { message }) });
     } finally {
       if (connected) {
         try {
@@ -163,7 +164,7 @@ export function bindScreenshotWorkflowActions(
 
   target.querySelector<HTMLButtonElement>("#screenshot-clear-btn")?.addEventListener("click", () => {
     uiState.screenshotImageData = null;
-    uiState.screenshotStatusMessage = "No screenshot captured yet.";
+    uiState.screenshotStatusMessage = t("screenshot.status.none");
     renderState(target, store, store.getState(), channelState, uiState);
   });
 

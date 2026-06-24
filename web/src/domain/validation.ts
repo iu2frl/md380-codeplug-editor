@@ -13,6 +13,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "ZONE_MAX_CHANNELS",
         message: `Zone ${zone.name} has ${zone.channelIds.length} channels. Maximum is 16.`,
+        params: { name: zone.name, count: zone.channelIds.length },
       });
     }
 
@@ -22,6 +23,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
           level: "error",
           code: "ZONE_CHANNEL_REFERENCE",
           message: `Zone ${zone.name} references missing channel #${channelId}.`,
+          params: { name: zone.name, channelId },
         });
       }
     }
@@ -33,6 +35,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "CHANNEL_CONTACT_REFERENCE",
         message: `Channel ${channel.name} references missing contact #${channel.contactId}.`,
+        params: { name: channel.name, contactId: channel.contactId },
       });
     }
 
@@ -41,6 +44,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "CHANNEL_RX_INVALID",
         message: `Channel ${channel.name} has invalid RX frequency.`,
+        params: { name: channel.name },
       });
     }
 
@@ -49,6 +53,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "CHANNEL_TX_INVALID",
         message: `Channel ${channel.name} has invalid TX frequency.`,
+        params: { name: channel.name },
       });
     }
 
@@ -57,6 +62,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "CHANNEL_COLOR_CODE_RANGE",
         message: `Channel ${channel.name} color code must be 0-15.`,
+        params: { name: channel.name },
       });
     }
   }
@@ -68,6 +74,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "warning",
         code: "CONTACT_DUPLICATE",
         message: `Contact name ${contact.name} is duplicated.`,
+        params: { name: contact.name },
       });
     }
 
@@ -76,6 +83,7 @@ export function validateDocument(doc: CodeplugDocument): ValidationIssue[] {
         level: "error",
         code: "CONTACT_CALL_ID_RANGE",
         message: `Contact ${contact.name} call ID must be 1-16777215.`,
+        params: { name: contact.name },
       });
     }
 

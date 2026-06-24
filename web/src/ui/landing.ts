@@ -143,62 +143,62 @@ export function renderGuideModal(uiState: UiState): string {
         <div class="guide-modal-backdrop" data-guide-modal-close="backdrop"></div>
         <article class="guide-modal-card">
           <header class="guide-modal-header">
-            <h2 id="guide-modal-title">WebUSB Setup Guide</h2>
-            <button class="button ghost tiny" data-guide-modal-close="button" aria-label="Close guide">Close</button>
+            <h2 id="guide-modal-title">${t("guide.title")}</h2>
+            <button class="button ghost tiny" data-guide-modal-close="button" aria-label="${t("guide.closeAria")}">${t("common.close")}</button>
           </header>
 
-          <h3>Prerequisites</h3>
+          <h3>${t("guide.prereq.heading")}</h3>
           <ol class="radio-transfer-list">
-            <li>Use a <strong>Chromium-based browser</strong> (Chrome, Edge, Brave). Firefox and Safari do not support WebUSB.</li>
-            <li>Use <strong>HTTPS</strong> or <strong>localhost</strong> (WebUSB requires a secure context).</li>
-            <li>Close any other apps that may capture the radio USB interface (CPS software, serial tools).</li>
-            <li>To operate on the firmware, put your radio in <strong>programming mode</strong> before connecting USB by holding <strong>PTT and the button above it</strong> while powering on the radio.</li>
-            <li>To operate on codeplug, callsign database, RTC clock, or screenshots, simply connect the radio via USB in <strong>normal mode</strong>.</li>
+            <li>${t("guide.prereq.1")}</li>
+            <li>${t("guide.prereq.2")}</li>
+            <li>${t("guide.prereq.3")}</li>
+            <li>${t("guide.prereq.4")}</li>
+            <li>${t("guide.prereq.5")}</li>
           </ol>
 
-          <h3>Windows Setup</h3>
-          <p>Windows requires installing the WinUSB driver using Zadig:</p>
+          <h3>${t("guide.windows.heading")}</h3>
+          <p>${t("guide.windows.intro")}</p>
           <ol class="radio-transfer-list">
-            <li>Download and run <a href="https://zadig.akeo.ie" target="_blank" rel="noopener noreferrer nofollow">Zadig</a>.</li>
-            <li>In Zadig, open <strong>Options &rarr; List All Devices</strong>.</li>
-            <li>Select your device (usually shows as <strong>STM32 BOOTLOADER</strong> or <strong>Patched MD380/MD390</strong>).</li>
-            <li>Set target driver to <strong>WinUSB</strong> (not LibUSB or LibUsbK).</li>
-            <li>Click <strong>Replace Driver</strong>, then unplug and replug your radio.</li>
+            <li>${t("guide.windows.1")}</li>
+            <li>${t("guide.windows.2")}</li>
+            <li>${t("guide.windows.3")}</li>
+            <li>${t("guide.windows.4")}</li>
+            <li>${t("guide.windows.5")}</li>
           </ol>
-          <p>If Zadig shows <strong>GuiSTDFUDev</strong> as installed driver, you will need to manually uninstall it from Device Manager and then install WinUSB with Zadig.</p>
+          <p>${t("guide.windows.note")}</p>
 
-          <h3>Linux Setup</h3>
-          <p>Linux requires udev rules to grant USB access without root. Copy the rules file from the repository:</p>
+          <h3>${t("guide.linux.heading")}</h3>
+          <p>${t("guide.linux.intro")}</p>
           <pre class="code-block">
 git clone https://github.com/iu2frl/md380-codeplug-editor.git
 sudo cp md380-codeplug-editor/tools/99-md380.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 sudo udevadm trigger
           </pre>
-          <p class="muted-text">If needed, add your user to the <code>plugdev</code> group and re-login.</p>
+          <p class="muted-text">${t("guide.linux.note")}</p>
 
-          <h3>macOS Setup</h3>
+          <h3>${t("guide.macos.heading")}</h3>
           <ol class="radio-transfer-list">
-            <li>No extra driver is usually required on macOS.</li>
-            <li>If the browser permission prompt fails, unplug and replug the radio, then try again.</li>
-            <li>Ensure no other app is currently using the radio USB interface.</li>
+            <li>${t("guide.macos.1")}</li>
+            <li>${t("guide.macos.2")}</li>
+            <li>${t("guide.macos.3")}</li>
           </ol>
 
-          <h3>Using the App</h3>
+          <h3>${t("guide.app.heading")}</h3>
           <ol class="radio-transfer-list">
-            <li>Accept the risk acknowledgment on the homepage.</li>
-            <li>Click <strong>Read From Radio</strong> to load your current codeplug.</li>
-            <li>When prompted, select your radio from the browser USB permission dialog.</li>
-            <li>After reading, export a backup before making changes.</li>
-            <li>Edit your codeplug (channels, zones, contacts, settings).</li>
-            <li>Click <strong>Write To Radio</strong> to save changes back to your radio.</li>
+            <li>${t("guide.app.1")}</li>
+            <li>${t("guide.app.2")}</li>
+            <li>${t("guide.app.3")}</li>
+            <li>${t("guide.app.4")}</li>
+            <li>${t("guide.app.5")}</li>
+            <li>${t("guide.app.6")}</li>
           </ol>
 
-          <h3>Useful Links</h3>
+          <h3>${t("guide.links.heading")}</h3>
           <ul class="radio-transfer-list">
-            <li><a href="https://zadig.akeo.ie" target="_blank" rel="noopener">Zadig USB driver installer (Windows)</a></li>
-            <li><a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener">MD380 Tools (patched firmware)</a></li>
-            <li><a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener">Project GitHub</a></li>
+            <li>${t("guide.links.zadig")}</li>
+            <li>${t("guide.links.md380tools")}</li>
+            <li>${t("guide.links.github")}</li>
           </ul>
         </article>
       </section>
@@ -312,13 +312,13 @@ export function bindLandingActions(
 
     const capabilities = detectBrowserRadioCapabilities();
     if (!capabilities.supported) {
-      showToast({ type: "error", message: `WebUSB not ready in this browser:\n${capabilities.blockers.join("\n")}` });
+      showToast({ type: "error", message: t("radio.error.webusbNotReady", { blockers: capabilities.blockers.join("\n") }) });
       return;
     }
 
     const transport = uiState.radioTransport ?? createBrowserRadioTransport(capabilities);
     if (!transport) {
-      showToast({ type: "error", message: "Unable to initialize WebUSB transport in this browser." });
+      showToast({ type: "error", message: t("radio.error.initFailed") });
       return;
     }
 
@@ -328,7 +328,7 @@ export function bindLandingActions(
       uiState.radioTransport = transport;
       uiState.radioProgressVisible = true;
       uiState.radioProgressPercent = 0;
-      uiState.radioProgressLabel = "Starting radio read...";
+      uiState.radioProgressLabel = t("landing.read.starting");
       renderState(target, store, store.getState(), channelState, uiState);
       await transport.connect();
       connected = true;
@@ -336,13 +336,13 @@ export function bindLandingActions(
       store.load("radio-read.bin", bytes);
       const loadedState = store.getState();
       if (!loadedState.document) {
-        throw new Error(loadedState.importError ?? "Read completed but codeplug parsing failed.");
+        throw new Error(loadedState.importError ?? t("landing.read.parseFailed"));
       }
 
       // Codeplug payload does not contain device metadata (maker, MCU, unique
       // device ID). Query the radio directly so the Basic tab can show it.
       if (transport.readDeviceInfo) {
-        uiState.radioProgressLabel = "Reading device information...";
+        uiState.radioProgressLabel = t("landing.read.deviceInfo");
         syncRadioProgressUi(target, uiState);
         try {
           const deviceInfo = await transport.readDeviceInfo();
@@ -352,18 +352,18 @@ export function bindLandingActions(
         }
       }
 
-      uiState.radioStatusMessage = `Read complete: ${bytes.byteLength} bytes loaded into editor.`;
+      uiState.radioStatusMessage = t("landing.read.complete", { bytes: bytes.byteLength });
       uiState.radioProgressPercent = 100;
-      uiState.radioProgressLabel = "Read complete.";
-      showToast({ type: "success", message: `Read complete: ${bytes.byteLength} bytes loaded into editor.` });
+      uiState.radioProgressLabel = t("landing.read.completeLabel");
+      showToast({ type: "success", message: t("landing.read.complete", { bytes: bytes.byteLength }) });
       await transport.rebootRadio();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Read failed.";
-      uiState.radioStatusMessage = `Read failed: ${message}`;
+      uiState.radioStatusMessage = t("landing.read.failed", { message });
       uiState.radioProgressVisible = false;
       uiState.radioProgressPercent = 0;
       uiState.radioProgressLabel = "";
-      showToast({ type: "error", message: `Read failed: ${message}` });
+      showToast({ type: "error", message: t("landing.read.failed", { message }) });
     } finally {
       if (connected) {
         try {
