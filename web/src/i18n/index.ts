@@ -11,7 +11,9 @@ export const SUPPORTED_LOCALES: readonly Locale[] = ["en", "it", "fr"];
 // Key used to persist the user's language choice across reloads.
 export const LOCALE_STORAGE_KEY = "md380.locale";
 
-const DICTIONARIES: Record<Locale, Record<MessageKey, string>> = { en, it, fr };
+// English is always the complete source of truth. Other locales may be partial;
+// any key they omit transparently falls back to English via t().
+const DICTIONARIES: Record<Locale, Partial<Record<MessageKey, string>>> = { en, it, fr };
 
 let currentLocale: Locale = "en";
 

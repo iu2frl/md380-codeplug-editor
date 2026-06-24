@@ -18,6 +18,7 @@ import {
 } from "./uiHelpers";
 import { showToast, showConfirm, showMembershipPicker } from "./dialog";
 import { renderLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -69,40 +70,40 @@ export function renderLoadedLayout(state: AppState, uiState: UiState): string {
     <main class="layout">
       <section class="hero card">
         ${renderLanguageSelector(uiState)}
-        <h1>IU2FRL MD380 Codeplug Editor</h1>
-        <p>Loaded: ${escapeHtml(document.fileName)} (${document.format.toUpperCase()})</p>
+        <h1>${t("app.title")}</h1>
+        <p>${t("shell.loaded", { file: escapeHtml(document.fileName), format: document.format.toUpperCase() })}</p>
         <p class="status-line">
-          <span class="status-badge ${state.isDirty ? "dirty" : "clean"}">${state.isDirty ? "Unsaved changes" : "Saved"}</span>
-          <span class="status-meta">Undo: ${state.undoCount} | Redo: ${state.redoCount}</span>
+          <span class="status-badge ${state.isDirty ? "dirty" : "clean"}">${state.isDirty ? t("shell.status.dirty") : t("shell.status.clean")}</span>
+          <span class="status-meta">${t("shell.undoRedo", { undo: state.undoCount, redo: state.redoCount })}</span>
         </p>
         <div class="actions">
           <label class="button">
-            Open Another File
+            ${t("shell.openAnother")}
             <input id="file-input" type="file" accept=".rdt,.bin" hidden />
           </label>
-          <button id="undo-btn" class="button ghost" ${state.undoCount === 0 ? "disabled" : ""}>Undo</button>
-          <button id="redo-btn" class="button ghost" ${state.redoCount === 0 ? "disabled" : ""}>Redo</button>
-          <button id="export-btn" class="button ghost">Export Current File</button>
-          <button id="callsign-back-home-btn" class="button ghost">Back To Homepage</button>
+          <button id="undo-btn" class="button ghost" ${state.undoCount === 0 ? "disabled" : ""}>${t("common.undo")}</button>
+          <button id="redo-btn" class="button ghost" ${state.redoCount === 0 ? "disabled" : ""}>${t("common.redo")}</button>
+          <button id="export-btn" class="button ghost">${t("shell.export")}</button>
+          <button id="callsign-back-home-btn" class="button ghost">${t("common.backHome")}</button>
         </div>
       </section>
 
       <section class="card tabs-card">
-        <div class="tabs" role="tablist" aria-label="Codeplug sections">
-          ${renderTabButton("basic", "Basic", uiState.activeTab, false)}
-          ${renderTabButton("general", "General", uiState.activeTab, false)}
-          ${renderTabButton("menus", "Menus", uiState.activeTab, false)}
-          ${renderTabButton("buttons", "Buttons", uiState.activeTab, false)}
-          ${renderTabButton("digital-text", "Digital Text Message", uiState.activeTab, false)}
-          ${renderTabButton("encryption", "Encryption", uiState.activeTab, false)}
-          ${renderTabButton("digital-contacts", "Digital Contacts", uiState.activeTab, false)}
-          ${renderTabButton("dtmf", "DTMF", uiState.activeTab, false)}
-          ${renderTabButton("one-touch", "One Touch", uiState.activeTab, false)}
-          ${renderTabButton("zones", "Zones", uiState.activeTab, false)}
-          ${renderTabButton("group-lists", "Group Lists", uiState.activeTab, false)}
-          ${renderTabButton("scan-lists", "Scan Lists", uiState.activeTab, false)}
-          ${renderTabButton("channels", "Channels", uiState.activeTab, false)}
-          ${renderTabButton("radio-transfer", "Radio Transfer", uiState.activeTab, false)}
+        <div class="tabs" role="tablist" aria-label="${t("shell.tablistLabel")}">
+          ${renderTabButton("basic", t("tab.basic"), uiState.activeTab, false)}
+          ${renderTabButton("general", t("tab.general"), uiState.activeTab, false)}
+          ${renderTabButton("menus", t("tab.menus"), uiState.activeTab, false)}
+          ${renderTabButton("buttons", t("tab.buttons"), uiState.activeTab, false)}
+          ${renderTabButton("digital-text", t("tab.digitalText"), uiState.activeTab, false)}
+          ${renderTabButton("encryption", t("tab.encryption"), uiState.activeTab, false)}
+          ${renderTabButton("digital-contacts", t("tab.digitalContacts"), uiState.activeTab, false)}
+          ${renderTabButton("dtmf", t("tab.dtmf"), uiState.activeTab, false)}
+          ${renderTabButton("one-touch", t("tab.oneTouch"), uiState.activeTab, false)}
+          ${renderTabButton("zones", t("tab.zones"), uiState.activeTab, false)}
+          ${renderTabButton("group-lists", t("tab.groupLists"), uiState.activeTab, false)}
+          ${renderTabButton("scan-lists", t("tab.scanLists"), uiState.activeTab, false)}
+          ${renderTabButton("channels", t("tab.channels"), uiState.activeTab, false)}
+          ${renderTabButton("radio-transfer", t("tab.radioTransfer"), uiState.activeTab, false)}
         </div>
         <article id="active-tab-panel" class="tab-panel"></article>
       </section>

@@ -13,6 +13,7 @@ import {
 } from "./uiHelpers";
 import { showToast } from "./dialog";
 import { renderLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 type RenderStateFn = (
   target: HTMLElement,
@@ -27,37 +28,33 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
     <main class="layout">
       <section class="hero card">
         ${renderLanguageSelector(uiState)}
-        <h1>IU2FRL MD380 Codeplug Editor</h1>
-        <p>A simple web application to interact with your MD380 codeplug, where everything is done in the browser.</p>
+        <h1>${t("app.title")}</h1>
+        <p>${t("landing.intro")}</p>
       </section>
 
       <section class="card risk-card" ${!riskAccepted ? "" : "style='display: none;'"}>
-        <h2>Warning</h2>
+        <h2>${t("landing.risk.heading")}</h2>
         <p class="risk-text">
-          This app is still under development.<br>
-          Not all features were tested and using it may create an unusable codeplug that can freeze your transceiver.<br>
-          It is very hard to brick these devices thanks to their robust design and bootloader, but no operation can be considered 100% safe.<br>
-          By proceeding, you accept all risk and agree that the project maintainer is not responsible for any device damage or malfunctioning.<br>
-          If your transceiver freezes during or after a read/write operation, simply unplug it from the PC and restart it using the volume knob.<br>
+          ${t("landing.risk.body")}
         </p>
         <p>
-          Please note: 
+          ${t("landing.risk.noteIntro")}
           <ul>
-            <li>This app does not (yet) support OpenGD77 firmware.</li>
-            <li>This app only supports original or patched (via <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="nofollow">md380tools</a>) firmwares for MD380 and MD390.</li>
-            <li>This app requires Chrome, Edge, or any Chromium-based browser with WebUSB support. Firefox and Safari are not supported due to lack of WebUSB API.</li>
+            <li>${t("landing.risk.note.opengd77")}</li>
+            <li>${t("landing.risk.note.firmwares")}</li>
+            <li>${t("landing.risk.note.browser")}</li>
           </ul>
         </p>
         <label class="risk-ack">
           <input id="risk-ack" type="checkbox" ${riskAccepted ? "checked" : ""} ${uiState.busy ? "disabled" : ""}/>
-          I understand and accept all risk, including possible device damage or bricking.
+          ${t("landing.risk.ack")}
         </label>
       </section>
 
       ${uiState.radioProgressVisible
         ? `
       <section class="card">
-        <h2>Radio Transfer Progress</h2>
+        <h2>${t("landing.radioProgress.heading")}</h2>
         <progress id="landing-radio-progress" max="100" value="${uiState.radioProgressPercent}"></progress>
         <p class="muted-text" id="landing-radio-progress-label">${escapeHtml(uiState.radioProgressLabel)}</p>
       </section>
@@ -65,72 +62,70 @@ export function renderLanding(importError: string | undefined, riskAccepted: boo
         : ""}
       <section class="tiles">
         <article class="card tile">
-          <h2>Setup Guide</h2>
-          <p>Instructions for setting up your browser and operating system to communicate with your radio via USB.</p>
-          <button id="open-setup-guide-btn" class="button">Show Setup Guide</button>
+          <h2>${t("landing.tile.setup.heading")}</h2>
+          <p>${t("landing.tile.setup.desc")}</p>
+          <button id="open-setup-guide-btn" class="button">${t("landing.tile.setup.button")}</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Create New Codeplug</h2>
-          <p>Start from a blank profile and build your codeplug from scratch.</p>
+          <h2>${t("landing.tile.create.heading")}</h2>
+          <p>${t("landing.tile.create.desc")}</p>
           <p class="risk-text">
-          This feature is in the alpha testing stage and might need further refinements to ensure the generated codeplugs are fully compatible with all radio models and firmware versions.
+          ${t("landing.tile.create.alpha")}
           </p>
           <div class="actions">
-            <button id="create-new-md380-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Create new MD380 codeplug</button>
-            <button id="create-new-md390-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Create new MD390 codeplug</button>
+            <button id="create-new-md380-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.create.md380")}</button>
+            <button id="create-new-md390-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.create.md390")}</button>
           </div>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Open Existing Codeplug</h2>
-          <p>Import an existing <code>.rdt</code> or <code>.bin</code> file to edit it safely in-browser.
-          <p>Preferred format is <code>.rdt</code>, which can be exported by some applications like <strong>G6AMU Codeplug Editor</strong>.<br>
-          <strong>Please note:</strong> the <code>.bin</code> format does not contain all device information (no custom headers), so some features may not be fully supported.</p>
-          <button id="open-existing-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Open .rdt/.bin</button>
+          <h2>${t("landing.tile.open.heading")}</h2>
+          <p>${t("landing.tile.open.desc1")}
+          <p>${t("landing.tile.open.desc2")}</p>
+          <button id="open-existing-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.open.button")}</button>
           <input id="file-input" type="file" accept=".rdt,.bin" hidden ${riskAccepted && !uiState.busy ? "" : "disabled"} />
           ${importError ? `<p class="error">${escapeHtml(importError)}</p>` : ""}
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Read Codeplug From Radio</h2>
-          <p>Connect your radio and load the current codeplug directly into this browser session.</p>
-          <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Read Codeplug From Radio</button>
+          <h2>${t("landing.tile.read.heading")}</h2>
+          <p>${t("landing.tile.read.desc")}</p>
+          <button id="landing-read-radio-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.read.button")}</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Update Callsign Database</h2>
-          <p>Download the latest callsign database and write it to the transceiver.</p>
-          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Update Callsigns Database</button>
+          <h2>${t("landing.tile.callsign.heading")}</h2>
+          <p>${t("landing.tile.callsign.desc")}</p>
+          <button id="open-callsign-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.callsign.button")}</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Radio Date and Time Sync</h2>
-          <p>Sync date, time, and timezone from this machine to the transceiver clock.</p>
-          <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Sync Date and Time</button>
+          <h2>${t("landing.tile.timeSync.heading")}</h2>
+          <p>${t("landing.tile.timeSync.desc")}</p>
+          <button id="open-time-sync-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.timeSync.button")}</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Radio Screenshot</h2>
-          <p>Capture the current LCD display (160x128 px) from the radio and save it as a PNG. Requires patched firmware, see <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener noreferrer">MD380 Tools</a>.</p>
-          <button id="open-screenshot-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Capture Screenshot</button>
+          <h2>${t("landing.tile.screenshot.heading")}</h2>
+          <p>${t("landing.tile.screenshot.desc")}</p>
+          <button id="open-screenshot-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.screenshot.button")}</button>
         </article>
 
         <article class="card tile ${riskAccepted && !uiState.busy ? "" : "muted"}">
-          <h2>Firmware Backup</h2>
-          <p>Create a backup of your radio's firmware (848 KB). Requires entering STM32 bootloader mode manually by turning on the transceiver while pressing PTT and the button above it.</p>
-          <button id="open-firmware-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>Backup Firmware</button>
+          <h2>${t("landing.tile.firmware.heading")}</h2>
+          <p>${t("landing.tile.firmware.desc")}</p>
+          <button id="open-firmware-workflow-btn" class="button" ${riskAccepted && !uiState.busy ? "" : "disabled"}>${t("landing.tile.firmware.button")}</button>
         </article>
       </section>
 
       <section class="card tile landing-footer">
-        <h2>Credits</h2>
-        <p>Developed by <a href="https://github.com/iu2frl" target="_blank" rel="noopener noreferrer">IU2FRL</a> on GitHub Pages and released under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU General Public License v3</a>.<br>
-        ${uiState.callsignLastUpdated ? `Last update: ${escapeHtml(formatCallsignDate(uiState.callsignLastUpdated))}` : ""}.</p>
-        <p>This project is open source on <a href="https://github.com/iu2frl/md380-codeplug-editor" target="_blank" rel="noopener noreferrer">GitHub</a>.<br>
-        Please report any issues on <a href="https://github.com/iu2frl/md380-codeplug-editor/issues" target="_blank" rel="noopener noreferrer">md380-codeplug-editor/issues</a> and consider contributing if you can!
+        <h2>${t("landing.credits.heading")}</h2>
+        <p>${t("landing.credits.body1")}<br>
+        ${uiState.callsignLastUpdated ? t("landing.credits.lastUpdate", { date: escapeHtml(formatCallsignDate(uiState.callsignLastUpdated)) }) : ""}.</p>
+        <p>${t("landing.credits.body2")}
         </p>
-        <p>Special thanks to <a href="https://github.com/travisgoodspeed/md380tools" target="_blank" rel="noopener noreferrer">MD380-Tools</a> and <a href="https://github.com/DaleFarnsworth/codeplug" target="_blank" rel="noopener noreferrer">GO Codeplug</a> as sources of inspiration.</p>
+        <p>${t("landing.credits.body3")}</p>
       </section>
     </main>
   `;

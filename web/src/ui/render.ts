@@ -32,6 +32,7 @@ import {
   renderLoadedLayout,
 } from "./codeplugEditor";
 import { bindLanguageSelector } from "./languageSelector";
+import { t } from "../i18n";
 
 export function renderApp(target: HTMLElement, store: EditorStore): void {
   const channelState: ChannelPanelState = createInitialChannelPanelState();
@@ -160,10 +161,10 @@ function renderState(
   activeTab.innerHTML = activeContent;
 
   validation.innerHTML = `
-    <h2>Validation</h2>
+    <h2>${t("validation.heading")}</h2>
     ${
       state.validationIssues.length === 0
-        ? "<p class=\"ok\">No validation issues.</p>"
+        ? `<p class="ok">${t("validation.none")}</p>`
         : `<ul>${state.validationIssues
             .map((issue) => `<li class="${issue.level}">[${issue.code}] ${issue.message}</li>`)
             .join("")}</ul>`
