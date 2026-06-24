@@ -39,6 +39,66 @@ export function renderApp(target: HTMLElement, store: EditorStore): void {
   store.subscribe((state) => renderState(target, store, state, channelState, uiState));
 }
 
+interface ScrollSnapshotEntry {
+  path: number[];
+  signature: string;
+  top: number;
+  left: number;
+}
+
+function elementSignature(element: Element): string {
+  return `${element.tagName}#${element.id}.${element.className}`;
+}
+
+function pathFromRoot(root: HTMLElement, element: Element): number[] | null {
+  const path: number[] = [];
+  let current: Element | null = element;
+  while (current && current !== root) {
+    const parent: Element | null = current.parentElement;
+    if (!parent) {
+      return null;
+    }
+    path.unshift(Array.prototype.indexOf.call(parent.children, current));
+    current = parent;
+  }
+  return current === root ? path : null;
+}
+
+// Capture the scroll offset of every scrolled element so a full innerHTML
+// rebuild does not visibly jump the page or any inner list back to the top.
+function captureScrollPositions(root: HTMLElement): ScrollSnapshotEntry[] {
+  const entries: ScrollSnapshotEntry[] = [];
+  for (const element of root.querySelectorAll<HTMLElement>("*")) {
+    if (element.scrollTop > 0 || element.scrollLeft > 0) {
+      const path = pathFromRoot(root, element);
+      if (path) {
+        entries.push({
+          path,
+          signature: elementSignature(element),
+          top: element.scrollTop,
+          left: element.scrollLeft,
+        });
+      }
+    }
+  }
+  return entries;
+}
+
+function restoreScrollPositions(root: HTMLElement, entries: ScrollSnapshotEntry[]): void {
+  for (const entry of entries) {
+    let current: Element | null = root;
+    for (const index of entry.path) {
+      current = current?.children.item(index) ?? null;
+    }
+    // Only restore when the element at this location is structurally the same
+    // node, so a changed layout never receives a stale scroll offset.
+    if (current instanceof HTMLElement && elementSignature(current) === entry.signature) {
+      current.scrollTop = entry.top;
+      current.scrollLeft = entry.left;
+    }
+  }
+}
+
 function renderState(
   target: HTMLElement,
   store: EditorStore,
@@ -74,34 +134,11 @@ function renderState(
     return;
   }
 
-  if (uiState.activeTab === "channels") {
-    const channelsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (channelsList) {
-      uiState.channelsListScrollTop = channelsList.scrollTop;
-    }
-  }
-
-  if (uiState.activeTab === "zones") {
-    const zonesList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (zonesList) {
-      uiState.zonesListScrollTop = zonesList.scrollTop;
-    }
-    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
-    if (channelPool) {
-      uiState.zonesChannelPoolScrollTop = channelPool.scrollTop;
-    }
-  }
-
-  if (uiState.activeTab === "scan-lists") {
-    const scanListsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (scanListsList) {
-      uiState.scanListsListScrollTop = scanListsList.scrollTop;
-    }
-    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
-    if (channelPool) {
-      uiState.scanListChannelPoolScrollTop = channelPool.scrollTop;
-    }
-  }
+  // Preserve scroll positions across the full re-render, but only when staying
+  // on the same tab — switching tabs intentionally starts fresh at the top.
+  const sameTabRender = uiState.lastRenderedTab === uiState.activeTab;
+  const preservedWindowScroll = { x: window.scrollX, y: window.scrollY };
+  const preservedScroll = sameTabRender ? captureScrollPositions(target) : [];
 
   target.innerHTML = `${renderLoadedLayout(state, uiState)}${renderGuideModal(uiState)}`;
   bindFileInputs(target, store);
@@ -132,32 +169,9 @@ function renderState(
 
   bindActiveTab(target, store, state, channelState, uiState, renderState);
 
-  if (uiState.activeTab === "channels") {
-    const channelsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (channelsList) {
-      channelsList.scrollTop = uiState.channelsListScrollTop;
-    }
+  if (sameTabRender) {
+    restoreScrollPositions(target, preservedScroll);
+    window.scrollTo(preservedWindowScroll.x, preservedWindowScroll.y);
   }
-
-  if (uiState.activeTab === "zones") {
-    const zonesList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (zonesList) {
-      zonesList.scrollTop = uiState.zonesListScrollTop;
-    }
-    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
-    if (channelPool) {
-      channelPool.scrollTop = uiState.zonesChannelPoolScrollTop;
-    }
-  }
-
-  if (uiState.activeTab === "scan-lists") {
-    const scanListsList = target.querySelector<HTMLElement>("#active-tab-panel .pane-left .list");
-    if (scanListsList) {
-      scanListsList.scrollTop = uiState.scanListsListScrollTop;
-    }
-    const channelPool = target.querySelector<HTMLElement>("#active-tab-panel .zone-channel-pool");
-    if (channelPool) {
-      channelPool.scrollTop = uiState.scanListChannelPoolScrollTop;
-    }
-  }
+  uiState.lastRenderedTab = uiState.activeTab;
 }

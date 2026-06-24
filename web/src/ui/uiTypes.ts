@@ -44,11 +44,7 @@ export interface UiState {
   selectedGroupListId: number | null;
   selectedScanListId: number | null;
   selectedChannelId: number | null;
-  channelsListScrollTop: number;
-  zonesListScrollTop: number;
-  zonesChannelPoolScrollTop: number;
-  scanListsListScrollTop: number;
-  scanListChannelPoolScrollTop: number;
+  lastRenderedTab: ActiveTab | null;
   radioTransport: BrowserRadioTransport | null;
   radioStatusMessage: string;
   radioBusy: boolean;
@@ -108,11 +104,7 @@ export function createInitialUiState(): UiState {
     selectedGroupListId: null,
     selectedScanListId: null,
     selectedChannelId: null,
-    channelsListScrollTop: 0,
-    zonesListScrollTop: 0,
-    zonesChannelPoolScrollTop: 0,
-    scanListsListScrollTop: 0,
-    scanListChannelPoolScrollTop: 0,
+    lastRenderedTab: null,
     radioTransport: null,
     radioStatusMessage: "Not connected.",
     radioBusy: false,

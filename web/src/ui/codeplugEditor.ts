@@ -1327,7 +1327,7 @@ export function bindTopActions(
     uiState.activeGuideModal = null;
     uiState.selectedZoneId = null;
     uiState.selectedChannelId = null;
-    uiState.channelsListScrollTop = 0;
+    uiState.lastRenderedTab = null;
     uiState.radioTransport = null;
     uiState.radioStatusMessage = "Not connected.";
     uiState.radioBusy = false;
