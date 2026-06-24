@@ -37,7 +37,7 @@ export const it: Record<MessageKey, string> = {
   "tab.general": "Generale",
   "tab.menus": "Menu",
   "tab.buttons": "Pulsanti",
-  "tab.digitalText": "Messaggio di testo digitale",
+  "tab.digitalText": "Messaggio di testo",
   "tab.encryption": "Crittografia",
   "tab.digitalContacts": "Contatti digitali",
   "tab.dtmf": "DTMF",
