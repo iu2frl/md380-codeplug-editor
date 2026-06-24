@@ -3,7 +3,7 @@
  *
  * @vitest-environment happy-dom
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EditorStore } from "../state/store";
 import { renderApp } from "./render";
@@ -28,11 +28,17 @@ beforeEach(() => {
   document.body.innerHTML = "";
   localStorage.clear();
   setLocale("en");
+  // Rendering the landing page fires a fire-and-forget fetch for callsign
+  // metadata. Stub it so the suite stays hermetic (no real network request)
+  // and happy-dom does not log an AbortError when it cancels the pending
+  // request during environment teardown.
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
 });
 
 afterEach(() => {
   localStorage.clear();
   setLocale("en");
+  vi.unstubAllGlobals();
 });
 
 describe("language selector", () => {

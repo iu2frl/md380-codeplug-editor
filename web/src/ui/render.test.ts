@@ -244,6 +244,15 @@ async function flushAsyncWork(): Promise<void> {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+// Rendering the landing page fires a fire-and-forget fetch for callsign
+// metadata. Stub it globally so every suite stays hermetic (no real network
+// request) and happy-dom does not log an AbortError when it cancels the
+// pending request during environment teardown.
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
 });
 
 // ---------------------------------------------------------------------------
